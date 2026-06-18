@@ -36,7 +36,16 @@ export class Town {
 
       meal_cooked: 2,
       bandage_basic: 2,
-      beer_refreshing: 2
+      beer_refreshing: 2,
+      bed_disposable: 2,
+      meal_cooked_t2: 0,
+      bandage_basic_t2: 0,
+      beer_refreshing_t2: 0,
+      bed_disposable_t2: 0,
+      meal_cooked_t3: 0,
+      bandage_basic_t3: 0,
+      beer_refreshing_t3: 0,
+      bed_disposable_t3: 0
     };
 
     this.buildings = {

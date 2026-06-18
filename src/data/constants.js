@@ -199,9 +199,20 @@ export const ITEMS_INFO = {
   linho: { name: 'Tecido de Linho', price: 4, icon: '🧵', type: 'material', source: 'Coleta' },
 
   // Consumíveis
-  meal_cooked: { name: 'Ensopado de Carne', price: 8, icon: '🍲', type: 'consumable' },
-  bandage_basic: { name: 'Curativo Simples', price: 8, icon: '🩹', type: 'consumable' },
-  beer_refreshing: { name: 'Cerveja Forte', price: 8, icon: '🍺', type: 'consumable' }
+  meal_cooked: { name: 'Ensopado Simples (T1)', price: 8, icon: '🍲', type: 'consumable' },
+  bandage_basic: { name: 'Curativo Simples (T1)', price: 8, icon: '🩹', type: 'consumable' },
+  beer_refreshing: { name: 'Cerveja Rústica (T1)', price: 8, icon: '🍺', type: 'consumable' },
+  bed_disposable: { name: 'Cama de Palha (T1)', price: 8, icon: '🛏️', type: 'consumable' },
+
+  meal_cooked_t2: { name: 'Churrasco de Lobo (T2)', price: 20, icon: '🍖', type: 'consumable' },
+  bandage_basic_t2: { name: 'Atadura Reforçada (T2)', price: 20, icon: '🧻', type: 'consumable' },
+  beer_refreshing_t2: { name: 'Suco de Caipora (T2)', price: 20, icon: '🍹', type: 'consumable' },
+  bed_disposable_t2: { name: 'Cama de Madeira (T2)', price: 20, icon: '🛌', type: 'consumable' },
+
+  meal_cooked_t3: { name: 'Banquete Real (T3)', price: 50, icon: '🍛', type: 'consumable' },
+  bandage_basic_t3: { name: 'Gaze Esterilizada (T3)', price: 50, icon: '📦', type: 'consumable' },
+  beer_refreshing_t3: { name: 'Hidromel Lendário (T3)', price: 50, icon: '🥂', type: 'consumable' },
+  bed_disposable_t3: { name: 'Cama de Pena (T3)', price: 50, icon: '👑', type: 'consumable' }
 };
 
 export const BUILDINGS_CONFIG = {
@@ -270,9 +281,23 @@ export const BUILDINGS_CONFIG = {
 
 export const CRAFT_RECIPES = {
   // Consumíveis
+  // --- TIER 1 ---
   meal_cooked: { result: 'meal_cooked', cost: { meat_raw: 2 }, qty: 1, building: 'restaurant' },
   bandage_basic: { result: 'bandage_basic', cost: { herbs_wild: 1, linho: 1 }, qty: 1, building: 'hospital' },
   beer_refreshing: { result: 'beer_refreshing', cost: { wood_rough: 1, meat_raw: 1 }, qty: 1, building: 'tavern' },
+  bed_disposable: { result: 'bed_disposable', cost: { wood_rough: 3 }, qty: 1, building: 'hotel' },
+
+  // --- TIER 2 ---
+  meal_cooked_t2: { result: 'meal_cooked_t2', cost: { meat_raw: 3, wood_rough: 1 }, qty: 1, building: 'restaurant' },
+  bandage_basic_t2: { result: 'bandage_basic_t2', cost: { herbs_wild: 2, linho: 2, wolf_fur: 1 }, qty: 1, building: 'hospital' },
+  beer_refreshing_t2: { result: 'beer_refreshing_t2', cost: { wood_rough: 2, bananier_leaf: 1 }, qty: 1, building: 'tavern' },
+  bed_disposable_t2: { result: 'bed_disposable_t2', cost: { wood_rough: 6, linho: 1 }, qty: 1, building: 'hotel' },
+
+  // --- TIER 3 ---
+  meal_cooked_t3: { result: 'meal_cooked_t3', cost: { meat_raw: 4, herbs_wild: 1, dente_queixada: 1 }, qty: 1, building: 'restaurant' },
+  bandage_basic_t3: { result: 'bandage_basic_t3', cost: { herbs_wild: 3, linho: 3, spider_silk: 2 }, qty: 1, building: 'hospital' },
+  beer_refreshing_t3: { result: 'beer_refreshing_t3', cost: { wood_rough: 3, chapeu_boto: 1 }, qty: 1, building: 'tavern' },
+  bed_disposable_t3: { result: 'bed_disposable_t3', cost: { wood_rough: 10, linho: 2, couro_rigido: 1 }, qty: 1, building: 'hotel' },
 
   // EQUIPAMENTOS ORIGINAIS E LENDÁRIOS DO FOLCLORE
   // --- GRAU 1 ---

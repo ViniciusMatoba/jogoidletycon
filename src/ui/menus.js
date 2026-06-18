@@ -1,4 +1,4 @@
-﻿import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
+import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
 
 import { getBuildingVisualStage } from './renderer.js';
 
@@ -6,6 +6,10 @@ let activeProfileHero = null;
 let activeProfileTab = 'stats';
 let pendingBuildingPlacement = null;
 let activeBuildingKey = null;
+
+let lastTownStateKey = '';
+let wasTownModalActive = false;
+let wasCraftModalActive = false;
 
 const BUILDING_ACTION_LABELS = {
   townhall: { name: 'Centro da Cidade', icon: '🏛️', modalId: 'town-modal' },
@@ -395,7 +399,7 @@ function setupBuildingUpgrades(game) {
   const upgradeContainer = document.getElementById('buildings-list');
   if (!upgradeContainer) return;
 
-  // Render inicial dos edifÃ­cios
+  // Render inicial dos edifícios
   renderBuildings(game);
 }
 
@@ -410,17 +414,40 @@ export function renderBuildings(game) {
     const itemEl = document.createElement('div');
     itemEl.className = 'building-card';
 
-    // Status da construÃ§Ã£o
+    // Status da construção
     const isBuilt = config.level > 0;
     const isMax = config.next === null;
     const currentVisualStage = getBuildingVisualStage(Math.max(config.level, 1));
     const nextVisualStage = !isMax ? getBuildingVisualStage(config.level + 1) : null;
 
+    let canUpgrade = true;
+    if (isMax) {
+      canUpgrade = false;
+    } else {
+      // Check cost
+      for (const res in config.next.cost) {
+        const required = config.next.cost[res];
+        const owned = res === 'gold' ? game.town.gold : game.town.resources[res] || 0;
+        if (owned < required) {
+          canUpgrade = false;
+          break;
+        }
+      }
+      // Check townhall dependency
+      if (bKey !== 'townhall') {
+        if (game.town.buildings.townhall <= 0) {
+          canUpgrade = false;
+        } else if (game.town.buildings[bKey] >= game.town.buildings.townhall) {
+          canUpgrade = false;
+        }
+      }
+    }
+
     let costHtml = '';
     if (!isMax) {
       const costs = [];
       for (const res in config.next.cost) {
-        const icon = res === 'gold' ? 'ðŸª™' : ITEMS_INFO[res]?.icon || 'ðŸ“¦';
+        const icon = res === 'gold' ? '🪙' : ITEMS_INFO[res]?.icon || '📦';
         const name = res === 'gold' ? 'Ouro' : ITEMS_INFO[res]?.name || res;
         const required = config.next.cost[res];
         const owned = res === 'gold' ? game.town.gold : game.town.resources[res] || 0;
@@ -434,23 +461,23 @@ export function renderBuildings(game) {
       <div class="building-info-header">
         <span class="building-icon">${config.icon}</span>
         <div class="building-title-desc">
-          <h4>${config.name} ${isBuilt ? `(NÃ­v. ${config.level})` : '<span class="locked-text">(Bloqueado)</span>'}</h4>
+          <h4>${config.name} ${isBuilt ? `(Nív. ${config.level})` : '<span class="locked-text">(Bloqueado)</span>'}</h4>
           <p class="building-desc-text">${config.description}</p>
         </div>
       </div>
       <div class="building-perks">
         <p class="visual-perk">Visual: ${isBuilt ? currentVisualStage.name : 'Projeto inicial'}${nextVisualStage && nextVisualStage.name !== currentVisualStage.name ? ` -> ${nextVisualStage.name}` : ''}</p>
-        <p class="current-perk">Efeito Atual: ${isBuilt ? (config.current?.desc || 'EdifÃ­cio Funcional') : 'Inativo'}</p>
-        ${!isMax ? `<p class="next-perk">PrÃ³ximo NÃ­vel: ${config.next.desc}</p>` : '<p class="max-perk">NÃ­vel MÃ¡ximo Atingido!</p>'}
+        <p class="current-perk">Efeito Atual: ${isBuilt ? (config.current?.desc || 'Edifício Funcional') : 'Inativo'}</p>
+        ${!isMax ? `<p class="next-perk">Próximo Nível: ${config.next.desc}</p>` : '<p class="max-perk">Nível Máximo Atingido!</p>'}
       </div>
       ${costHtml}
-      <button class="upgrade-btn action-btn-retro ${isMax ? 'disabled' : ''}" data-building="${bKey}">
-        ${isBuilt ? (isMax ? 'NÃ­vel MÃ¡ximo' : 'Melhorar') : 'Construir'}
+      <button class="upgrade-btn action-btn-retro ${!canUpgrade ? 'disabled' : ''}" data-building="${bKey}" ${!canUpgrade ? 'disabled' : ''}>
+        ${isBuilt ? (isMax ? 'Nível Máximo' : 'Melhorar') : 'Construir'}
       </button>
     `;
 
     const button = itemEl.querySelector('.upgrade-btn');
-    if (button && !isMax) {
+    if (button && canUpgrade) {
       button.addEventListener('click', () => {
         if (!isBuilt) {
           pendingBuildingPlacement = bKey;
@@ -477,7 +504,7 @@ export function renderBuildings(game) {
   }
 }
 
-// Configura botÃµes de craft
+// Configura botões de craft
 function setupCraftingButtons(game) {
   const craftContainer = document.getElementById('recipes-list');
   if (!craftContainer) return;
@@ -494,14 +521,49 @@ function setupCraftingButtons(game) {
     const card = document.createElement('div');
     card.className = `recipe-card ${isEquip ? 'recipe-equip' : 'recipe-consumable'}`;
 
+    let canCraft = true;
+    let craftReason = "";
+    if (isEquip) {
+      canCraft = false; // Equipment is auto-bought by heroes
+    } else {
+      const buildingKey = recipe.building;
+      if (!game.town.isBuilt(buildingKey)) {
+        canCraft = false;
+        craftReason = `Requer ${BUILDINGS_CONFIG[buildingKey]?.name}`;
+      } else {
+        // Check building level tier requirement
+        let recipeTier = 1;
+        if (recipeKey.endsWith('_t3')) recipeTier = 3;
+        else if (recipeKey.endsWith('_t2')) recipeTier = 2;
+
+        const bLevel = game.town.buildings[buildingKey] || 0;
+        if (bLevel < recipeTier) {
+          canCraft = false;
+          craftReason = `Requer Nív. ${recipeTier}`;
+        }
+      }
+
+      if (canCraft) {
+        for (const res in recipe.cost) {
+          const required = recipe.cost[res];
+          const owned = game.town.resources[res] || 0;
+          if (owned < required) {
+            canCraft = false;
+            break;
+          }
+        }
+      }
+    }
+
     // Montar custos
     const costs = [];
     for (const res in recipe.cost) {
-      const icon = res === 'gold' ? 'ðŸª™' : ITEMS_INFO[res]?.icon || 'ðŸ“¦';
+      const icon = res === 'gold' ? '🪙' : ITEMS_INFO[res]?.icon || '📦';
       const required = recipe.cost[res];
-      const owned = res === 'gold' ? 0 : game.town.resources[res] || 0; // Ouro de equip Ã© do herÃ³i, consumÃ­veis usam cidade
+      const owned = game.town.resources[res] || 0; // Ouro de equip é do herói, consumíveis usam cidade
+      const isEnough = res === 'gold' ? true : owned >= required;
       
-      costs.push(`<span>${icon} ${required}</span>`);
+      costs.push(`<span class="cost-item ${isEnough ? 'enough' : 'not-enough'}">${icon} ${required} (${owned})</span>`);
     }
 
     let targetText = '';
@@ -511,13 +573,15 @@ function setupCraftingButtons(game) {
                     <p class="recipe-stats">Efeitos: +${recipe.stats.atk ? `${recipe.stats.atk} Atk` : ''} ${recipe.stats.hp ? `+${recipe.stats.hp} HP` : ''} ${recipe.stats.def ? `+${recipe.stats.def} Def` : ''}</p>`;
     } else {
       const sourceBuildingName = BUILDINGS_CONFIG[recipe.building]?.name || recipe.building;
-      targetText = `<p class="recipe-target">PrÃ©dio: <strong>${sourceBuildingName}</strong></p>
+      targetText = `<p class="recipe-target">Prédio: <strong>${sourceBuildingName}</strong> ${craftReason ? `<span style="color:#ff3d3d;">(${craftReason})</span>` : ''}</p>
                     <p class="recipe-desc">${resultItem.desc || ''}</p>`;
     }
 
+    const btnDisabled = isEquip || !canCraft;
+
     card.innerHTML = `
       <div class="recipe-header">
-        <span class="recipe-icon">${resultItem.icon || 'âš”ï¸'}</span>
+        <span class="recipe-icon">${resultItem.icon || '⚔️'}</span>
         <div class="recipe-title-section">
           <h4>${resultItem.name}</h4>
           ${targetText}
@@ -526,13 +590,13 @@ function setupCraftingButtons(game) {
       <div class="recipe-cost-list">
         Custos: ${costs.join(' | ')}
       </div>
-      <button class="craft-btn action-btn-retro ${isEquip ? 'disabled' : ''}" data-recipe="${recipeKey}" ${isEquip ? 'disabled' : ''}>
-        ${isEquip ? 'HerÃ³is Compram Auto' : 'Fabricar'}
+      <button class="craft-btn action-btn-retro ${btnDisabled ? 'disabled' : ''}" data-recipe="${recipeKey}" ${btnDisabled ? 'disabled' : ''}>
+        ${isEquip ? 'Heróis Compram Auto' : 'Fabricar'}
       </button>
     `;
 
     const btn = card.querySelector('.craft-btn');
-    if (btn && !isEquip) {
+    if (btn && canCraft) {
       btn.addEventListener('click', () => {
         const res = game.town.craftConsumable(recipeKey, 1);
         if (res.success) {
@@ -547,26 +611,55 @@ function setupCraftingButtons(game) {
   }
 }
 
-// Atualiza dinamicamente as tabelas de recursos e herÃ³is a cada frame/tick
+// Atualiza dinamicamente as tabelas de recursos e heróis a cada frame/tick
 export function updateUI(game) {
   // 1. Atualizar Recursos Globais da Cidade na Barra Superior
   const goldEl = document.getElementById('town-gold');
   if (goldEl) goldEl.innerText = game.town.gold;
 
-  // Atualizar vagas de herÃ³is no topo minimalista
+  // Atualizar vagas de heróis no topo minimalista
   const heroesCountEl = document.getElementById('town-heroes-count');
   if (heroesCountEl) {
     const maxHeroes = game.town.getMaxHeroes();
     heroesCountEl.innerText = `${game.heroes.length} / ${maxHeroes}`;
   }
 
-  // Atualizar ArmazÃ©m de Recursos da Prefeitura
-  updateTownInventory(game);
+  // Detectar mudança de estado para re-renderização suave
+  const currentTownStateKey = JSON.stringify({
+    gold: game.town.gold,
+    buildings: game.town.buildings,
+    resources: game.town.resources
+  });
+  const stateChanged = currentTownStateKey !== lastTownStateKey;
+  if (stateChanged) {
+    lastTownStateKey = currentTownStateKey;
+    // Atualizar Armazém de Recursos da Prefeitura
+    updateTownInventory(game);
+  }
 
-  // 2. Atualizar Lista de HerÃ³is (Aba HerÃ³is)
+  // Re-renderização dos modais em tempo real caso estejam ativos
+  const townModal = document.getElementById('town-modal');
+  const townActive = townModal && townModal.classList.contains('active');
+  if (townActive) {
+    if (stateChanged || !wasTownModalActive) {
+      renderBuildings(game);
+    }
+  }
+  wasTownModalActive = townActive;
+
+  const craftModal = document.getElementById('craft-modal');
+  const craftActive = craftModal && craftModal.classList.contains('active');
+  if (craftActive) {
+    if (stateChanged || !wasCraftModalActive) {
+      setupCraftingButtons(game);
+    }
+  }
+  wasCraftModalActive = craftActive;
+
+  // 2. Atualizar Lista de Heróis (Aba Heróis)
   updateHeroesTab(game);
 
-  // 3. Atualizar InformaÃ§Ãµes de Batalha (Lado Direito / Superior)
+  // 3. Atualizar Informações de Batalha (Lado Direito / Superior)
   const biomeNameEl = document.getElementById('current-biome-name');
   if (biomeNameEl) {
     const b = game.spawner.getBiomeConfig();
@@ -588,7 +681,7 @@ export function updateUI(game) {
   const queueContainer = document.getElementById('craft-queue-list');
   if (queueContainer) {
     if (game.town.craftQueue.length === 0) {
-      queueContainer.innerHTML = '<p class="empty-queue-text">Fila de fabricaÃ§Ã£o vazia.</p>';
+      queueContainer.innerHTML = '<p class="empty-queue-text">Fila de fabricação vazia.</p>';
     } else {
       queueContainer.innerHTML = game.town.craftQueue.map(job => {
         const item = CRAFT_RECIPES[job.recipeId];
@@ -607,19 +700,19 @@ export function updateUI(game) {
     }
   }
 
-  // Atualizar Logs de Eventos de CaÃ§a
+  // Atualizar Logs de Eventos de Caça
   const logsContainer = document.getElementById('system-logs');
   if (logsContainer) {
     logsContainer.innerHTML = game.spawner.logs.slice(0, 8).map(log => `<li>${log}</li>`).join('');
   }
 
-  // Desabilitar botÃµes de contrataÃ§Ã£o se o limite for atingido
-  const maxHeroes = game.town.getMaxHeroes();
+  // Desabilitar botões de contratação se o limite for atingido
+  const maxHeroesForHiring = game.town.getMaxHeroes();
   const countHeroes = game.heroes.length;
   const hireBtnContainer = document.getElementById('hiring-cost-display');
   if (hireBtnContainer) {
     const cost = game.getHiringCost();
-    hireBtnContainer.innerHTML = `Vagas: <strong>${countHeroes} / ${maxHeroes}</strong>. Custo do prÃ³ximo herÃ³i: ðŸª™ <strong>${cost} Ouro</strong>`;
+    hireBtnContainer.innerHTML = `Vagas: <strong>${countHeroes} / ${maxHeroesForHiring}</strong>. Custo do próximo herói: 🪙 <strong>${cost} Ouro</strong>`;
   }
 
   // Atualizar modal de perfil em tempo real se aberto

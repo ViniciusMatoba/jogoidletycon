@@ -349,18 +349,21 @@ export class Hero {
 
       case 'HEALING_HOSP':
         // Recuperar vida no hospital
-        if (town.isBuilt('hospital') && town.resources.bandage_basic > 0 && this.gold >= 8) {
+        const hospLevel = town.buildings.hospital || 0;
+        const hospResKey = hospLevel === 3 ? 'bandage_basic_t3' : (hospLevel === 2 ? 'bandage_basic_t2' : 'bandage_basic');
+        
+        if (town.isBuilt('hospital') && (town.resources[hospResKey] || 0) > 0 && this.gold >= 8) {
           const rate = town.getBuildingConfig('hospital').current.hpRecovery;
           this.hp = Math.min(this.maxHp, this.hp + rate * dt * 4);
           
           this.stateTimer += dt;
           if (this.stateTimer >= 2.5 || this.hp >= this.maxHp) {
-            // Pagamento e finalizaÃ§Ã£o
-            town.resources.bandage_basic--;
+            // Pagamento e finalização
+            town.resources[hospResKey]--;
             town.gold += 8;
             this.gold -= 8;
             this.hp = this.maxHp;
-            this.addLog(`Tratamento concluÃ­do.`);
+            this.addLog(`Tratamento concluído.`);
             this.state = 'IDLE_TOWN';
             this.wanderTown(town, viewport);
           }
@@ -375,22 +378,25 @@ export class Hero {
         break;
 
       case 'EATING_REST':
-        if (town.isBuilt('restaurant') && town.resources.meal_cooked > 0 && this.gold >= 8) {
+        const restLevel = town.buildings.restaurant || 0;
+        const restResKey = restLevel === 3 ? 'meal_cooked_t3' : (restLevel === 2 ? 'meal_cooked_t2' : 'meal_cooked');
+
+        if (town.isBuilt('restaurant') && (town.resources[restResKey] || 0) > 0 && this.gold >= 8) {
           const rate = town.getBuildingConfig('restaurant').current.foodRecovery;
           this.hunger = Math.min(100, this.hunger + rate * dt * 4);
           
           this.stateTimer += dt;
           if (this.stateTimer >= 2.5 || this.hunger >= 100) {
-            town.resources.meal_cooked--;
+            town.resources[restResKey]--;
             town.gold += 8;
             this.gold -= 8;
             this.hunger = 100;
-            this.addLog(`AlmoÃ§ou ensopado.`);
+            this.addLog(`Almoçou ensopado.`);
             this.state = 'IDLE_TOWN';
             this.wanderTown(town, viewport);
           }
         } else {
-          // Sem comida, herÃ³i fica irritado mas volta a agir
+          // Sem comida, herói fica irritado mas volta a agir
           this.hunger = Math.min(100, this.hunger + 1.5 * dt);
           if (this.hunger >= 50) {
             this.state = 'IDLE_TOWN';
@@ -400,7 +406,10 @@ export class Hero {
         break;
 
       case 'RESTING_HOTEL':
-        if (town.isBuilt('hotel') && this.gold >= 6) {
+        const hotelLevel = town.buildings.hotel || 0;
+        const hotelResKey = hotelLevel === 3 ? 'bed_disposable_t3' : (hotelLevel === 2 ? 'bed_disposable_t2' : 'bed_disposable');
+
+        if (town.isBuilt('hotel') && (town.resources[hotelResKey] || 0) > 0 && this.gold >= 6) {
           const rate = town.getBuildingConfig('hotel').current.energyRecovery;
           const goldEarned = town.getBuildingConfig('hotel').current.goldEarned;
           
@@ -408,6 +417,7 @@ export class Hero {
           
           this.stateTimer += dt;
           if (this.stateTimer >= 3.0 || this.energy >= 100) {
+            town.resources[hotelResKey]--;
             town.gold += goldEarned;
             this.gold -= goldEarned;
             this.energy = 100;
@@ -416,7 +426,7 @@ export class Hero {
             this.wanderTown(town, viewport);
           }
         } else {
-          // Sem hotel construÃ­do ou sem ouro, cochila na rua de forma muito ineficiente
+          // Sem hotel construído ou sem ouro, cochila na rua de forma muito ineficiente
           this.energy = Math.min(100, this.energy + 2 * dt);
           if (this.energy >= 40) {
             this.state = 'IDLE_TOWN';
@@ -426,7 +436,10 @@ export class Hero {
         break;
 
       case 'DRINKING_TAVERN':
-        if (town.isBuilt('tavern') && town.resources.beer_refreshing > 0 && this.gold >= 8) {
+        const tavernLevel = town.buildings.tavern || 0;
+        const tavernResKey = tavernLevel === 3 ? 'beer_refreshing_t3' : (tavernLevel === 2 ? 'beer_refreshing_t2' : 'beer_refreshing');
+
+        if (town.isBuilt('tavern') && (town.resources[tavernResKey] || 0) > 0 && this.gold >= 8) {
           const rate = town.getBuildingConfig('tavern').current.moodRecovery;
           const goldEarned = town.getBuildingConfig('tavern').current.goldEarned;
           
@@ -434,7 +447,7 @@ export class Hero {
           
           this.stateTimer += dt;
           if (this.stateTimer >= 2.5 || this.mood >= 100) {
-            town.resources.beer_refreshing--;
+            town.resources[tavernResKey]--;
             town.gold += goldEarned;
             this.gold -= goldEarned;
             this.mood = 100;
@@ -443,7 +456,7 @@ export class Hero {
             this.wanderTown(town, viewport);
           }
         } else {
-          // Sem cerveja, recupera humor lentamente andando na praÃ§a
+          // Sem cerveja, recupera humor lentamente andando na praça
           this.mood = Math.min(100, this.mood + 2 * dt);
           if (this.mood >= 45) {
             this.state = 'IDLE_TOWN';
@@ -475,35 +488,48 @@ export class Hero {
     }
   }
 
-  // Avalia as necessidades do herÃ³i e define o estado apropriado
+  // Avalia as necessidades do herói e define o estado apropriado
   evaluateNeeds(town, viewport = {}) {
     let target = null;
     let logMsg = "";
 
+    // Obter as chaves de recursos correspondentes aos níveis atuais das construções
+    const hospLevel = town.buildings.hospital || 0;
+    const hospResKey = hospLevel === 3 ? 'bandage_basic_t3' : (hospLevel === 2 ? 'bandage_basic_t2' : 'bandage_basic');
+
+    const restLevel = town.buildings.restaurant || 0;
+    const restResKey = restLevel === 3 ? 'meal_cooked_t3' : (restLevel === 2 ? 'meal_cooked_t2' : 'meal_cooked');
+
+    const hotelLevel = town.buildings.hotel || 0;
+    const hotelResKey = hotelLevel === 3 ? 'bed_disposable_t3' : (hotelLevel === 2 ? 'bed_disposable_t2' : 'bed_disposable');
+
+    const tavernLevel = town.buildings.tavern || 0;
+    const tavernResKey = tavernLevel === 3 ? 'beer_refreshing_t3' : (tavernLevel === 2 ? 'beer_refreshing_t2' : 'beer_refreshing');
+
     // 1. Hospital (Vida)
-    if (this.hp < this.maxHp * 0.35 && this.gold >= 8 && town.isBuilt('hospital')) {
+    if (this.hp < this.maxHp * 0.35 && this.gold >= 8 && town.isBuilt('hospital') && (town.resources[hospResKey] || 0) > 0) {
       target = 'hospital';
       logMsg = `Indo ao Hospital para curar HP.`;
     }
     // 2. Restaurante (Fome)
-    else if (this.hunger < 25 && this.gold >= 8 && town.isBuilt('restaurant')) {
+    else if (this.hunger < 25 && this.gold >= 8 && town.isBuilt('restaurant') && (town.resources[restResKey] || 0) > 0) {
       target = 'restaurant';
       logMsg = `Fome extrema. Indo ao restaurante.`;
     }
     // 3. Hotel (Energia)
-    else if (this.energy < 20 && this.gold >= 6 && town.isBuilt('hotel')) {
+    else if (this.energy < 20 && this.gold >= 6 && town.isBuilt('hotel') && (town.resources[hotelResKey] || 0) > 0) {
       target = 'hotel';
       logMsg = `Exausto. Indo dormir no hotel.`;
     }
     // 4. Taverna (Humor)
-    else if (this.mood < 20 && this.gold >= 8 && town.isBuilt('tavern')) {
+    else if (this.mood < 20 && this.gold >= 8 && town.isBuilt('tavern') && (town.resources[tavernResKey] || 0) > 0) {
       target = 'tavern';
-      logMsg = `Mau humor. Indo Ã  Taverna beber.`;
+      logMsg = `Mau humor. Indo à Taverna beber.`;
     }
     // 5. Prefeitura (Vender Loot)
     else if (town.autoBuyHeroLoot && this.hasLootToSell() && town.isBuilt('townhall')) {
       target = 'townhall';
-      logMsg = `InventÃ¡rio cheio. Indo vender loot.`;
+      logMsg = `Inventário cheio. Indo vender loot.`;
     }
 
     if (target) {
