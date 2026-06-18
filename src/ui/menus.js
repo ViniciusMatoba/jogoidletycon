@@ -638,34 +638,34 @@ function setupCraftingButtons(game) {
 
     let canCraft = true;
     let craftReason = "";
-    if (isEquip) {
-      canCraft = false; // Equipment is auto-bought by heroes
+    const buildingKey = recipe.building || 'forge';
+    if (!game.town.isBuilt(buildingKey)) {
+      canCraft = false;
+      craftReason = `Requer ${BUILDINGS_CONFIG[buildingKey]?.name}`;
     } else {
-      const buildingKey = recipe.building;
-      if (!game.town.isBuilt(buildingKey)) {
-        canCraft = false;
-        craftReason = `Requer ${BUILDINGS_CONFIG[buildingKey]?.name}`;
+      // Check building level tier requirement
+      let recipeTier = 1;
+      if (isEquip) {
+        recipeTier = recipe.tier || 1;
       } else {
-        // Check building level tier requirement
-        let recipeTier = 1;
         if (recipeKey.endsWith('_t3')) recipeTier = 3;
         else if (recipeKey.endsWith('_t2')) recipeTier = 2;
-
-        const bLevel = game.town.buildings[buildingKey] || 0;
-        if (bLevel < recipeTier) {
-          canCraft = false;
-          craftReason = `Requer Nív. ${recipeTier}`;
-        }
       }
 
-      if (canCraft) {
-        for (const res in recipe.cost) {
-          const required = recipe.cost[res];
-          const owned = game.town.resources[res] || 0;
-          if (owned < required) {
-            canCraft = false;
-            break;
-          }
+      const bLevel = game.town.buildings[buildingKey] || 0;
+      if (bLevel < recipeTier) {
+        canCraft = false;
+        craftReason = `Requer Nív. ${recipeTier}`;
+      }
+    }
+
+    if (canCraft) {
+      for (const res in recipe.cost) {
+        const required = recipe.cost[res];
+        const owned = res === 'gold' ? game.town.gold : game.town.resources[res] || 0;
+        if (owned < required) {
+          canCraft = false;
+          break;
         }
       }
     }
@@ -675,8 +675,8 @@ function setupCraftingButtons(game) {
     for (const res in recipe.cost) {
       const icon = res === 'gold' ? '🪙' : ITEMS_INFO[res]?.icon || '📦';
       const required = recipe.cost[res];
-      const owned = game.town.resources[res] || 0; // Ouro de equip é do herói, consumíveis usam cidade
-      const isEnough = res === 'gold' ? true : owned >= required;
+      const owned = res === 'gold' ? game.town.gold : game.town.resources[res] || 0;
+      const isEnough = owned >= required;
       
       costs.push(`<span class="cost-item ${isEnough ? 'enough' : 'not-enough'}">${icon} ${required} (${owned})</span>`);
     }
@@ -684,7 +684,7 @@ function setupCraftingButtons(game) {
     let targetText = '';
     if (isEquip) {
       const classesFormatted = recipe.class.map(c => HERO_CLASSES[c]?.name || c).join(', ');
-      targetText = `<p class="recipe-target">Uso: <strong>${classesFormatted}</strong> (Grau ${recipe.tier})</p>
+      targetText = `<p class="recipe-target">Uso: <strong>${classesFormatted}</strong> (Grau ${recipe.tier}) ${craftReason ? `<span style="color:#ff3d3d;">(${craftReason})</span>` : ''}</p>
                     <p class="recipe-stats">Efeitos: +${recipe.stats.atk ? `${recipe.stats.atk} Atk` : ''} ${recipe.stats.hp ? `+${recipe.stats.hp} HP` : ''} ${recipe.stats.def ? `+${recipe.stats.def} Def` : ''}</p>`;
     } else {
       const sourceBuildingName = BUILDINGS_CONFIG[recipe.building]?.name || recipe.building;
@@ -692,7 +692,7 @@ function setupCraftingButtons(game) {
                     <p class="recipe-desc">${resultItem.desc || ''}</p>`;
     }
 
-    const btnDisabled = isEquip || !canCraft;
+    const btnDisabled = !canCraft;
 
     card.innerHTML = `
       <div class="recipe-header">
@@ -706,7 +706,7 @@ function setupCraftingButtons(game) {
         Custos: ${costs.join(' | ')}
       </div>
       <button class="craft-btn action-btn-retro ${btnDisabled ? 'disabled' : ''}" data-recipe="${recipeKey}" ${btnDisabled ? 'disabled' : ''}>
-        ${isEquip ? 'Heróis Compram Auto' : 'Fabricar'}
+        Fabricar
       </button>
     `;
 
@@ -837,7 +837,7 @@ export function updateUI(game) {
   }
 }
 
-// Injeta dinamicamente os materiais e provisÃµes no baÃº do modal prefeitura
+// Injeta dinamicamente os materiais e provisões no baú do modal prefeitura
 function updateTownInventory(game) {
   const gridEl = document.getElementById('town-inventory-grid');
   if (!gridEl) return;
@@ -846,13 +846,13 @@ function updateTownInventory(game) {
 
   for (const key in game.town.resources) {
     const qty = game.town.resources[key];
-    const info = ITEMS_INFO[key];
+    const info = ITEMS_INFO[key] || CRAFT_RECIPES[key];
     if (info && qty > 0) {
       const card = document.createElement('div');
       card.className = 'inventory-item-card';
       card.title = `${info.name} (Origem: ${info.source || 'Cidade'})`;
       card.innerHTML = `
-        <span class="inv-icon">${info.icon}</span>
+        <span class="inv-icon">${info.icon || '📦'}</span>
         <span class="inv-name">${info.name}</span>
         <span class="inv-qty-badge">${qty}</span>
       `;

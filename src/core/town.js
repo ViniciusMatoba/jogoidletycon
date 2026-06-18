@@ -252,9 +252,9 @@ export class Town {
     const recipe = CRAFT_RECIPES[recipeId];
     if (!recipe) return { success: false, reason: 'Receita desconhecida.' };
 
-    const building = recipe.building;
+    const building = recipe.building || 'forge';
     if (!this.isBuilt(building)) {
-      return { success: false, reason: `E necessario construir o(a) ${BUILDINGS_CONFIG[building].name}!` };
+      return { success: false, reason: `É necessário construir o(a) ${BUILDINGS_CONFIG[building].name}!` };
     }
 
     const totalCost = {};
@@ -263,13 +263,18 @@ export class Town {
     }
 
     for (const key in totalCost) {
-      if ((this.resources[key] || 0) < totalCost[key]) {
-        return { success: false, reason: `Falta de recurso: ${ITEMS_INFO[key]?.name || key}` };
+      const owned = key === 'gold' ? this.gold : this.resources[key] || 0;
+      if (owned < totalCost[key]) {
+        return { success: false, reason: `Falta de recurso: ${key === 'gold' ? 'Ouro' : ITEMS_INFO[key]?.name || key}` };
       }
     }
 
     for (const key in totalCost) {
-      this.resources[key] -= totalCost[key];
+      if (key === 'gold') {
+        this.gold -= totalCost[key];
+      } else {
+        this.resources[key] -= totalCost[key];
+      }
     }
 
     const craftTime = 3000;
@@ -278,8 +283,8 @@ export class Town {
     const job = {
       id: Date.now() + Math.random(),
       recipeId,
-      result: recipe.result,
-      quantity: quantity * recipe.qty,
+      result: recipe.result || recipeId,
+      quantity: quantity * (recipe.qty || 1),
       timeLeft: duration,
       duration,
       building

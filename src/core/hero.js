@@ -636,20 +636,20 @@ export class Hero {
 
     const forgeTier = town.buildings.forge;
 
-    // Para cada slot de equipamento, vamos encontrar a melhor receita disponÃ­vel
+    // Para cada slot de equipamento, vamos encontrar a melhor receita disponível
     const bestRecipesBySlot = {};
 
     for (const recipeKey in CRAFT_RECIPES) {
       const recipe = CRAFT_RECIPES[recipeKey];
       
-      // Filtra por equipamento, classe do herÃ³i e tier permitido pela Forja
+      // Filtra por equipamento, classe do herói e tier permitido pela Forja
       if (recipe.stats && recipe.class.includes(this.className) && recipe.tier <= forgeTier) {
         const slot = recipe.slot;
         if (slot in this.equipment) {
           const currentItem = this.equipment[slot];
-          // Se o herÃ³i nÃ£o tiver o item ou a receita for de maior tier
+          // Se o herói não tiver o item ou a receita for de maior tier
           if (!currentItem || recipe.tier > currentItem.tier) {
-            if (this.gold >= recipe.cost.gold && this.canTownAffordRecipe(town, recipe)) {
+            if (this.gold >= recipe.cost.gold && (town.resources[recipeKey] || 0) > 0) {
               const bestForSlot = bestRecipesBySlot[slot];
               if (!bestForSlot || recipe.tier > bestForSlot.tier) {
                 bestRecipesBySlot[slot] = { key: recipeKey, ...recipe };
@@ -664,11 +664,11 @@ export class Hero {
     let boughtAny = false;
     for (const slot in bestRecipesBySlot) {
       const bestRecipe = bestRecipesBySlot[slot];
-      // Verifica se o herÃ³i ainda tem ouro e a cidade ainda tem materiais
-      if (this.gold >= bestRecipe.cost.gold && this.canTownAffordRecipe(town, bestRecipe)) {
+      // Verifica se o herói ainda tem ouro e a cidade tem no estoque
+      if (this.gold >= bestRecipe.cost.gold && (town.resources[bestRecipe.key] || 0) > 0) {
         this.gold -= bestRecipe.cost.gold;
         town.gold += bestRecipe.cost.gold;
-        this.deductTownRecipeMaterials(town, bestRecipe);
+        town.resources[bestRecipe.key]--;
         this.equipment[slot] = bestRecipe;
         this.addLog(`Comprou: ${bestRecipe.name}`);
         boughtAny = true;
@@ -680,16 +680,6 @@ export class Hero {
     }
   }
 
-  canTownAffordRecipe(town, recipe) {
-    for (const res in recipe.cost) {
-      if (res === 'gold') continue; // Ouro Ã© pago pelo herÃ³i
-      if ((town.resources[res] || 0) < recipe.cost[res]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   deductTownRecipeMaterials(town, recipe) {
     for (const res in recipe.cost) {
       if (res === 'gold') continue;
@@ -697,4 +687,3 @@ export class Hero {
     }
   }
 }
-
