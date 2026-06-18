@@ -1,11 +1,11 @@
-/* Folha de Estilos: Guilda Idle RPG Tycoon */
+/* Folha de Estilos Avançada: Guilda Idle RPG Tycoon (Edição Modais Retro) */
 
 :root {
   --bg-main: #0c0e12;
   --bg-panel: #161a22;
-  --bg-card: rgba(27, 33, 44, 0.85);
-  --border-color: #5c4530; /* Marrom Madeira Retro */
-  --border-gold: #c39b34;
+  --bg-card: rgba(22, 27, 36, 0.9);
+  --border-color: #5c4530; /* Marrom Madeira */
+  --border-gold: #c39b34;   /* Ouro Medieval */
   --text-main: #e2e8f0;
   --text-muted: #94a3b8;
   
@@ -41,14 +41,15 @@ body {
 
 /* Scrollbars Retro */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
   background: #11141c;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 3px;
+  border: 2px solid #11141c;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-gold);
@@ -60,34 +61,35 @@ body {
   flex-direction: column;
   width: 100vw;
   height: 100vh;
-  max-width: 1280px;
-  max-height: 800px;
+  max-width: 1200px;
+  max-height: 750px;
   border: 6px double var(--border-color);
   background-color: #12151c;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85);
+  border-radius: 6px;
+  position: relative;
 }
 
-/* BARRA SUPERIOR */
+/* BARRA SUPERIOR (ESTOQUE) */
 .town-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background-color: #1a1e29;
+  padding: 6px 14px;
+  background-color: #161a24;
   border-bottom: 4px double var(--border-color);
   height: 65px;
+  z-index: 10;
 }
 
 .header-logo h3 {
   font-family: var(--font-pixel);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--border-gold);
   text-shadow: 2px 2px #000;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 .header-logo p {
-  font-size: 9px;
   font-family: var(--font-retro);
   font-size: 14px;
   color: var(--text-muted);
@@ -96,110 +98,107 @@ body {
 .resources-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;
-  max-width: 60%;
+  gap: 4px 8px;
+  max-width: 68%;
 }
 
 .res-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.05);
+  gap: 3px;
+  background-color: rgba(0, 0, 0, 0.35);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 .res-icon {
-  font-size: 13px;
+  font-size: 12px;
 }
 .res-val {
   font-family: var(--font-retro);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: bold;
 }
 
 .supplies-bar {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 .supply-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: linear-gradient(135deg, #242c3d, #141a26);
-  border: 1px solid var(--border-gold);
-  padding: 4px 8px;
-  border-radius: 4px;
+  gap: 3px;
+  background: linear-gradient(135deg, #1b212f, #0d121c);
+  border: 1.5px solid var(--border-gold);
+  padding: 3px 6px;
+  border-radius: 3px;
 }
 .sup-icon {
-  font-size: 14px;
+  font-size: 12px;
 }
 .sup-val {
   font-family: var(--font-retro);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: var(--border-gold);
 }
 
-/* ÁREA PRINCIPAL */
-.game-main {
-  display: flex;
+/* ÁREA CENTRAL DO MAPA EXPANDIDO */
+.game-main-expanded {
   flex: 1;
-  height: calc(100% - 65px);
-  overflow: hidden;
-}
-
-/* Lado Esquerdo: Viewport Canvas */
-.viewport-section {
-  width: 55%;
-  border-right: 4px double var(--border-color);
-  background-color: #1d212c;
   display: flex;
   flex-direction: column;
+  background-color: #0b0c10;
+  position: relative;
+  height: calc(100% - 120px); /* Descontando header e footer */
 }
 
-.canvas-wrapper {
+.canvas-container-large {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #0b0c10;
   overflow: hidden;
+  position: relative;
 }
 
 #game-canvas {
   width: 100%;
-  max-width: 800px;
-  height: auto;
-  aspect-ratio: 2 / 1;
+  height: 100%;
+  max-width: 960px;
+  max-height: 540px;
   display: block;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
 }
 
-.viewport-controls {
+/* Controles rápidos flutuando abaixo do mapa */
+.canvas-floating-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  background-color: #141720;
-  border-top: 2px solid rgba(255,255,255,0.05);
+  padding: 6px 14px;
+  background-color: #11131a;
+  border-top: 2px solid rgba(255,255,255,0.04);
+  height: 35px;
 }
 
 .game-speed-control {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 .speed-btn {
-  background-color: #242936;
+  background-color: #1d212c;
   border: 1.5px solid var(--border-color);
   color: var(--text-main);
-  padding: 2px 6px;
+  padding: 1px 5px;
   font-family: var(--font-retro);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   border-radius: 2px;
+  outline: none;
 }
 .speed-btn.active {
   background-color: var(--border-gold);
@@ -209,99 +208,161 @@ body {
 }
 
 .active-biome-indicator {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 .active-biome-indicator strong {
   color: #ff9f3a;
 }
 
-/* Lado Direito: Abas de Gerenciamento */
-.management-section {
-  width: 45%;
+/* BARRA DE MENU INFERIOR FIXADA */
+.retro-footer-menu {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 55px;
+  background-color: #161a24;
+  border-top: 4px double var(--border-color);
+  padding: 4px 12px;
+  z-index: 10;
+}
+
+.menu-btn-retro {
+  background-color: #5c4530;
+  border: 3px double #8c6e54;
+  color: #fff;
+  padding: 6px 16px;
+  font-family: var(--font-retro);
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px #000;
+  border-radius: 2px;
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.menu-btn-retro:hover {
+  background-color: #70553c;
+  transform: translateY(-1px);
+}
+.menu-btn-retro:active {
+  transform: translateY(1px);
+  box-shadow: 0 0px #000;
+}
+.menu-btn-retro.active {
+  background-color: var(--border-gold);
+  border-color: #ffea3a;
+  color: #000;
+  font-weight: bold;
+}
+
+/* ==================== SISTEMA DE JANELAS MODAIS RETRO ==================== */
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(6, 8, 12, 0.65);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  display: none; /* Oculto por padrão */
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.retro-modal {
   background-color: var(--bg-panel);
+  border: 6px double var(--border-color);
+  width: 90%;
+  max-width: 580px;
+  max-height: 82%;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+  animation: modalSlideIn 0.25s cubic-bezier(0.1, 0.8, 0.3, 1);
 }
 
-.management-tabs {
+.retro-modal.large-modal {
+  max-width: 720px;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(15px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
   background-color: #11141c;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 3px double var(--border-color);
 }
-.tab-btn {
-  flex: 1;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  padding: 12px 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: all 0.2s;
-  text-align: center;
-}
-.tab-btn:hover {
-  background-color: rgba(255,255,255,0.03);
-  color: var(--text-main);
-}
-.tab-btn.active {
+.modal-header h3 {
+  font-family: var(--font-pixel);
+  font-size: 10px;
   color: var(--border-gold);
-  border-bottom: 3px solid var(--border-gold);
-  background-color: var(--bg-panel);
+  text-shadow: 1px 1px #000;
 }
 
-.tabs-container {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
+.close-modal-btn {
+  background: #8c2323;
+  border: 1.5px solid #ff4d4d;
+  color: #fff;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 1px 6px;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: 0 1px #000;
+}
+.close-modal-btn:hover {
+  background: #a63232;
 }
 
-.tab-content {
-  display: none;
-  height: 100%;
-  padding: 16px;
+.modal-body {
+  padding: 14px;
   overflow-y: auto;
-}
-.tab-content.active {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.tab-content h3 {
-  font-size: 14px;
-  font-family: var(--font-pixel);
-  font-size: 10px;
-  color: var(--border-gold);
-  margin-bottom: 4px;
-}
-.tab-subtitle {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
-.scrollable-list {
+.modal-scroll-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
-  flex: 1;
   padding-right: 4px;
+  flex: 1;
 }
 
-/* RETRO BUTTONS */
+/* ELEMENTOS RETRO */
 .action-btn-retro {
   background-color: #5c4530;
   border: 3px double #8c6e54;
   color: #fff;
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-family: var(--font-retro);
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
-  transition: transform 0.1s, background-color 0.2s;
   box-shadow: 0 2px #000;
   border-radius: 2px;
   text-align: center;
@@ -323,182 +384,176 @@ body {
   box-shadow: none !important;
 }
 
-/* ABA CIDADE: RECRUTAMENTO E CONSTRUÇÕES */
-.hiring-banner {
-  background: linear-gradient(135deg, #1d2535, #121824);
-  border: 2px solid var(--border-color);
-  padding: 12px;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.danger-btn {
+  background-color: #8c2323;
+  border-color: #bf4343;
 }
-.hiring-banner h3 {
-  margin: 0;
-}
-.hiring-banner p {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.hiring-options {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-.hiring-options .hire-btn {
-  font-size: 14px;
-  padding: 4px 6px;
+.danger-btn:hover {
+  background-color: #b33232;
 }
 
-/* Cards de Prédios */
-.building-card {
-  background-color: var(--bg-card);
+.retro-divider {
+  border: 0;
+  border-top: 3px double var(--border-color);
+  margin: 10px 0;
+}
+
+/* ELEMENTOS DE CONTEÚDO DOS MODAIS */
+
+/* Cidade / Prefeitura / Construções */
+.hiring-banner {
+  background: linear-gradient(135deg, #181d28, #0e121a);
   border: 2px solid var(--border-color);
   padding: 10px;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: transform 0.15s;
+  gap: 6px;
 }
-.building-card:hover {
-  transform: scale(1.01);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+.hiring-banner h3 {
+  font-size: 11px;
+  font-family: var(--font-pixel);
+  color: var(--border-gold);
+}
+.hiring-banner p {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.hiring-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.hiring-options .hire-btn {
+  font-size: 13px;
+  padding: 3px 5px;
+}
+.section-title {
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--font-pixel);
+  color: var(--border-gold);
+  border-bottom: 2px solid rgba(255,255,255,0.05);
+  padding-bottom: 4px;
+}
+
+.building-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-color);
+  padding: 8px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .building-info-header {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 .building-icon {
-  font-size: 24px;
-  background-color: rgba(0,0,0,0.2);
-  padding: 6px;
-  border-radius: 4px;
+  font-size: 20px;
+  background-color: rgba(0,0,0,0.25);
+  padding: 4px;
+  border-radius: 3px;
 }
 .building-title-desc h4 {
-  font-size: 13px;
+  font-size: 12px;
   color: #fff;
 }
 .building-desc-text {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.locked-text {
-  color: #ff3d3d;
   font-size: 10px;
+  color: var(--text-muted);
 }
 .building-perks {
-  font-size: 11px;
+  font-size: 10px;
   background-color: rgba(0,0,0,0.15);
-  padding: 6px;
+  padding: 4px;
   border-radius: 2px;
 }
-.current-perk {
-  color: #3aff7d;
-}
-.next-perk {
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-.max-perk {
-  color: var(--border-gold);
-  font-weight: bold;
-}
+.current-perk { color: #3aff7d; }
+.next-perk { color: var(--text-muted); margin-top: 1px; }
+.max-perk { color: var(--border-gold); font-weight: bold; }
 .building-cost {
-  font-size: 11px;
+  font-size: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
-.cost-item.enough {
-  color: #3aff7d;
-}
-.cost-item.not-enough {
-  color: #ff3d3d;
-}
+.cost-item.enough { color: #3aff7d; }
+.cost-item.not-enough { color: #ff3d3d; }
 
-/* ABA HERÓIS: LISTAGEM E DETALHES */
+/* Aba Heróis */
 .hero-row-card {
   background-color: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.05);
   border-radius: 4px;
   cursor: pointer;
   overflow: hidden;
-  transition: all 0.2s;
+  transition: background-color 0.15s;
 }
 .hero-row-card:hover {
+  background-color: #1e2430;
   border-color: var(--border-gold);
-  background-color: #202735;
 }
 .hero-row-card.selected {
   border-color: var(--border-gold);
   background-color: #1f2736;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
 .hero-summary-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 10px;
 }
 .hero-name-lvl {
   display: flex;
   flex-direction: column;
 }
 .hero-name-lvl strong {
-  font-size: 13px;
+  font-size: 12px;
   color: #fff;
 }
 .hero-lvl-label {
-  font-size: 10px;
+  font-size: 8px;
   color: var(--text-muted);
   font-family: var(--font-pixel);
-  font-size: 8px;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .hero-needs-bars {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  width: 40%;
+  gap: 1.5px;
+  width: 45%;
 }
 .need-bar-mini {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 9px;
+  gap: 3px;
+  font-size: 8px;
 }
-.need-icon {
-  width: 10px;
-}
+.need-icon { width: 8px; }
 .need-bar-mini .bar {
   flex: 1;
   background-color: #101217;
-  height: 4px;
+  height: 3.5px;
   border-radius: 2px;
   overflow: hidden;
 }
-.need-bar-mini .fill {
-  height: 100%;
-}
+.need-bar-mini .fill { height: 100%; }
 .need-bar-mini .fill.hp { background-color: var(--color-hp); }
 .need-bar-mini .fill.hunger { background-color: var(--color-hunger); }
 .need-bar-mini .fill.energy { background-color: var(--color-energy); }
-.need-bar-mini .val {
-  width: 32px;
-  text-align: right;
-  color: var(--text-muted);
-}
+.need-bar-mini .val { width: 28px; text-align: right; color: var(--text-muted); }
 .state-badge {
-  font-size: 10px;
-  padding: 2px 6px;
+  font-size: 9px;
+  padding: 1px 4px;
   border-radius: 2px;
   font-weight: bold;
 }
 .state-idle_town { background-color: #3b4252; color: #d8dee9; }
 .state-searching_monster { background-color: #434c5e; color: #8fbcbb; }
-.state-fighting { background-color: #bf616a; color: #fff; animation: pulse 1s infinite alternate; }
+.state-fighting { background-color: #bf616a; color: #fff; }
 .state-returning_town { background-color: #4c566a; color: #e5e9f0; }
 .state-resting_hotel { background-color: #5e81ac; color: #fff; }
 .state-eating_rest { background-color: #d08770; color: #fff; }
@@ -506,141 +561,108 @@ body {
 .state-drinking_tavern { background-color: #ebcb8b; color: #2e3440; }
 .state-selling_loot { background-color: #b48ead; color: #fff; }
 
-/* Detalhes do Herói */
 .hero-details-drawer {
   background-color: rgba(0, 0, 0, 0.4);
-  border-top: 1px solid rgba(255,255,255,0.05);
-  padding: 12px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .details-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 .details-stats h5, .details-equipment h5, .details-inventory h5, .details-logs h5 {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--border-gold);
-  margin-bottom: 4px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  padding-bottom: 2px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding-bottom: 1px;
 }
 .details-stats p, .details-equipment p, .details-inventory p {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.3;
 }
-.details-stats strong {
-  color: #fff;
-}
-.equip-item-tag {
-  font-weight: bold;
-}
+.details-stats strong { color: #fff; }
+.equip-item-tag { font-weight: bold; }
 .equip-item-tag.tier-1 { color: #8fbcbb; }
 .equip-item-tag.tier-2 { color: #d08770; }
-.equip-item-tag.tier-3 { color: #ebcb8b; text-shadow: 0 0 2px rgba(235,203,139,0.5); }
-
+.equip-item-tag.tier-3 { color: #ebcb8b; }
 .details-logs ul {
   list-style: none;
-  font-size: 10px;
+  font-size: 9.5px;
   font-family: monospace;
   color: #8892b0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1.5px;
 }
-.details-logs li::before {
-  content: '>';
-  color: var(--border-gold);
-  margin-right: 4px;
-}
+.details-logs li::before { content: '>'; color: var(--border-gold); margin-right: 3px; }
 
-/* ABA COMBATE / CAÇA */
+/* Aba Caça */
 .biome-selector-box {
-  background-color: rgba(0,0,0,0.2);
+  background-color: rgba(0,0,0,0.25);
   border: 1px solid var(--border-color);
-  padding: 10px;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.biome-selector-box label {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.retro-select {
-  background-color: #242936;
-  border: 1.5px solid var(--border-color);
-  color: var(--text-main);
-  padding: 6px;
-  font-family: var(--font-retro);
-  font-size: 15px;
-  border-radius: 3px;
-  outline: none;
-}
-.dungeon-progress-panel {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-.progress-box-mini {
-  background-color: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.05);
   padding: 8px;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.biome-selector-box label { font-size: 10px; color: var(--text-muted); }
+.retro-select {
+  background-color: #1e222d;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-main);
+  padding: 4px;
+  font-family: var(--font-retro);
+  font-size: 14px;
+  border-radius: 2px;
+  outline: none;
+}
+.dungeon-progress-panel {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.progress-box-mini {
+  background-color: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 6px;
+  border-radius: 4px;
   text-align: center;
 }
-.progress-box-mini span {
-  font-size: 10px;
-  color: var(--text-muted);
-}
-.progress-box-mini strong {
-  font-size: 18px;
-  font-family: var(--font-retro);
-  color: #ff9f3a;
-}
+.progress-box-mini span { font-size: 9px; color: var(--text-muted); }
+.progress-box-mini strong { font-size: 16px; font-family: var(--font-retro); color: #ff9f3a; }
 .logs-panel {
-  flex: 1;
+  background-color: rgba(0,0,0,0.3);
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.02);
+  min-height: 120px;
+  max-height: 180px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background-color: rgba(0,0,0,0.3);
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.03);
 }
-.logs-panel h4 {
-  font-size: 11px;
-  color: var(--text-muted);
-}
+.logs-panel h4 { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
 .logs-list {
   list-style: none;
   font-family: monospace;
-  font-size: 10.5px;
+  font-size: 10px;
   color: #8892b0;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
   flex: 1;
 }
-.logs-list li::before {
-  content: '⚔️';
-  margin-right: 6px;
-  font-size: 9px;
-}
+.logs-list li::before { content: '⚔️'; margin-right: 4px; font-size: 8px; }
 
-/* ABA CRAFTING */
+/* Aba Crafting */
 .crafting-layout {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 10px;
   height: 100%;
 }
 .recipes-column {
@@ -650,168 +672,112 @@ body {
 }
 .recipe-card {
   background-color: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.05);
-  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 6px;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
-.recipe-header {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+.recipe-header { display: flex; gap: 6px; align-items: center; }
 .recipe-icon {
-  font-size: 20px;
+  font-size: 16px;
   background-color: rgba(0,0,0,0.25);
-  padding: 4px;
+  padding: 3px;
   border-radius: 3px;
 }
-.recipe-title-section h4 {
-  font-size: 12px;
-  color: #fff;
-}
-.recipe-target {
-  font-size: 10px;
-  color: var(--text-muted);
-}
-.recipe-stats {
-  font-size: 10px;
-  color: #3aff7d;
-}
-.recipe-desc {
-  font-size: 10px;
-  color: var(--text-muted);
-}
+.recipe-title-section h4 { font-size: 11px; color: #fff; }
+.recipe-target { font-size: 9px; color: var(--text-muted); }
+.recipe-stats { font-size: 9px; color: #3aff7d; }
+.recipe-desc { font-size: 9px; color: var(--text-muted); }
 .recipe-cost-list {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-muted);
   background-color: rgba(0,0,0,0.15);
-  padding: 4px;
+  padding: 3px;
   border-radius: 2px;
 }
-.recipe-card .craft-btn {
-  font-size: 12px;
-  padding: 3px 6px;
-}
+.recipe-card .craft-btn { font-size: 11px; padding: 2px 4px; }
 
-/* Fila de Produção */
 .queue-column {
   display: flex;
   flex-direction: column;
   background-color: rgba(0,0,0,0.25);
   border: 1px solid rgba(255,255,255,0.03);
-  padding: 10px;
+  padding: 8px;
   border-radius: 4px;
-  overflow-y: auto;
 }
-.empty-queue-text {
-  font-size: 11px;
-  color: var(--text-muted);
-  text-align: center;
-  margin-top: 20px;
-}
+.empty-queue-text { font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 15px; }
 .queue-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background-color: rgba(0,0,0,0.2);
-  padding: 6px;
+  gap: 3px;
+  background-color: rgba(0,0,0,0.15);
+  padding: 5px;
   border-radius: 3px;
-  margin-bottom: 6px;
-  font-size: 11px;
+  margin-bottom: 5px;
+  font-size: 10px;
 }
-.progress-bar-container {
-  background-color: #101217;
-  height: 6px;
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
-}
-.progress-bar-fill {
-  background-color: var(--border-gold);
-  height: 100%;
-}
-.queue-time {
-  text-align: right;
-  font-size: 9px;
-  color: var(--text-muted);
-}
+.progress-bar-container { background-color: #101217; height: 5px; border-radius: 2.5px; overflow: hidden; }
+.progress-bar-fill { background-color: var(--border-gold); height: 100%; }
+.queue-time { text-align: right; font-size: 8px; color: var(--text-muted); }
 
-/* ABA PREFEITURA / CONFIGURAÇÕES */
+/* Aba Prefeitura */
 .emergency-imports-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 .import-card {
   background-color: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.04);
-  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.03);
+  padding: 6px;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
-  font-size: 12px;
+  font-size: 11px;
 }
-.import-card button {
-  font-size: 12px;
-  padding: 3px 8px;
-  width: 100%;
-}
-.retro-divider {
-  border: 0;
-  border-top: 2px double var(--border-color);
-  margin: 12px 0;
-}
-.danger-btn {
-  background-color: #8c2323;
-  border-color: #bf4343;
-}
-.danger-btn:hover {
-  background-color: #b33232;
-}
+.import-card button { font-size: 11px; padding: 2px 6px; width: 100%; }
 
-/* ANIMAÇÕES */
-@keyframes pulse {
-  from { transform: scale(1); }
-  to { transform: scale(1.03); }
-}
-
-/* RESPONSIVIDADE (TELA DE CELULAR E DISPOSITIVOS MENORES) */
+/* Responsividade de Tela de Celular */
 @media (max-width: 768px) {
-  body {
-    overflow: auto;
-  }
   .game-container {
-    height: auto;
+    height: 100vh;
     max-height: none;
     border: none;
   }
   .town-header {
-    height: auto;
     flex-direction: column;
-    gap: 8px;
-    padding: 10px;
+    height: auto;
+    padding: 6px;
+    gap: 4px;
   }
   .resources-bar {
     max-width: 100%;
     justify-content: center;
   }
-  .game-main {
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
+  .game-main-expanded {
+    height: calc(100vh - 170px);
   }
-  .viewport-section {
-    width: 100%;
-    border-right: none;
-    border-bottom: 4px double var(--border-color);
+  .retro-footer-menu {
+    height: 50px;
+    padding: 2px;
   }
-  .management-section {
-    width: 100%;
-    height: 500px;
+  .menu-btn-retro {
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+  .retro-modal {
+    width: 95%;
+    max-height: 90%;
+  }
+  .crafting-layout {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .queue-column {
+    margin-top: 10px;
   }
 }

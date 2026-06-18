@@ -145,29 +145,29 @@ export class Hero {
 
   // Escolhe novas coordenadas de alvo dentro da floresta
   wanderForest() {
-    this.targetX = 480 + Math.random() * 260; // Área da Floresta
-    this.targetY = 80 + Math.random() * 180;
+    this.targetX = 510 + Math.random() * 410; // Área da Floresta
+    this.targetY = 60 + Math.random() * 410;
   }
 
   // Escolhe novas coordenadas de alvo dentro da cidade
   wanderTown() {
-    this.targetX = 80 + Math.random() * 220; // Área da Cidade
-    this.targetY = 100 + Math.random() * 150;
+    this.targetX = 60 + Math.random() * 370; // Área da Cidade
+    this.targetY = 80 + Math.random() * 370;
   }
 
   // Define um prédio como alvo físico
   targetBuilding(buildingType) {
-    // Coordenadas aproximadas dos edifícios no Canvas
+    // Coordenadas aproximadas dos edifícios no Canvas 960x540
     const positions = {
-      townhall: { x: 200, y: 80 },
-      hotel: { x: 100, y: 150 },
-      restaurant: { x: 300, y: 150 },
-      hospital: { x: 100, y: 250 },
-      tavern: { x: 300, y: 250 },
-      forge: { x: 200, y: 320 }
+      townhall: { x: 230, y: 100 },
+      hotel: { x: 130, y: 200 },
+      restaurant: { x: 330, y: 200 },
+      hospital: { x: 130, y: 340 },
+      tavern: { x: 330, y: 340 },
+      forge: { x: 230, y: 450 }
     };
 
-    const pos = positions[buildingType] || { x: 200, y: 200 };
+    const pos = positions[buildingType] || { x: 230, y: 250 };
     // Pequena variação para heróis não ficarem sobrepostos
     this.targetX = pos.x + (Math.random() * 20 - 10);
     this.targetY = pos.y + (Math.random() * 20 - 10);
@@ -453,23 +453,20 @@ export class Hero {
 
   // Entra no edifício correspondente quando chega perto
   enterBuilding(town) {
-    const dxTownhall = this.targetX - 200;
-    const dyTownhall = this.targetY - 80;
-    
-    // Verifica qual prédio está mais próximo baseado nas posições predefinidas
-    if (Math.abs(this.x - 200) < 30 && Math.abs(this.y - 80) < 30) {
+    // Verifica qual prédio está mais próximo baseado nas posições predefinidas do canvas 960x540
+    if (Math.abs(this.x - 230) < 30 && Math.abs(this.y - 100) < 30) {
       this.state = 'SELLING_LOOT';
       this.stateTimer = 0;
-    } else if (Math.abs(this.x - 100) < 30 && Math.abs(this.y - 150) < 30) {
+    } else if (Math.abs(this.x - 130) < 30 && Math.abs(this.y - 200) < 30) {
       this.state = 'RESTING_HOTEL';
       this.stateTimer = 0;
-    } else if (Math.abs(this.x - 300) < 30 && Math.abs(this.y - 150) < 30) {
+    } else if (Math.abs(this.x - 330) < 30 && Math.abs(this.y - 200) < 30) {
       this.state = 'EATING_REST';
       this.stateTimer = 0;
-    } else if (Math.abs(this.x - 100) < 30 && Math.abs(this.y - 250) < 30) {
+    } else if (Math.abs(this.x - 130) < 30 && Math.abs(this.y - 340) < 30) {
       this.state = 'HEALING_HOSP';
       this.stateTimer = 0;
-    } else if (Math.abs(this.x - 300) < 30 && Math.abs(this.y - 250) < 30) {
+    } else if (Math.abs(this.x - 330) < 30 && Math.abs(this.y - 340) < 30) {
       this.state = 'DRINKING_TAVERN';
       this.stateTimer = 0;
     } else {

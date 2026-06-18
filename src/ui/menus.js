@@ -1,18 +1,53 @@
 import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
 
 export function setupUI(game) {
-  // 1. Alternar Abas (Tabs)
-  const tabButtons = document.querySelectorAll('.tab-btn');
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabButtons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+  // 1. Controle de Janelas Modais Retro (Menu de Rodapé)
+  const menuButtons = document.querySelectorAll('.menu-btn-retro');
+  const modalOverlays = document.querySelectorAll('.modal-overlay');
 
-      const targetTab = btn.getAttribute('data-tab');
-      document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
+  menuButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const modal = document.getElementById(targetId);
+
+      if (modal) {
+        // Se o modal clicado já está aberto, fecha ele
+        if (modal.classList.contains('active')) {
+          modal.classList.remove('active');
+          btn.classList.remove('active');
+          return;
+        }
+
+        // Se não, fecha os outros e abre este
+        menuButtons.forEach(b => b.classList.remove('active'));
+        modalOverlays.forEach(m => m.classList.remove('active'));
+
+        btn.classList.add('active');
+        modal.classList.add('active');
+      }
+    });
+  });
+
+  // Configura fechamento de todos os modais (botão [X] ou cliques no overlay de fundo)
+  modalOverlays.forEach(modal => {
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    const closeAction = () => {
+      modal.classList.remove('active');
+      menuButtons.forEach(btn => {
+        if (btn.getAttribute('data-target') === modal.id) {
+          btn.classList.remove('active');
+        }
       });
-      document.getElementById(`${targetTab}-tab`).classList.add('active');
+    };
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeAction);
+    }
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeAction();
+      }
     });
   });
 

@@ -22,7 +22,7 @@
     <header class="town-header">
       <div class="header-logo">
         <h3>GUILDA IDLE</h3>
-        <p>Prefeitura da Cidade</p>
+        <p>Painel Administrativo</p>
       </div>
       
       <!-- Estoque da Cidade -->
@@ -67,6 +67,7 @@
           <span class="res-icon">🕸️</span>
           <span id="town-spider-silk" class="res-val">0</span>
         </div>
+        <!-- Novos itens do folclore -->
         <div class="res-item" title="Gorro do Saci (Raro)">
           <span class="res-icon">🧢</span>
           <span id="town-gorro-saci" class="res-val">0</span>
@@ -110,158 +111,185 @@
       </div>
     </header>
 
-    <!-- Área Principal de Conteúdo -->
-    <main class="game-main">
-      
-      <!-- LADO ESQUERDO: Renderizador Gráfico -->
-      <section class="viewport-section">
-        <div class="canvas-wrapper">
-          <canvas id="game-canvas" width="800" height="400"></canvas>
+    <!-- Área Principal do Mapa Expandido -->
+    <main class="game-main-expanded">
+      <div class="canvas-container-large">
+        <canvas id="game-canvas" width="960" height="540"></canvas>
+      </div>
+
+      <!-- Controles rápidos flutuando abaixo do mapa -->
+      <div class="canvas-floating-controls">
+        <div class="game-speed-control">
+          <span>Velocidade:</span>
+          <button id="speed-1x" class="speed-btn active">1x</button>
+          <button id="speed-2x" class="speed-btn">2x</button>
+          <button id="speed-3x" class="speed-btn">4x</button>
         </div>
-        <div class="viewport-controls">
-          <div class="game-speed-control">
-            <span>Velocidade:</span>
-            <button id="speed-1x" class="speed-btn active">1x</button>
-            <button id="speed-2x" class="speed-btn">2x</button>
-            <button id="speed-3x" class="speed-btn">4x</button>
-          </div>
-          <div class="active-biome-indicator">
-            <span>Bioma Atual:</span>
-            <strong id="current-biome-name">Cavernas Rasas</strong>
-          </div>
+        <div class="active-biome-indicator">
+          <span>Bioma Atual:</span>
+          <strong id="current-biome-name">Cavernas Rasas</strong>
         </div>
-      </section>
-
-      <!-- LADO DIREITO: Abas de Gerenciamento -->
-      <section class="management-section">
-        <!-- Navegação das Abas -->
-        <nav class="management-tabs">
-          <button class="tab-btn active" data-tab="town">🏠 Cidade</button>
-          <button class="tab-btn" data-tab="heroes">🛡️ Heróis</button>
-          <button class="tab-btn" data-tab="dungeons">🐉 Caça</button>
-          <button class="tab-btn" data-tab="craft">⚒️ Crafting</button>
-          <button class="tab-btn" data-tab="config">⚙️ Prefeitura</button>
-        </nav>
-
-        <!-- Conteúdo das Abas -->
-        <div class="tabs-container">
-          
-          <!-- Aba 1: Cidade (Construções e Recrutamento) -->
-          <div id="town-tab" class="tab-content active">
-            <div class="hiring-banner">
-              <h3>Recrutar Heróis</h3>
-              <p id="hiring-cost-display">Vagas: 0 / 0. Custo do próximo: 🪙 0 Ouro</p>
-              <div class="hiring-options">
-                <button class="hire-btn action-btn-retro" data-class="WARRIOR">🛡️ Guerreiro</button>
-                <button class="hire-btn action-btn-retro" data-class="MERCENARY">⚔️ Mercenário</button>
-                <button class="hire-btn action-btn-retro" data-class="ARCHER">🏹 Arqueiro</button>
-                <button class="hire-btn action-btn-retro" data-class="MAGE">🔮 Mago</button>
-                <button class="hire-btn action-btn-retro" data-class="PRIEST">✨ Sacerdote</button>
-              </div>
-            </div>
-            
-            <h3>Melhorar Edifícios</h3>
-            <div id="buildings-list" class="scrollable-list">
-              <!-- Injetado dinamicamente -->
-            </div>
-          </div>
-
-          <!-- Aba 2: Heróis (Fichas e Equipamento) -->
-          <div id="heroes-tab" class="tab-content">
-            <h3>Fichas de Heróis da Guilda</h3>
-            <p class="tab-subtitle">Clique em um herói para ver detalhes, equipamentos e logs de IA.</p>
-            <div id="heroes-list-container" class="scrollable-list">
-              <!-- Injetado dinamicamente -->
-            </div>
-          </div>
-
-          <!-- Aba 3: Masmorras / Caça -->
-          <div id="dungeons-tab" class="tab-content">
-            <h3>Gerenciamento de Zonas de Caça</h3>
-            
-            <div class="biome-selector-box">
-              <label for="biome-select">Selecionar Bioma Ativo:</label>
-              <select id="biome-select" class="retro-select">
-                <option value="0">Cavernas Rasas (Nív. 1-15)</option>
-                <option value="1">Floresta Escura (Nív. 15-30) - Requer Prefeitura Lvl 3</option>
-                <option value="2">Pântano Sombrio (Nív. 30-50) - Requer Prefeitura Lvl 4</option>
-              </select>
-            </div>
-
-            <div class="dungeon-progress-panel">
-              <div class="progress-box-mini">
-                <span>Contador de Abates (Bioma):</span>
-                <strong id="kills-count">0 / 30</strong>
-              </div>
-              <div class="progress-box-mini">
-                <span>Bosses Derrotados neste Bioma:</span>
-                <strong id="boss-kills-count">0</strong>
-              </div>
-            </div>
-
-            <div class="logs-panel">
-              <h4>Histórico de Batalhas</h4>
-              <ul id="system-logs" class="logs-list">
-                <!-- Injetado dinamicamente -->
-              </ul>
-            </div>
-          </div>
-
-          <!-- Aba 4: Crafting -->
-          <div id="craft-tab" class="tab-content">
-            <div class="crafting-layout">
-              <div class="recipes-column">
-                <h3>Receitas de Suprimentos</h3>
-                <div id="recipes-list" class="scrollable-list">
-                  <!-- Injetado dinamicamente -->
-                </div>
-              </div>
-              
-              <div class="queue-column">
-                <h3>Fila de Produção</h3>
-                <div id="craft-queue-list">
-                  <p class="empty-queue-text">Fila de fabricação vazia.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Aba 5: Configurações / Prefeitura -->
-          <div id="config-tab" class="tab-content">
-            <h3>Importações de Emergência</h3>
-            <p class="tab-subtitle">Se faltar recursos vitais na cidade e você estiver sem loot dos monstros, importe materiais básicos pagando ouro da Prefeitura.</p>
-            
-            <div class="emergency-imports-grid">
-              <div class="import-card">
-                <span>🪵 Madeira Bruta (x5)</span>
-                <button class="import-btn action-btn-retro" data-item="wood_rough" data-qty="5" data-cost="25">🪙 25 Ouro</button>
-              </div>
-              <div class="import-card">
-                <span>🪨 Minério de Ferro (x5)</span>
-                <button class="import-btn action-btn-retro" data-item="iron_ore" data-qty="5" data-cost="40">🪙 40 Ouro</button>
-              </div>
-              <div class="import-card">
-                <span>🌿 Ervas Selvagens (x5)</span>
-                <button class="import-btn action-btn-retro" data-item="herbs_wild" data-qty="5" data-cost="30">🪙 30 Ouro</button>
-              </div>
-              <div class="import-card">
-                <span>🧵 Tecido de Linho (x5)</span>
-                <button class="import-btn action-btn-retro" data-item="linho" data-qty="5" data-cost="30">🪙 30 Ouro</button>
-              </div>
-            </div>
-
-            <hr class="retro-divider" />
-            
-            <h3>Administração</h3>
-            <p>Precisa reiniciar o império do zero?</p>
-            <button id="reset-btn" class="action-btn-retro danger-btn">Resetar Todos os Dados</button>
-          </div>
-
-        </div>
-      </section>
-
+      </div>
     </main>
 
+    <!-- MENU INFERIOR FIXADO (Mobile e Desktop) -->
+    <footer class="retro-footer-menu">
+      <button class="menu-btn-retro" data-target="town-modal">🏠 Cidade</button>
+      <button class="menu-btn-retro" data-target="heroes-modal">🛡️ Heróis</button>
+      <button class="menu-btn-retro" data-target="dungeons-modal">🐉 Caça</button>
+      <button class="menu-btn-retro" data-target="craft-modal">⚒️ Crafting</button>
+      <button class="menu-btn-retro" data-target="config-modal">🏛️ Prefeitura</button>
+    </footer>
+
+  </div>
+
+  <!-- ==================== MODAIS DE CONTEÚDO (RETRO WINDOWS) ==================== -->
+
+  <!-- 1. Modal Cidade (Construções e Recrutamento) -->
+  <div id="town-modal" class="modal-overlay">
+    <div class="retro-modal">
+      <div class="modal-header">
+        <h3>CONSTRUÇÕES & RECRUTAMENTO</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="hiring-banner">
+          <h3>Recrutar Heróis</h3>
+          <p id="hiring-cost-display">Vagas: 0 / 0. Custo do próximo: 🪙 0 Ouro</p>
+          <div class="hiring-options">
+            <button class="hire-btn action-btn-retro" data-class="WARRIOR">🛡️ Guerreiro</button>
+            <button class="hire-btn action-btn-retro" data-class="MERCENARY">⚔️ Mercenário</button>
+            <button class="hire-btn action-btn-retro" data-class="ARCHER">🏹 Arqueiro</button>
+            <button class="hire-btn action-btn-retro" data-class="MAGE">🔮 Mago</button>
+            <button class="hire-btn action-btn-retro" data-class="PRIEST">✨ Sacerdote</button>
+          </div>
+        </div>
+        
+        <h3 class="section-title">Evolução de Prédios da Cidade</h3>
+        <div id="buildings-list" class="modal-scroll-list">
+          <!-- Injetado dinamicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Modal Heróis -->
+  <div id="heroes-modal" class="modal-overlay">
+    <div class="retro-modal">
+      <div class="modal-header">
+        <h3>FICHAS DOS HERÓIS DA GUILDA</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="tab-subtitle">Clique em um herói para visualizar seus atributos, equipamentos visíveis e logs de comportamento.</p>
+        <div id="heroes-list-container" class="modal-scroll-list">
+          <!-- Injetado dinamicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Modal Caça / Biomas -->
+  <div id="dungeons-modal" class="modal-overlay">
+    <div class="retro-modal">
+      <div class="modal-header">
+        <h3>ZONAS DE CAÇA & NÍVEIS</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="biome-selector-box">
+          <label for="biome-select">Alterar Bioma Ativo:</label>
+          <select id="biome-select" class="retro-select">
+            <option value="0">Cavernas Rasas (Nív. 1-15)</option>
+            <option value="1">Floresta Escura (Nív. 15-30) - Requer Prefeitura Lvl 3</option>
+            <option value="2">Pântano Sombrio (Nív. 30-50) - Requer Prefeitura Lvl 4</option>
+          </select>
+        </div>
+
+        <div class="dungeon-progress-panel">
+          <div class="progress-box-mini">
+            <span>Progresso de Abates (Bioma):</span>
+            <strong id="kills-count">0 / 30</strong>
+          </div>
+          <div class="progress-box-mini">
+            <span>Bosses Derrotados (Geral):</span>
+            <strong id="boss-kills-count">0</strong>
+          </div>
+        </div>
+
+        <div class="logs-panel">
+          <h4>Relatório de Combate da Guilda</h4>
+          <ul id="system-logs" class="logs-list">
+            <!-- Injetado dinamicamente -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Modal Crafting -->
+  <div id="craft-modal" class="modal-overlay">
+    <div class="retro-modal large-modal">
+      <div class="modal-header">
+        <h3>OFICINA DE FORJA & PROVISÕES</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="crafting-layout">
+          <div class="recipes-column">
+            <h3>Receitas de Equipamentos & Consumíveis</h3>
+            <div id="recipes-list" class="modal-scroll-list">
+              <!-- Injetado dinamicamente -->
+            </div>
+          </div>
+          <div class="queue-column">
+            <h3>Fila de Produção da Cidade</h3>
+            <div id="craft-queue-list">
+              <p class="empty-queue-text">Nenhum item sendo fabricado.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Modal Prefeitura / Administração -->
+  <div id="config-modal" class="modal-overlay">
+    <div class="retro-modal">
+      <div class="modal-header">
+        <h3>ADMINISTRAÇÃO DA PREFEITURA</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>Importações Estratégicas de Emergência</h3>
+        <p class="tab-subtitle">Pague ouro da cidade para comprar matérias-primas básicas do mercado caso seus heróis não estejam trazendo suprimentos.</p>
+        
+        <div class="emergency-imports-grid">
+          <div class="import-card">
+            <span>🪵 Madeira Bruta (x5)</span>
+            <button class="import-btn action-btn-retro" data-item="wood_rough" data-qty="5" data-cost="25">🪙 25 Ouro</button>
+          </div>
+          <div class="import-card">
+            <span>🪨 Minério de Ferro (x5)</span>
+            <button class="import-btn action-btn-retro" data-item="iron_ore" data-qty="5" data-cost="40">🪙 40 Ouro</button>
+          </div>
+          <div class="import-card">
+            <span>🌿 Ervas Selvagens (x5)</span>
+            <button class="import-btn action-btn-retro" data-item="herbs_wild" data-qty="5" data-cost="30">🪙 30 Ouro</button>
+          </div>
+          <div class="import-card">
+            <span>🧵 Tecido de Linho (x5)</span>
+            <button class="import-btn action-btn-retro" data-item="linho" data-qty="5" data-cost="30">🪙 30 Ouro</button>
+          </div>
+        </div>
+
+        <hr class="retro-divider" />
+        
+        <h3>Reinicialização de Guilda</h3>
+        <p class="tab-subtitle">Deseja apagar os dados salvos e recomeçar a cidade do zero?</p>
+        <button id="reset-btn" class="action-btn-retro danger-btn">Resetar Todo o Império</button>
+      </div>
+    </div>
   </div>
 
   <!-- Script Bootstrap Principal -->
