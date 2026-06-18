@@ -198,7 +198,11 @@ export class Game {
         hero.mood = hData.mood;
         hero.hp = hData.hp;
         hero.inventory = hData.inventory;
-        hero.equipment = hData.equipment;
+        hero.equipment = Object.assign({
+          weapon: null, armor: null, helmet: null, necklace: null, gloves: null,
+          ring: null, belt: null, boots: null, pants: null, accessory1: null,
+          pet: null, weapon_skin: null, armor_skin: null, wings: null, accessory2: null
+        }, hData.equipment);
         if (hData.cosmetics) {
           hero.cosmetics = hData.cosmetics;
         }

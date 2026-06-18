@@ -621,7 +621,7 @@ export class GameRenderer {
         } else if (tier === 2) {
           bodyColor = '#4e5a66';
         } else if (tier === 3) {
-          bodyColor = hero.equipment.armor.key.includes('mapinguari') ? '#ab5522' : '#cca93d';
+          bodyColor = (hero.equipment.armor.key && hero.equipment.armor.key.includes('mapinguari')) ? '#ab5522' : '#cca93d';
           isLendaria = true;
         }
       }
