@@ -170,11 +170,13 @@ export class GameRenderer {
 
     const width = this.canvas.width;
     const height = this.canvas.height;
+    const time = performance.now();
+    const biome = game.spawner.getBiomeConfig();
 
     // Limpar tela
     this.ctx.clearRect(0, 0, width, height);
 
-    // 1. Desenhar Cenários Base (Terreno, Rio, Ponte, Estradas)
+    // 1. Desenhar Cenários Base (Terreno, Rio/Fosso, Ponte, Muralha, Estradas)
     this.drawTerrain(game, width, height);
 
     // 2. Criar a lista de objetos para ordenação por profundidade (Y-sorting)
@@ -222,6 +224,94 @@ export class GameRenderer {
       });
     });
 
+    // Adicionar Elementos Decorativos Urbanos Y-sorted
+    // Postes de Lampião
+    const lamps = [
+      { x: 210, y: 190 },
+      { x: 210, y: 330 },
+      { x: 250, y: 440 }
+    ];
+    lamps.forEach(l => {
+      renderList.push({
+        y: l.y,
+        render: () => this.drawStreetLamp(l.x, l.y)
+      });
+    });
+
+    // Poço de Água
+    renderList.push({
+      y: 130,
+      render: () => this.drawWaterWell(280, 130)
+    });
+
+    // Barril e Caixa
+    renderList.push({
+      y: 460,
+      render: () => this.drawBarrel(200, 460)
+    });
+    renderList.push({
+      y: 350,
+      render: () => this.drawBox(365, 350)
+    });
+
+    // Portal de Caça
+    renderList.push({
+      y: 120,
+      render: () => this.drawDungeonPortal(880, 120, time)
+    });
+
+    // Elementos de Caça dinâmicos de Bioma Y-sorted
+    const huntDecorations = [
+      { x: 600, y: 100 },
+      { x: 750, y: 70 },
+      { x: 850, y: 200 },
+      { x: 620, y: 250 },
+      { x: 780, y: 280 },
+      { x: 650, y: 400 },
+      { x: 820, y: 450 },
+      { x: 550, y: 320 }
+    ];
+
+    huntDecorations.forEach((pt, index) => {
+      const typeIdx = index % 3;
+      if (biome.id === 0) { // Cavernas
+        if (typeIdx === 2) {
+          // Osso é plano, desenhado direto no chão (não Y-sorted)
+          this.drawBone(pt.x, pt.y);
+        } else {
+          renderList.push({
+            y: pt.y,
+            render: () => {
+              if (typeIdx === 0) this.drawCrystal(pt.x, pt.y, time, index);
+              else this.drawWeb(pt.x, pt.y);
+            }
+          });
+        }
+      } else if (biome.id === 1) { // Floresta
+        renderList.push({
+          y: pt.y,
+          render: () => {
+            if (typeIdx === 0) this.drawMushroom(pt.x, pt.y);
+            else if (typeIdx === 1) this.drawShrub(pt.x, pt.y);
+            else this.drawFlower(pt.x, pt.y);
+          }
+        });
+      } else if (biome.id === 2) { // Pântano
+        if (typeIdx === 0) {
+          // Poça de lama é plana, desenha direto no chão
+          this.drawMudPool(pt.x, pt.y);
+        } else {
+          renderList.push({
+            y: pt.y,
+            render: () => {
+              if (typeIdx === 1) this.drawReeds(pt.x, pt.y);
+              else this.drawPoisonFlower(pt.x, pt.y, time);
+            }
+          });
+        }
+      }
+    });
+
     // Ordenar por Y cartesiano (menores Ys desenhados primeiro, maiores Ys desenhados depois)
     renderList.sort((a, b) => a.y - b.y);
 
@@ -248,76 +338,168 @@ export class GameRenderer {
     const biome = game.spawner.getBiomeConfig();
     const time = performance.now();
 
-    // 1. Cidade (Grama) - Lado Esquerdo Reta
+    // 1. Grama Geral de Fundo
     this.ctx.fillStyle = this.patterns['tile_grass'] || '#395c2f';
-    this.ctx.fillRect(0, 0, 470, h);
+    this.ctx.fillRect(0, 0, w, h);
 
-    // 2. Floresta (Terra) - Lado Direito Reta
+    // 2. Cidade (Solo de terra batida dentro das muralhas)
+    this.ctx.fillStyle = '#7a6b5e';
+    this.ctx.fillRect(0, 35, 440, h - 60);
+    
+    // Pequenos pontos de matinho nas bordas internas
+    this.ctx.fillStyle = '#5c4d3c';
+    this.ctx.fillRect(10, 48, 4, 3);
+    this.ctx.fillRect(400, 70, 6, 2);
+    this.ctx.fillRect(50, 450, 8, 3);
+
+    // 3. Floresta (Terra batida de acordo com o Bioma)
     let forestColor = '#243b23';
     if (biome.id === 0) forestColor = '#222326'; // Cavernas
     if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
-    if (biome.id === 2) forestColor = '#1b231e'; // Igarapés
+    if (biome.id === 2) forestColor = '#1b231e'; // Pântano/Igarapés
 
     this.ctx.fillStyle = this.patterns['tile_dirt'] || forestColor;
-    this.ctx.fillRect(490, 0, w - 490, h);
+    this.ctx.fillRect(480, 0, w - 480, h);
 
-    // 3. Rio Animado (X = 470 a 490) - Faixa Reta Vertical
+    // 4. Fosso de Água da Cidade (Moat) - X = 450 a 480
     this.ctx.fillStyle = this.patterns['tile_water'] || '#2d6ab3';
-    this.ctx.fillRect(470, 0, 20, h);
+    this.ctx.fillRect(450, 0, 30, h);
 
-    // Ondas no Rio (Correnteza animada descendo verticalmente)
+    // Ondas no Fosso (correnteza descendo verticalmente)
     this.ctx.strokeStyle = '#5c99e6';
-    this.ctx.lineWidth = 2;
+    this.ctx.lineWidth = 1.5;
     const waveOffset = (time * 0.04) % 40;
-    for (let y = -20; y < h; y += 30) {
+    for (let y = -20; y < h; y += 40) {
       const wy = y + waveOffset;
       this.ctx.beginPath();
-      this.ctx.moveTo(475, wy);
-      this.ctx.lineTo(475, wy + 4);
+      this.ctx.moveTo(455, wy);
+      this.ctx.lineTo(455, wy + 5);
       this.ctx.stroke();
 
       this.ctx.beginPath();
-      this.ctx.moveTo(485, wy + 12);
-      this.ctx.lineTo(485, wy + 16);
+      this.ctx.moveTo(470, wy + 15);
+      this.ctx.lineTo(470, wy + 20);
       this.ctx.stroke();
     }
 
-    // 4. Estradas de terra na cidade (Retângulos ortogonais retos)
-    this.ctx.fillStyle = this.patterns['tile_road'] || '#826442';
-    // Estrada principal norte-sul
-    this.ctx.fillRect(220, 100, 20, 350);
-    // Ramificações para prédios
-    this.ctx.fillRect(120, 195, 220, 15);
-    this.ctx.fillRect(120, 335, 220, 15);
-    // Estrada até a ponte
-    this.ctx.fillRect(230, 262, 240, 15);
+    // 5. Desenhar as Muralhas de Pedra da Cidade
+    this.drawStoneWall(this.ctx, h);
 
-    // 5. Ponte de madeira (X = 464 a 496, Y = 250 a 290) - Reta e Horizontal
-    this.ctx.fillStyle = '#6e4726'; // Tábuas principais
-    this.ctx.fillRect(464, 250, 32, 40);
+    // 6. Caminhos de cobblestone na cidade (ligando prédios e saindo no portão)
+    this.ctx.fillStyle = '#546e7a';
+    this.ctx.fillRect(222, 100, 16, 350); // Estrada principal norte-sul
+    this.ctx.fillRect(120, 192, 220, 16); // Estrada horizontal superior
+    this.ctx.fillRect(120, 332, 220, 16); // Estrada horizontal inferior
+    this.ctx.fillRect(230, 262, 210, 16); // Caminho até o portão
+
+    // Detalhe de tijolos na estrada
+    this.ctx.fillStyle = '#37474f';
+    for (let ex = 120; ex < 340; ex += 24) {
+      this.ctx.fillRect(ex, 192, 1.5, 16);
+      this.ctx.fillRect(ex, 332, 1.5, 16);
+    }
+    for (let ey = 100; ey < 450; ey += 24) {
+      this.ctx.fillRect(222, ey, 16, 1.5);
+    }
+    for (let ex = 230; ex < 440; ex += 24) {
+      this.ctx.fillRect(ex, 262, 1.5, 16);
+    }
+
+    // 7. Ponte de Madeira Cruzando o Fosso (X = 446 a 484, Y = 250 a 290)
+    this.ctx.fillStyle = '#5d4037';
+    this.ctx.fillRect(446, 250, 38, 40);
     
-    // Desenha tábuas individuais da ponte (Linhas horizontais)
-    this.ctx.strokeStyle = '#452b16';
-    this.ctx.lineWidth = 1.5;
+    this.ctx.strokeStyle = '#3e2723';
+    this.ctx.lineWidth = 2;
     for (let py = 254; py < 290; py += 6) {
       this.ctx.beginPath();
-      this.ctx.moveTo(464, py);
-      this.ctx.lineTo(496, py);
+      this.ctx.moveTo(446, py);
+      this.ctx.lineTo(484, py);
       this.ctx.stroke();
     }
-
-    // Corrimões
-    this.ctx.strokeStyle = '#452b16';
-    this.ctx.lineWidth = 3;
-    this.ctx.beginPath();
-    this.ctx.moveTo(464, 247);
-    this.ctx.lineTo(496, 247);
-    this.ctx.stroke();
     
-    this.ctx.beginPath();
-    this.ctx.moveTo(464, 290);
-    this.ctx.lineTo(496, 290);
-    this.ctx.stroke();
+    // Corrimão da ponte
+    this.ctx.fillStyle = '#3e2723';
+    this.ctx.fillRect(446, 247, 38, 3);
+    this.ctx.fillRect(446, 290, 38, 3);
+    
+    // Cercas ao longo do fosso
+    this.drawFences(h);
+  }
+
+  drawStoneWall(ctx, h) {
+    ctx.save();
+    
+    const wallColor = '#5c6773';
+    const mortarColor = '#212529';
+    
+    ctx.fillStyle = wallColor;
+    
+    // Muralha Superior e Inferior
+    ctx.fillRect(0, 35, 440, 10);
+    ctx.fillRect(0, h - 25, 440, 10);
+    
+    // Muralha Direita (com portão de 250 a 290)
+    ctx.fillRect(440, 40, 10, 210);
+    ctx.fillRect(440, 290, 10, h - 310);
+    
+    // Tijolos
+    ctx.strokeStyle = mortarColor;
+    ctx.lineWidth = 1;
+    
+    for (let wy = 45; wy < 250; wy += 8) {
+      ctx.beginPath(); ctx.moveTo(440, wy); ctx.lineTo(450, wy); ctx.stroke();
+    }
+    for (let wy = 295; wy < h - 25; wy += 8) {
+      ctx.beginPath(); ctx.moveTo(440, wy); ctx.lineTo(450, wy); ctx.stroke();
+    }
+    for (let wx = 10; wx < 440; wx += 16) {
+      ctx.beginPath(); ctx.moveTo(wx, 35); ctx.lineTo(wx, 45); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(wx, h - 25); ctx.lineTo(wx, h - 15); ctx.stroke();
+    }
+
+    // Ameias
+    ctx.fillStyle = '#454d57';
+    for (let wy = 40; wy < 250; wy += 16) {
+      ctx.fillRect(447, wy, 3, 8);
+    }
+    for (let wy = 290; wy < h - 20; wy += 16) {
+      ctx.fillRect(447, wy, 3, 8);
+    }
+    for (let wx = 10; wx < 440; wx += 20) {
+      ctx.fillRect(wx, 32, 10, 3);
+      ctx.fillRect(wx, h - 28, 10, 3);
+    }
+
+    // Pilares do Portão
+    ctx.fillStyle = '#37474f';
+    ctx.fillRect(438, 245, 14, 5);
+    ctx.fillRect(438, 290, 14, 5);
+    ctx.strokeRect(438, 245, 14, 5);
+    ctx.strokeRect(438, 290, 14, 5);
+    
+    ctx.restore();
+  }
+
+  drawFences(h) {
+    this.ctx.save();
+    this.ctx.fillStyle = '#5c4530';
+    this.ctx.strokeStyle = '#3e2723';
+    this.ctx.lineWidth = 1;
+
+    for (let y = 4; y < h; y += 12) {
+      if (y >= 246 && y <= 294) continue;
+      this.ctx.fillRect(445, y, 2, 8);
+      if (y + 12 < h && !(y + 12 >= 246 && y + 12 <= 294)) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(446, y + 2);
+        this.ctx.lineTo(446, y + 14);
+        this.ctx.moveTo(446, y + 5);
+        this.ctx.lineTo(446, y + 17);
+        this.ctx.stroke();
+      }
+    }
+    this.ctx.restore();
   }
 
   // --- DESENHO DE ÁRVORE RETRÔ TOP-DOWN ---
@@ -345,88 +527,450 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART / FALLBACK 2D PLANO) ---
+  // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART E LOTES FISICOS) ---
   drawBuildingIndividual(town, b) {
     const level = town.buildings[b.key];
     const isBuilt = level > 0;
 
-    this.ctx.save();
-
-    if (!isBuilt) {
-      this.ctx.globalAlpha = 0.45;
-    }
-
     const bx = b.x;
     const by = b.y;
 
-    const img = this.images[b.key];
-    if (img && img.loaded) {
-      // --- DESENHAR COM IMAGEM DE ASSET EM PERSPECTIVA (Transparência corrigida) ---
-      const wSize = b.key === 'townhall' ? 76 : 60;
-      const hSize = b.key === 'townhall' ? 76 : 60;
-      
-      // Desenha centrado na coordenada cartesiana
-      this.ctx.drawImage(img, bx - wSize / 2, by - hSize + 8, wSize, hSize);
+    const wSize = b.key === 'townhall' ? 76 : 60;
+    const hSize = b.key === 'townhall' ? 76 : 60;
 
-      // Emoji de Identificação
-      this.ctx.font = '14px Arial';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(b.icon, bx, by - hSize + 4);
+    this.ctx.save();
 
-      // Rótulo de Lvl
-      this.ctx.globalAlpha = 1.0;
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = '9px monospace';
-      this.ctx.textAlign = 'center';
-      const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
-      this.ctx.fillText(label, bx, by + 12);
-    } else {
-      // --- FALLBACK VETORIAL 2D PLANO ORIGINAL ---
-      // Base da casa
-      this.ctx.fillStyle = '#5c4530';
-      this.ctx.fillRect(bx - 22, by - 12, 44, 28);
+    // 1. Fundação do Lote (Terra/pedra compactada)
+    const rx = bx - wSize / 2;
+    const ry = by - hSize + 10;
+    const rw = wSize;
+    const rh = hSize - 10;
 
-      // Telhado
-      this.ctx.fillStyle = isBuilt ? '#8c3523' : '#575251';
-      this.ctx.beginPath();
-      this.ctx.moveTo(bx - 26, by - 12);
-      this.ctx.lineTo(bx + 26, by - 12);
-      this.ctx.lineTo(bx, by - 28);
-      this.ctx.closePath();
-      this.ctx.fill();
+    this.ctx.fillStyle = '#3a2e2b';
+    this.ctx.fillRect(rx, ry, rw, rh);
+    this.ctx.strokeStyle = '#221917';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.strokeRect(rx, ry, rw, rh);
 
-      // Porta
-      this.ctx.fillStyle = '#2e1c0c';
-      this.ctx.fillRect(bx - 6, by + 6, 12, 10);
+    // Detalhes de solo do lote
+    this.ctx.fillStyle = '#2d2321';
+    this.ctx.fillRect(rx + 4, ry + 4, 3, 3);
+    this.ctx.fillRect(rx + rw - 8, ry + 6, 4, 2);
 
-      // Chaminé (Forja, Restaurante, Hospital, Taverna)
-      if (b.key !== 'townhall' && b.key !== 'hotel') {
-        this.ctx.fillStyle = '#3d2e20';
-        this.ctx.fillRect(bx + 11, by - 18, 6, 10);
-      }
+    if (isBuilt) {
+      // --- SE CONSTRUÍDO: Desenhar prédio por cima da base ---
+      const img = this.images[b.key];
+      if (img && img.loaded) {
+        this.ctx.drawImage(img, bx - wSize / 2, by - hSize + 8, wSize, hSize);
 
-      // Janelas acesas
-      if (isBuilt) {
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(b.icon, bx, by - hSize + 4);
+      } else {
+        // Fallback vetorial original
+        this.ctx.fillStyle = '#5c4530';
+        this.ctx.fillRect(bx - 22, by - 12, 44, 28);
+
+        this.ctx.fillStyle = '#8c3523';
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx - 26, by - 12);
+        this.ctx.lineTo(bx + 26, by - 12);
+        this.ctx.lineTo(bx, by - 28);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#2e1c0c';
+        this.ctx.fillRect(bx - 6, by + 6, 12, 10);
+
+        if (b.key !== 'townhall' && b.key !== 'hotel') {
+          this.ctx.fillStyle = '#3d2e20';
+          this.ctx.fillRect(bx + 11, by - 18, 6, 10);
+        }
+
         const isNight = this.isNightTime();
         this.ctx.fillStyle = isNight ? (Math.random() > 0.05 ? '#ffea3a' : '#aa9e27') : '#2e1c0c';
         this.ctx.fillRect(bx - 14, by - 4, 6, 6);
         this.ctx.fillRect(bx + 8, by - 4, 6, 6);
+
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(b.icon, bx, by - 32);
       }
 
-      // Emoji e Rótulo
-      this.ctx.font = '14px Arial';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(b.icon, bx, by - 32);
-
-      this.ctx.globalAlpha = 1.0;
+      // Nível do Prédio
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
-      const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
-      this.ctx.fillText(label, bx, by + 24);
+      this.ctx.fillText(`Lvl ${level}`, bx, by + 12);
+    } else {
+      // --- SE TRANCADO: Desenhar estrutura de madeira (scaffolding) ---
+      const beamColor = '#5d4037';
+      const plankColor = '#8d6e63';
+      
+      this.ctx.strokeStyle = beamColor;
+      this.ctx.lineWidth = 3;
+      
+      // Postes verticais principais
+      this.ctx.beginPath();
+      this.ctx.moveTo(rx + 8, ry + rh - 2); this.ctx.lineTo(rx + 8, ry + 12);
+      this.ctx.moveTo(rx + rw - 8, ry + rh - 2); this.ctx.lineTo(rx + rw - 8, ry + 12);
+      this.ctx.moveTo(bx, ry + rh - 2); this.ctx.lineTo(bx, ry + 6);
+      this.ctx.stroke();
+
+      // Vigas horizontais
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(rx + 8, ry + 16); this.ctx.lineTo(rx + rw - 8, ry + 16);
+      this.ctx.moveTo(rx + 8, ry + rh - 12); this.ctx.lineTo(rx + rw - 8, ry + rh - 12);
+      this.ctx.stroke();
+      
+      // Vigas diagonais cruzadas
+      this.ctx.strokeStyle = '#4e342e';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(rx + 8, ry + 16); this.ctx.lineTo(bx, ry + rh - 12);
+      this.ctx.moveTo(bx, ry + 16); this.ctx.lineTo(rx + 8, ry + rh - 12);
+      this.ctx.moveTo(bx, ry + 16); this.ctx.lineTo(rx + rw - 8, ry + rh - 12);
+      this.ctx.moveTo(rx + rw - 8, ry + 16); this.ctx.lineTo(bx, ry + rh - 12);
+      this.ctx.stroke();
+
+      // Viga do telhado (triângulo)
+      this.ctx.strokeStyle = beamColor;
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(rx + 8, ry + 16); this.ctx.lineTo(bx, ry + 2);
+      this.ctx.lineTo(rx + rw - 8, ry + 16);
+      this.ctx.stroke();
+      
+      // Placa de obra pendurada
+      this.ctx.fillStyle = plankColor;
+      this.ctx.fillRect(bx - 20, by - 26, 40, 10);
+      this.ctx.strokeStyle = '#4e342e';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(bx - 20, by - 26, 40, 10);
+      
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = '8px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(b.name, bx, by - 18);
+      
+      // Martelo flutuante no centro
+      this.ctx.font = '14px Arial';
+      this.ctx.fillText('🔨', bx, by + 4);
+      
+      // Rótulo: 🔒 Trancado
+      this.ctx.fillStyle = '#b0bec5';
+      this.ctx.font = '9px monospace';
+      this.ctx.fillText('🔒 Trancado', bx, by + 16);
     }
 
     this.ctx.restore();
+  }
+
+  // --- ELEMENTOS DE DECORAÇÃO DE BACKGROUND (MURAIS, LAMPIÕES, PORTAIS) ---
+  drawStreetLamp(x, y) {
+    this.ctx.save();
+    
+    // Post
+    this.ctx.fillStyle = '#455a64';
+    this.ctx.fillRect(x - 2, y - 32, 4, 32);
+    
+    // Base
+    this.ctx.fillStyle = '#263238';
+    this.ctx.fillRect(x - 4, y - 4, 8, 4);
+    
+    // Haste horizontal
+    this.ctx.fillStyle = '#455a64';
+    this.ctx.fillRect(x - 2, y - 32, 10, 2);
+    
+    // Lampião
+    this.ctx.fillStyle = '#37474f';
+    this.ctx.fillRect(x + 5, y - 30, 4, 6);
+    
+    const isNight = this.isNightTime();
+    
+    this.ctx.fillStyle = isNight ? '#ffeb3b' : '#78909c';
+    this.ctx.fillRect(x + 6, y - 28, 2, 3);
+    
+    if (isNight) {
+      const grad = this.ctx.createRadialGradient(x + 7, y - 27, 2, x + 7, y - 27, 36);
+      grad.addColorStop(0, 'rgba(255, 235, 59, 0.45)');
+      grad.addColorStop(0.3, 'rgba(255, 235, 59, 0.15)');
+      grad.addColorStop(1, 'rgba(255, 235, 59, 0)');
+      
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.arc(x + 7, y - 27, 36, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    
+    this.ctx.restore();
+  }
+
+  drawWaterWell(x, y) {
+    this.ctx.save();
+    
+    // Base de pedra
+    this.ctx.fillStyle = '#78909c';
+    this.ctx.fillRect(x - 14, y - 8, 28, 8);
+    this.ctx.fillStyle = '#455a64';
+    this.ctx.strokeRect(x - 14, y - 8, 28, 8);
+    
+    // Textura
+    this.ctx.fillStyle = '#37474f';
+    this.ctx.fillRect(x - 10, y - 6, 4, 3);
+    this.ctx.fillRect(x + 6, y - 5, 5, 2);
+    
+    // Água
+    this.ctx.fillStyle = '#1565c0';
+    this.ctx.fillRect(x - 11, y - 8, 22, 1);
+    
+    // Suportes
+    this.ctx.fillStyle = '#5d4037';
+    this.ctx.fillRect(x - 11, y - 22, 3, 14);
+    this.ctx.fillRect(x + 8, y - 22, 3, 14);
+    
+    // Telhado
+    this.ctx.fillStyle = '#8d6e63';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 16, y - 22);
+    this.ctx.lineTo(x + 16, y - 22);
+    this.ctx.lineTo(x, y - 30);
+    this.ctx.closePath();
+    this.ctx.fill();
+    
+    this.ctx.strokeStyle = '#5d4037';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 16, y - 22);
+    this.ctx.lineTo(x + 16, y - 22);
+    this.ctx.lineTo(x, y - 30);
+    this.ctx.closePath();
+    this.ctx.stroke();
+    
+    // Balde e corda
+    this.ctx.fillStyle = '#5d4037';
+    this.ctx.fillRect(x - 2, y - 14, 4, 4);
+    this.ctx.strokeStyle = '#d7ccc8';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y - 22);
+    this.ctx.lineTo(x, y - 14);
+    this.ctx.stroke();
+
+    this.ctx.restore();
+  }
+
+  drawDungeonPortal(x, y, time) {
+    this.ctx.save();
+    
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y + 4, 24, 6, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    // Portal roxo pulsante
+    const pulse = Math.sin(time * 0.005) * 2;
+    const grad = this.ctx.createRadialGradient(x, y - 20, 2, x, y - 20, 18 + pulse);
+    grad.addColorStop(0, '#ea80fc');
+    grad.addColorStop(0.5, '#4a148c');
+    grad.addColorStop(1, '#000000');
+    
+    this.ctx.fillStyle = grad;
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y - 20, 16 + pulse/2, 22 + pulse, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    // Arco de pedra
+    this.ctx.fillStyle = '#37474f';
+    this.ctx.strokeStyle = '#212121';
+    this.ctx.lineWidth = 1.5;
+    
+    this.ctx.fillRect(x - 20, y - 36, 6, 36);
+    this.ctx.strokeRect(x - 20, y - 36, 6, 36);
+    this.ctx.fillRect(x + 14, y - 36, 6, 36);
+    this.ctx.strokeRect(x + 14, y - 36, 6, 36);
+    
+    const blocks = [
+      { bx: x - 20, by: y - 41, w: 7, h: 6 },
+      { bx: x - 14, by: y - 45, w: 8, h: 6 },
+      { bx: x - 6, by: y - 47, w: 12, h: 6 },
+      { bx: x + 6, by: y - 45, w: 8, h: 6 },
+      { bx: x + 13, by: y - 41, w: 7, h: 6 }
+    ];
+    
+    blocks.forEach(b => {
+      this.ctx.fillStyle = '#455a64';
+      this.ctx.fillRect(b.bx, b.by, b.w, b.h);
+      this.ctx.strokeRect(b.bx, b.by, b.w, b.h);
+    });
+    
+    this.ctx.fillStyle = '#ea80fc';
+    this.ctx.font = 'bold 9px monospace';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('PORTAL DA CAÇA', x, y - 52);
+    
+    this.ctx.restore();
+  }
+
+  drawBarrel(x, y) {
+    this.ctx.save();
+    this.ctx.fillStyle = '#795548';
+    this.ctx.fillRect(x - 6, y - 12, 12, 12);
+    this.ctx.strokeStyle = '#3e2723';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x - 6, y - 12, 12, 12);
+    
+    this.ctx.fillStyle = '#9e9e9e';
+    this.ctx.fillRect(x - 6, y - 10, 12, 1.5);
+    this.ctx.fillRect(x - 6, y - 3, 12, 1.5);
+    
+    this.ctx.strokeStyle = '#5d4037';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 2, y - 12); this.ctx.lineTo(x - 2, y);
+    this.ctx.moveTo(x + 2, y - 12); this.ctx.lineTo(x + 2, y);
+    this.ctx.stroke();
+    
+    this.ctx.restore();
+  }
+
+  drawBox(x, y) {
+    this.ctx.save();
+    this.ctx.fillStyle = '#a1887f';
+    this.ctx.fillRect(x - 7, y - 11, 14, 11);
+    this.ctx.strokeStyle = '#4e342e';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x - 7, y - 11, 14, 11);
+    
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 7, y - 11); this.ctx.lineTo(x + 7, y);
+    this.ctx.moveTo(x + 7, y - 11); this.ctx.lineTo(x - 7, y);
+    this.ctx.stroke();
+    
+    this.ctx.restore();
+  }
+
+  // --- DETALHES DE BIOMAS DE CAÇA ---
+  drawCrystal(x, y, time, index) {
+    const bounce = Math.sin((time * 0.003) + index) * 2;
+    const cy = y - 6 + bounce;
+    
+    this.ctx.fillStyle = index % 2 === 0 ? 'rgba(0, 229, 255, 0.25)' : 'rgba(224, 64, 251, 0.25)';
+    this.ctx.beginPath();
+    this.ctx.arc(x, cy, 8, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.fillStyle = index % 2 === 0 ? '#00e5ff' : '#e040fb';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, cy - 6);
+    this.ctx.lineTo(x + 3, cy);
+    this.ctx.lineTo(x, cy + 6);
+    this.ctx.lineTo(x - 3, cy);
+    this.ctx.closePath();
+    this.ctx.fill();
+    
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillRect(x - 1, cy - 2, 2, 4);
+  }
+
+  drawWeb(x, y) {
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    this.ctx.lineWidth = 0.8;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 8, y - 8); this.ctx.lineTo(x + 8, y + 8);
+    this.ctx.moveTo(x + 8, y - 8); this.ctx.lineTo(x - 8, y + 8);
+    this.ctx.strokeRect(x - 4, y - 4, 8, 8);
+    this.ctx.stroke();
+  }
+
+  drawBone(x, y) {
+    this.ctx.fillStyle = '#e0e0e0';
+    this.ctx.fillRect(x - 3, y - 3, 6, 5);
+    this.ctx.fillStyle = '#111';
+    this.ctx.fillRect(x - 2, y - 1, 1, 1);
+    this.ctx.fillRect(x + 1, y - 1, 1, 1);
+    
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillRect(x - 6, y + 2, 12, 1.5);
+  }
+
+  drawMushroom(x, y) {
+    this.ctx.fillStyle = '#f5f5f5';
+    this.ctx.fillRect(x - 1, y, 2, 4);
+    
+    this.ctx.fillStyle = '#d32f2f';
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 3.5, Math.PI, 0);
+    this.ctx.fill();
+    
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillRect(x - 1.5, y - 2, 1, 1);
+    this.ctx.fillRect(x + 1, y - 1.5, 1, 1);
+  }
+
+  drawShrub(x, y) {
+    this.ctx.fillStyle = '#1b5e20';
+    this.ctx.beginPath();
+    this.ctx.arc(x, y + 1, 5, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#2e7d32';
+    this.ctx.beginPath();
+    this.ctx.arc(x - 2, y - 1, 3.5, 0, Math.PI * 2);
+    this.ctx.arc(x + 2, y, 3, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawFlower(x, y) {
+    this.ctx.fillStyle = '#4caf50';
+    this.ctx.fillRect(x - 0.5, y - 2, 1, 6);
+    
+    this.ctx.fillStyle = '#ff80ab';
+    this.ctx.beginPath();
+    this.ctx.arc(x - 1.5, y - 3, 1.5, 0, Math.PI * 2);
+    this.ctx.arc(x + 1.5, y - 3, 1.5, 0, Math.PI * 2);
+    this.ctx.arc(x, y - 4.5, 1.5, 0, Math.PI * 2);
+    this.ctx.arc(x, y - 1.5, 1.5, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    this.ctx.fillStyle = '#ffff00';
+    this.ctx.beginPath();
+    this.ctx.arc(x, y - 3, 1, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawMudPool(x, y) {
+    this.ctx.fillStyle = '#3e2723';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y + 2, 10, 3, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawReeds(x, y) {
+    this.ctx.strokeStyle = '#2e7d32';
+    this.ctx.lineWidth = 1.2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 3, y + 4); this.ctx.lineTo(x - 1, y - 4);
+    this.ctx.moveTo(x, y + 4); this.ctx.lineTo(x, y - 6);
+    this.ctx.moveTo(x + 3, y + 4); this.ctx.lineTo(x + 1, y - 3);
+    this.ctx.stroke();
+
+    this.ctx.fillStyle = '#5d4037';
+    this.ctx.fillRect(x - 1.5, y - 4, 1, 2);
+    this.ctx.fillRect(x - 0.5, y - 6, 1, 2);
+  }
+
+  drawPoisonFlower(x, y, time) {
+    this.ctx.fillStyle = '#7b1fa2';
+    this.ctx.fillRect(x - 0.5, y - 1, 1, 5);
+    
+    const glow = Math.abs(Math.sin(time * 0.005)) * 2;
+    this.ctx.fillStyle = 'rgba(186, 104, 200, 0.3)';
+    this.ctx.beginPath();
+    this.ctx.arc(x, y - 3, 3 + glow, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    this.ctx.fillStyle = '#9c27b0';
+    this.ctx.fillRect(x - 1.5, y - 4.5, 3, 3);
   }
 
   // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
