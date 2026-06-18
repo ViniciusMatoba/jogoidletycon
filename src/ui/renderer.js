@@ -30,12 +30,19 @@ export class GameRenderer {
 
     // Dicionário de imagens dos assets
     this.images = {};
+    // Dicionário de padrões (patterns) de repetição de solo
+    this.patterns = {};
     this.loadImages();
   }
 
   // Carrega os assets de pixel art
   loadImages() {
     const assetsList = {
+      // Solo / Texturas de Terreno
+      'tile_grass': 'assets/terrain/tile_grass.png',
+      'tile_dirt': 'assets/terrain/tile_dirt.png',
+      'tile_water': 'assets/terrain/tile_water.png',
+      'tile_road': 'assets/terrain/tile_road.png',
       // Edifícios
       'townhall': 'assets/buildings/townhall.png',
       'hotel': 'assets/buildings/hotel.png',
@@ -57,6 +64,10 @@ export class GameRenderer {
       img.src = assetsList[key];
       img.onload = () => {
         img.loaded = true;
+        // Se for um tile de solo, cria o padrão de repetição do Canvas
+        if (key.startsWith('tile_')) {
+          this.patterns[key] = this.ctx.createPattern(img, 'repeat');
+        }
       };
       img.onerror = () => {
         console.warn(`Erro ao carregar imagem para ${key}: ${assetsList[key]}`);
@@ -171,7 +182,11 @@ export class GameRenderer {
     const time = performance.now();
 
     // Cidade (Grama)
-    this.ctx.fillStyle = '#395c2f';
+    if (this.patterns['tile_grass']) {
+      this.ctx.fillStyle = this.patterns['tile_grass'];
+    } else {
+      this.ctx.fillStyle = '#395c2f'; // Fallback
+    }
     this.drawIsoPolygon([
       { x: 0, y: 0 },
       { x: 470, y: 0 },
@@ -180,12 +195,15 @@ export class GameRenderer {
     ]);
 
     // Floresta (Varia com o bioma)
-    let forestColor = '#243b23';
-    if (biome.id === 0) forestColor = '#222326'; // Cavernas
-    if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
-    if (biome.id === 2) forestColor = '#1b231e'; // Igarapés
-
-    this.ctx.fillStyle = forestColor;
+    if (this.patterns['tile_dirt']) {
+      this.ctx.fillStyle = this.patterns['tile_dirt'];
+    } else {
+      let forestColor = '#243b23';
+      if (biome.id === 0) forestColor = '#222326'; // Cavernas
+      if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
+      if (biome.id === 2) forestColor = '#1b231e'; // Igarapés
+      this.ctx.fillStyle = forestColor;
+    }
     this.drawIsoPolygon([
       { x: 490, y: 0 },
       { x: 960, y: 0 },
@@ -194,7 +212,11 @@ export class GameRenderer {
     ]);
 
     // Rio Animado (X = 470 a 490)
-    this.ctx.fillStyle = '#2d6ab3';
+    if (this.patterns['tile_water']) {
+      this.ctx.fillStyle = this.patterns['tile_water'];
+    } else {
+      this.ctx.fillStyle = '#2d6ab3';
+    }
     this.drawIsoPolygon([
       { x: 470, y: 0 },
       { x: 490, y: 0 },
@@ -264,7 +286,11 @@ export class GameRenderer {
     this.ctx.stroke();
 
     // Estradas de terra na cidade
-    this.ctx.fillStyle = '#826442';
+    if (this.patterns['tile_road']) {
+      this.ctx.fillStyle = this.patterns['tile_road'];
+    } else {
+      this.ctx.fillStyle = '#826442';
+    }
     // Estrada principal norte-sul (X=220 a 240, Y=100 a 450)
     this.drawIsoPolygon([
       { x: 220, y: 100 },
@@ -1128,7 +1154,7 @@ export class GameRenderer {
   drawHeroWeapon(hx, hy, hero) {
     const isAttacking = hero.state === 'FIGHTING' && hero.cooldownTimer > 0;
     const wx = isAttacking ? hx + 5 : hx - 6.5;
-    const wy = isAttacking ? hy + 1 : hy + 2;
+    const wy = isAttacking ? hy + 1 : wy + 2;
 
     let weaponColor = '#bf9b30';
     let isLendaria = false;
