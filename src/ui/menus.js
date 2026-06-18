@@ -11,17 +11,19 @@ let lastTownStateKey = '';
 let wasTownModalActive = false;
 let wasCraftModalActive = false;
 
+let activeRecipeFilter = 'all';
+
 const BUILDING_ACTION_LABELS = {
-  townhall: { name: 'Centro da Cidade', icon: '🏛️', modalId: 'town-modal' },
-  hotel: { name: 'Hotel', icon: '🏨', modalId: 'town-modal' },
-  restaurant: { name: 'Restaurante', icon: '🍲', modalId: 'town-modal' },
-  hospital: { name: 'Hospital', icon: '🏥', modalId: 'town-modal' },
-  tavern: { name: 'Taverna', icon: '🍺', modalId: 'town-modal' },
+  townhall: { name: 'Centro da Cidade', icon: '🏛️', modalId: 'config-modal' },
+  hotel: { name: 'Hotel', icon: '🏨', modalId: 'craft-modal' },
+  restaurant: { name: 'Restaurante', icon: '🍲', modalId: 'craft-modal' },
+  hospital: { name: 'Hospital', icon: '🏥', modalId: 'craft-modal' },
+  tavern: { name: 'Taverna', icon: '🍺', modalId: 'craft-modal' },
   forge: { name: 'Forja', icon: '⚒️', modalId: 'craft-modal' }
 };
 
 export function setupUI(game) {
-  // 1. Controle de Janelas Modais Retro (Menu de RodapÃ©)
+  // 1. Controle de Janelas Modais Retro (Menu de Rodapé)
   const menuButtons = document.querySelectorAll('.menu-btn-retro');
   const modalOverlays = document.querySelectorAll('.modal-overlay');
 
@@ -29,7 +31,7 @@ export function setupUI(game) {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
       
-      // Se for Cidade ou CaÃ§a, apenas mudamos a tela do canvas (e fechamos modais abertos)
+      // Se for Cidade ou Caça, apenas mudamos a tela do canvas (e fechamos modais abertos)
       if (targetId === 'town-modal') {
         if (window.gameRenderer) {
           window.gameRenderer.activeView = 'town';
@@ -65,13 +67,13 @@ export function setupUI(game) {
         return;
       }
 
-      // Outros modais (HerÃ³is, Crafting, Prefeitura) abrem normalmente como overlays
+      // Outros modais (Heróis, Crafting, Prefeitura) abrem normalmente como overlays
       const modal = document.getElementById(targetId);
       if (modal) {
         if (modal.classList.contains('active')) {
           modal.classList.remove('active');
           btn.classList.remove('active');
-          // Re-ativa o botÃ£o da tela de fundo ativa
+          // Re-ativa o botão da tela de fundo ativa
           const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
           menuButtons.forEach(b => {
             const t = b.getAttribute('data-target');
@@ -82,7 +84,7 @@ export function setupUI(game) {
           return;
         }
 
-        // Fecha outros overlays de gerenciamento (HerÃ³is, Craft, Config)
+        // Fecha outros overlays de gerenciamento (Heróis, Craft, Config)
         menuButtons.forEach(b => {
           const t = b.getAttribute('data-target');
           if (t !== 'town-modal' && t !== 'dungeons-modal') {
@@ -95,13 +97,19 @@ export function setupUI(game) {
           }
         });
 
+        // Reset filtering if opening craft-modal from the bottom menu
+        if (targetId === 'craft-modal') {
+          activeRecipeFilter = 'all';
+          setupCraftingButtons(game);
+        }
+
         btn.classList.add('active');
         modal.classList.add('active');
       }
     });
   });
 
-  // Configura fechamento de todos os modais (botÃ£o [X] ou cliques no overlay de fundo)
+  // Configura fechamento de todos os modais (botão [X] ou cliques no overlay de fundo)
   modalOverlays.forEach(modal => {
     const closeBtn = modal.querySelector('.close-modal-btn');
     const closeAction = () => {
@@ -111,7 +119,7 @@ export function setupUI(game) {
           btn.classList.remove('active');
         }
       });
-      // Re-ativa o botÃ£o da tela de fundo ativa
+      // Re-ativa o botão da tela de fundo ativa
       const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
       menuButtons.forEach(b => {
         const t = b.getAttribute('data-target');
@@ -132,7 +140,7 @@ export function setupUI(game) {
     });
   });
 
-  // 2. VinculaÃ§Ã£o do Bioma
+  // 2. Vinculação do Bioma
   const biomeSelect = document.getElementById('biome-select');
   if (biomeSelect) {
     biomeSelect.addEventListener('change', (e) => {
@@ -143,8 +151,6 @@ export function setupUI(game) {
       }
     });
   }
-
-  // 3. ContrataÃ§Ã£o de HerÃ³is
   const hireButtons = document.querySelectorAll('.hire-btn');
   hireButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -223,6 +229,24 @@ export function setupUI(game) {
     openFunctionsBtn.addEventListener('click', () => {
       if (!activeBuildingKey) return;
       openBuildingFunctions(activeBuildingKey, game, menuButtons);
+    });
+  }
+
+  const upgradeDirectBtn = document.getElementById('building-upgrade-direct-btn');
+  if (upgradeDirectBtn) {
+    upgradeDirectBtn.addEventListener('click', () => {
+      if (!activeBuildingKey) return;
+      const result = game.town.upgradeBuilding(activeBuildingKey);
+      if (result.success) {
+        game.addFloater({ x: 480, y: 200, text: 'Evoluído!', color: '#3aff7d' });
+        // Refresh building actions modal content
+        openBuildingActions(activeBuildingKey);
+        // Refresh building list if needed
+        renderBuildings(game);
+        game.saveGame();
+      } else {
+        alert(result.reason || 'Erro ao melhorar.');
+      }
     });
   }
 
@@ -350,13 +374,67 @@ function openBuildingActions(buildingKey) {
   const iconEl = document.getElementById('building-actions-icon');
   const nameEl = document.getElementById('building-actions-name');
   const levelEl = document.getElementById('building-actions-level');
+  const upgradeInfoEl = document.getElementById('building-actions-upgrade-info');
+  const upgradeBtn = document.getElementById('building-upgrade-direct-btn');
 
   if (titleEl) titleEl.innerText = meta.name.toUpperCase();
   if (iconEl) iconEl.innerText = meta.icon;
   if (nameEl) nameEl.innerText = meta.name;
+  
+  const level = config?.level || 0;
   if (levelEl) {
-    const level = config?.level || 1;
-    levelEl.innerText = `Nivel ${level} - ${getBuildingVisualStage(level).name}`;
+    levelEl.innerText = `Nível ${level} - ${getBuildingVisualStage(Math.max(level, 1)).name}`;
+  }
+
+  // Render upgrade info
+  if (upgradeInfoEl && config) {
+    const isMax = config.next === null;
+    if (isMax) {
+      upgradeInfoEl.innerHTML = `<span style="color: var(--border-gold); font-weight: bold;">Nível Máximo Atingido!</span>`;
+      if (upgradeBtn) {
+        upgradeBtn.classList.add('disabled');
+        upgradeBtn.disabled = true;
+        upgradeBtn.innerText = 'Max Lvl';
+      }
+    } else {
+      let canUpgrade = true;
+      const costs = [];
+      for (const res in config.next.cost) {
+        const icon = res === 'gold' ? '🪙' : ITEMS_INFO[res]?.icon || '📦';
+        const required = config.next.cost[res];
+        const owned = res === 'gold' ? window.game.town.gold : window.game.town.resources[res] || 0;
+        const isEnough = owned >= required;
+        if (!isEnough) {
+          canUpgrade = false;
+        }
+        costs.push(`<span class="cost-item ${isEnough ? 'enough' : 'not-enough'}">${icon} ${required} (${owned})</span>`);
+      }
+      
+      // Check townhall dependency
+      if (buildingKey !== 'townhall') {
+        if (window.game.town.buildings.townhall <= 0) {
+          canUpgrade = false;
+        } else if (window.game.town.buildings[buildingKey] >= window.game.town.buildings.townhall) {
+          canUpgrade = false;
+        }
+      }
+
+      upgradeInfoEl.innerHTML = `
+        <div style="margin-bottom: 4px;"><strong>Próximo Nível:</strong> ${config.next.desc}</div>
+        <div class="building-cost" style="font-size: 10px; display: flex; flex-wrap: wrap; gap: 5px;">Custo: ${costs.join(', ')}</div>
+      `;
+
+      if (upgradeBtn) {
+        if (canUpgrade) {
+          upgradeBtn.classList.remove('disabled');
+          upgradeBtn.disabled = false;
+        } else {
+          upgradeBtn.classList.add('disabled');
+          upgradeBtn.disabled = true;
+        }
+        upgradeBtn.innerText = 'Melhorar';
+      }
+    }
   }
 
   document.querySelectorAll('.modal-overlay').forEach(m => {
@@ -373,6 +451,14 @@ function openBuildingFunctions(buildingKey, game, menuButtons) {
 
   const actionsModal = document.getElementById('building-actions-modal');
   if (actionsModal) actionsModal.classList.remove('active');
+
+  // Filter crafting if opening craft-modal
+  if (modalId === 'craft-modal') {
+    activeRecipeFilter = buildingKey;
+    setupCraftingButtons(game);
+  } else {
+    activeRecipeFilter = 'all';
+  }
 
   if (modalId === 'town-modal') {
     renderBuildings(game);
@@ -509,13 +595,42 @@ function setupCraftingButtons(game) {
   const craftContainer = document.getElementById('recipes-list');
   if (!craftContainer) return;
 
+  // Atualiza título da seção de receitas e botão de limpar filtro
+  const header = document.querySelector('.recipes-column h3');
+  if (header) {
+    if (activeRecipeFilter === 'all') {
+      header.innerText = 'Receitas de Equipamentos & Consumíveis';
+    } else {
+      const bConfig = BUILDINGS_CONFIG[activeRecipeFilter];
+      const name = bConfig ? bConfig.name : activeRecipeFilter;
+      header.innerHTML = `Receitas de ${name} <button id="clear-craft-filter-btn" class="action-btn-retro" style="font-size: 8px; padding: 2px 4px; margin-left: 8px;">Ver Todas</button>`;
+      
+      const clearBtn = document.getElementById('clear-craft-filter-btn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          activeRecipeFilter = 'all';
+          setupCraftingButtons(game);
+        });
+      }
+    }
+  }
+
   craftContainer.innerHTML = '';
 
   for (const recipeKey in CRAFT_RECIPES) {
     const recipe = CRAFT_RECIPES[recipeKey];
     const isEquip = recipe.stats !== undefined;
-    const resultItem = isEquip ? recipe : ITEMS_INFO[recipe.result];
 
+    // Filtragem por prédio
+    if (activeRecipeFilter !== 'all') {
+      if (activeRecipeFilter === 'forge') {
+        if (!isEquip) continue;
+      } else {
+        if (isEquip || recipe.building !== activeRecipeFilter) continue;
+      }
+    }
+
+    const resultItem = isEquip ? recipe : ITEMS_INFO[recipe.result];
     if (!resultItem) continue;
 
     const card = document.createElement('div');

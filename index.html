@@ -242,8 +242,15 @@
             <p id="building-actions-level">Nivel 1</p>
           </div>
         </div>
-        <div class="building-actions-grid">
-          <button id="building-open-functions-btn" class="action-btn-retro">Funcoes</button>
+        
+        <!-- Info de Upgrade Direta -->
+        <div id="building-actions-upgrade-info" style="font-size: 11px; margin: 10px 0; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); line-height: 1.4;">
+          <!-- Injetado dinamicamente -->
+        </div>
+
+        <div class="building-actions-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
+          <button id="building-open-functions-btn" class="action-btn-retro">Funções</button>
+          <button id="building-upgrade-direct-btn" class="action-btn-retro">Melhorar</button>
           <button id="building-move-btn" class="action-btn-retro">Mover</button>
         </div>
       </div>
