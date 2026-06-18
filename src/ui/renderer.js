@@ -35,6 +35,77 @@ export class GameRenderer {
     this.loadImages();
   }
 
+  // Remove fundos falsos (brancos, pretos ou quadriculados) em tempo real via Canvas
+  makeImageTransparent(img) {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = img.naturalWidth || img.width;
+    tempCanvas.height = img.naturalHeight || img.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(img, 0, 0);
+
+    try {
+      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      const data = imageData.data;
+
+      // Cor de fundo padrão (pixel superior esquerdo)
+      const bgR = data[0];
+      const bgG = data[1];
+      const bgB = data[2];
+      const bgA = data[3];
+
+      // Tolerância para variação de cores
+      const tolerance = 45;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+
+        // 1. Remover se for idêntico/próximo à cor do canto superior esquerdo
+        const distFromBg = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+        if (distFromBg < tolerance) {
+          data[i + 3] = 0;
+          continue;
+        }
+
+        // 2. Remover fundo branco dominante típico de falsos PNGs de IA
+        if (bgR > 180 && bgG > 180 && bgB > 180) {
+          if (r > 200 && g > 200 && b > 200) {
+            data[i + 3] = 0;
+            continue;
+          }
+        }
+
+        // 3. Remover fundo preto dominante
+        if (bgR < 60 && bgG < 60 && bgB < 60) {
+          if (r < 40 && g < 40 && b < 40) {
+            data[i + 3] = 0;
+            continue;
+          }
+        }
+
+        // 4. Remover quadriculado falso cinza/branco
+        const isWhite = r > 240 && g > 240 && b > 240;
+        const isGray = r > 180 && r < 210 && g > 180 && g < 210 && b > 180 && b < 210;
+        if ((isWhite || isGray) && (bgR > 180 && bgG > 180 && bgB > 180)) {
+          const x = (i / 4) % tempCanvas.width;
+          const y = Math.floor((i / 4) / tempCanvas.width);
+          // Se for perto das bordas externas, removemos
+          if (x < 15 || x > tempCanvas.width - 15 || y < 15 || y > tempCanvas.height - 15) {
+            data[i + 3] = 0;
+          }
+        }
+      }
+
+      tempCtx.putImageData(imageData, 0, 0);
+      return tempCanvas;
+    } catch (e) {
+      console.error("Erro ao remover fundo do asset:", e);
+      return img;
+    }
+  }
+
   // Carrega os assets de pixel art
   loadImages() {
     const assetsList = {
@@ -63,10 +134,14 @@ export class GameRenderer {
       const img = new Image();
       img.src = assetsList[key];
       img.onload = () => {
-        img.loaded = true;
+        // Aplica recorte de fundos transparentes em tempo real
+        const cleanCanvas = this.makeImageTransparent(img);
+        cleanCanvas.loaded = true;
+        this.images[key] = cleanCanvas;
+        
         // Se for um tile de solo, cria o padrão de repetição do Canvas
         if (key.startsWith('tile_')) {
-          this.patterns[key] = this.ctx.createPattern(img, 'repeat');
+          this.patterns[key] = this.ctx.createPattern(cleanCanvas, 'repeat');
         }
       };
       img.onerror = () => {
@@ -181,72 +256,47 @@ export class GameRenderer {
     const biome = game.spawner.getBiomeConfig();
     const time = performance.now();
 
-    // Cidade (Grama)
-    if (this.patterns['tile_grass']) {
-      this.ctx.fillStyle = this.patterns['tile_grass'];
-    } else {
-      this.ctx.fillStyle = '#395c2f'; // Fallback
-    }
-    this.drawIsoPolygon([
-      { x: 0, y: 0 },
-      { x: 470, y: 0 },
-      { x: 470, y: 540 },
-      { x: 0, y: 540 }
-    ]);
+    // -------------------------------------------------------------
+    // DESENHAR SOLO DEITADO (Transformação isométrica de contexto)
+    // Isso garante que os padrões de textura fiquem inclinados e deitados no chão
+    // -------------------------------------------------------------
+    this.ctx.save();
+    
+    // Aplica a matriz de projeção isométrica do terreno (escalaX, escalaY, etc.)
+    this.ctx.transform(0.64, 0.32, -0.64, 0.32, 350, 30);
 
-    // Floresta (Varia com o bioma)
-    if (this.patterns['tile_dirt']) {
-      this.ctx.fillStyle = this.patterns['tile_dirt'];
-    } else {
-      let forestColor = '#243b23';
-      if (biome.id === 0) forestColor = '#222326'; // Cavernas
-      if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
-      if (biome.id === 2) forestColor = '#1b231e'; // Igarapés
-      this.ctx.fillStyle = forestColor;
-    }
-    this.drawIsoPolygon([
-      { x: 490, y: 0 },
-      { x: 960, y: 0 },
-      { x: 960, y: 540 },
-      { x: 490, y: 540 }
-    ]);
+    // Cidade (Grama)
+    this.ctx.fillStyle = this.patterns['tile_grass'] || '#395c2f';
+    this.ctx.fillRect(0, 0, 470, 540);
+
+    // Floresta (Terra)
+    let forestColor = '#243b23';
+    if (biome.id === 0) forestColor = '#222326'; // Cavernas
+    if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
+    if (biome.id === 2) forestColor = '#1b231e'; // Igarapés
+
+    this.ctx.fillStyle = this.patterns['tile_dirt'] || forestColor;
+    this.ctx.fillRect(490, 0, 470, 540);
 
     // Rio Animado (X = 470 a 490)
-    if (this.patterns['tile_water']) {
-      this.ctx.fillStyle = this.patterns['tile_water'];
-    } else {
-      this.ctx.fillStyle = '#2d6ab3';
-    }
-    this.drawIsoPolygon([
-      { x: 470, y: 0 },
-      { x: 490, y: 0 },
-      { x: 490, y: 540 },
-      { x: 470, y: 540 }
-    ]);
+    this.ctx.fillStyle = this.patterns['tile_water'] || '#2d6ab3';
+    this.ctx.fillRect(470, 0, 20, 540);
 
-    // Ondas no Rio (Correnteza animada)
-    this.ctx.strokeStyle = '#5c99e6';
-    this.ctx.lineWidth = 2;
-    const waveOffset = (time * 0.04) % 40;
-    for (let y = -20; y < 540; y += 30) {
-      const wy = y + waveOffset;
-      // Ondulações horizontais curtas na perspectiva
-      const p1Start = this.toIso(475, wy);
-      const p1End = this.toIso(475, wy + 4);
-      this.ctx.beginPath();
-      this.ctx.moveTo(p1Start.x, p1Start.y);
-      this.ctx.lineTo(p1End.x, p1End.y);
-      this.ctx.stroke();
+    // Estradas de terra na cidade e até a ponte
+    this.ctx.fillStyle = this.patterns['tile_road'] || '#826442';
+    // Estrada principal norte-sul (X=220 a 240, Y=100 a 450)
+    this.ctx.fillRect(220, 100, 20, 350);
+    // Ramificação horizontal 1
+    this.ctx.fillRect(120, 195, 220, 15);
+    // Ramificação horizontal 2
+    this.ctx.fillRect(120, 335, 220, 15);
+    // Estrada até a ponte
+    this.ctx.fillRect(230, 262, 240, 15);
 
-      const p2Start = this.toIso(485, wy + 12);
-      const p2End = this.toIso(485, wy + 16);
-      this.ctx.beginPath();
-      this.ctx.moveTo(p2Start.x, p2Start.y);
-      this.ctx.lineTo(p2End.x, p2End.y);
-      this.ctx.stroke();
-    }
+    this.ctx.restore(); // Restaura contexto para sprites em pé
+    // -------------------------------------------------------------
 
-    // Ponte de madeira (X = 464 a 496, Y = 250 a 290)
+    // Desenha Ponte de madeira (Ponte fica em pé, mas alinhada às margens)
     this.ctx.fillStyle = '#6e4726'; // Tábuas principais
     this.drawIsoPolygon([
       { x: 464, y: 250 },
@@ -285,40 +335,26 @@ export class GameRenderer {
     this.ctx.lineTo(csEnd.x, csEnd.y);
     this.ctx.stroke();
 
-    // Estradas de terra na cidade
-    if (this.patterns['tile_road']) {
-      this.ctx.fillStyle = this.patterns['tile_road'];
-    } else {
-      this.ctx.fillStyle = '#826442';
+    // Ondas no Rio (Correnteza animada)
+    this.ctx.strokeStyle = '#5c99e6';
+    this.ctx.lineWidth = 2;
+    const waveOffset = (time * 0.04) % 40;
+    for (let y = -20; y < 540; y += 30) {
+      const wy = y + waveOffset;
+      const p1Start = this.toIso(475, wy);
+      const p1End = this.toIso(475, wy + 4);
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1Start.x, p1Start.y);
+      this.ctx.lineTo(p1End.x, p1End.y);
+      this.ctx.stroke();
+
+      const p2Start = this.toIso(485, wy + 12);
+      const p2End = this.toIso(485, wy + 16);
+      this.ctx.beginPath();
+      this.ctx.moveTo(p2Start.x, p2Start.y);
+      this.ctx.lineTo(p2End.x, p2End.y);
+      this.ctx.stroke();
     }
-    // Estrada principal norte-sul (X=220 a 240, Y=100 a 450)
-    this.drawIsoPolygon([
-      { x: 220, y: 100 },
-      { x: 240, y: 100 },
-      { x: 240, y: 450 },
-      { x: 220, y: 450 }
-    ]);
-    // Ramificação horizontal 1
-    this.drawIsoPolygon([
-      { x: 120, y: 195 },
-      { x: 340, y: 195 },
-      { x: 340, y: 210 },
-      { x: 120, y: 210 }
-    ]);
-    // Ramificação horizontal 2
-    this.drawIsoPolygon([
-      { x: 120, y: 335 },
-      { x: 340, y: 335 },
-      { x: 340, y: 350 },
-      { x: 120, y: 350 }
-    ]);
-    // Estrada até a ponte
-    this.drawIsoPolygon([
-      { x: 230, y: 262 },
-      { x: 470, y: 262 },
-      { x: 470, y: 277 },
-      { x: 230, y: 277 }
-    ]);
   }
 
   // Desenha um polígono a partir de pontos cartesianos projetados para isométrico
@@ -381,7 +417,7 @@ export class GameRenderer {
 
     const img = this.images[b.key];
     if (img && img.loaded) {
-      // --- DESENHAR COM IMAGEM DE ASSET ISOMÉTRICO PIXEL ART ---
+      // --- DESENHAR COM IMAGEM DE ASSET ISOMÉTRICO PIXEL ART (Transparência corrigida) ---
       const pos = this.toIso(bx, by);
       
       const wSize = b.key === 'townhall' ? 76 : 60;
@@ -593,7 +629,7 @@ export class GameRenderer {
     const img = imgKey ? this.images[imgKey] : null;
 
     if (img && img.loaded) {
-      // --- DESENHAR MONSTRO COM SPRITE DE PIXEL ART E BOUNCE ---
+      // --- DESENHAR MONSTRO COM SPRITE DE PIXEL ART E BOUNCE (Transparência corrigida) ---
       this.ctx.save();
       
       // Sombra
@@ -960,7 +996,7 @@ export class GameRenderer {
     const img = this.images[imgKey];
 
     if (img && img.loaded) {
-      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS ---
+      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS (Transparência corrigida) ---
       this.ctx.save();
       
       // Sombra
@@ -976,7 +1012,7 @@ export class GameRenderer {
       if (isWalking) {
         const bounce = Math.abs(Math.sin(time * 0.015)) * 3;
         this.ctx.translate(0, -bounce);
-        const angle = Math.sin(time * 0.015) * 0.04; // aprox 2.5 graus
+        const angle = Math.sin(time * 0.015) * 0.04;
         this.ctx.rotate(angle);
       }
 
@@ -985,7 +1021,6 @@ export class GameRenderer {
         const cdPct = hero.cooldownTimer * hero.spd;
         if (cdPct > 0.6) {
           const attackFactor = Math.sin(((cdPct - 0.6) / 0.4) * Math.PI);
-          // Achatando verticalmente e esticando horizontalmente
           this.ctx.scale(1 + attackFactor * 0.2, 1 - attackFactor * 0.15);
         }
       }
@@ -1154,7 +1189,7 @@ export class GameRenderer {
   drawHeroWeapon(hx, hy, hero) {
     const isAttacking = hero.state === 'FIGHTING' && hero.cooldownTimer > 0;
     const wx = isAttacking ? hx + 5 : hx - 6.5;
-    const wy = isAttacking ? hy + 1 : wy + 2;
+    const wy = isAttacking ? hy + 1 : hy + 2;
 
     let weaponColor = '#bf9b30';
     let isLendaria = false;
