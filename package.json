@@ -1,0 +1,13 @@
+{
+  "name": "jogoidletycon",
+  "version": "1.0.0",
+  "description": "Guilda Idle: Tycoon de Heróis",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "http-server -p 8080"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
