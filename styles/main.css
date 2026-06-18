@@ -1260,3 +1260,9 @@ body {
   color: #fff;
 }
 
+.craft-tab-btn.active {
+  background-color: var(--border-gold) !important;
+  border-color: #ffea3a !important;
+  color: #000 !important;
+  font-weight: bold;
+}

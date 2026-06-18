@@ -1,4 +1,4 @@
-﻿import { HERO_CLASSES, BIOMES, ITEMS_INFO } from '../data/constants.js';
+import { HERO_CLASSES, BIOMES, ITEMS_INFO } from '../data/constants.js';
 
 import {
   getTownGridMetrics,
@@ -45,13 +45,21 @@ export class GameRenderer {
       { x: 60, y: 280 }
     ];
 
-    // DicionÃ¡rio de imagens dos assets
+    // Dicionário de imagens dos assets
     this.images = {};
-    // DicionÃ¡rio de padrÃµes (patterns) de repetiÃ§Ã£o de solo
+    // Dicionário de padrões (patterns) de repetição de solo
     this.patterns = {};
     this.activeView = 'town';
     this.pendingPlacement = null;
     this.hoveredTile = null;
+    this.cameraX = 0;
+    this.cameraY = 0;
+    this.isDragging = false;
+    this.hasDragged = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.startCamX = 0;
+    this.startCamY = 0;
     this.loadImages();
   }
 
@@ -151,7 +159,19 @@ export class GameRenderer {
       'hero_archer': 'assets/sprites/hero_archer.png',
       // Monstros
       'monster_saci': 'assets/sprites/monster_saci.png',
-      'monster_curupira': 'assets/sprites/monster_curupira.png'
+      'monster_curupira': 'assets/sprites/monster_curupira.png',
+      'monster_boitata': 'assets/sprites/boi tata_universal.png',
+      'monster_caveira': 'assets/sprites/caveira_universal.png',
+      'monster_coelho': 'assets/sprites/coelho pascoa_universal.png',
+      'monster_et_varginha': 'assets/sprites/et varginha_universal.png',
+      'monster_et': 'assets/sprites/et_universal.png',
+      'monster_lagarto': 'assets/sprites/lagarto_universal.png',
+      'monster_lobisomen': 'assets/sprites/lobisomen_universal.png',
+      'monster_porco': 'assets/sprites/porco_universal.png',
+      'monster_rato': 'assets/sprites/rato_universal.png',
+      'monster_vampiro': 'assets/sprites/vampiro_universal.png',
+      'monster_zoio': 'assets/sprites/zoio_universal.png',
+      'monster_zombie': 'assets/sprites/zombie.png'
     };
 
     for (const key in assetsList) {
@@ -236,9 +256,7 @@ export class GameRenderer {
     this.ctx.stroke();
   }
 
-  drawTownGrid(town, width, height) {
-    const metrics = this.getTownGridMetrics(town, width, height);
-
+  drawTownGridBg(town, width, height) {
     this.ctx.fillStyle = '#172118';
     this.ctx.fillRect(0, 0, width, height);
 
@@ -247,6 +265,10 @@ export class GameRenderer {
     skyBand.addColorStop(1, '#1f2c1d');
     this.ctx.fillStyle = skyBand;
     this.ctx.fillRect(0, 0, width, height);
+  }
+
+  drawTownGridTiles(town, width, height) {
+    const metrics = this.getTownGridMetrics(town, width, height);
 
     for (let row = 0; row < town.grid.rows; row++) {
       for (let col = 0; col < town.grid.cols; col++) {
@@ -270,7 +292,9 @@ export class GameRenderer {
         }
       }
     }
+  }
 
+  drawTownGridLabel(town, width, height) {
     this.ctx.save();
     this.ctx.fillStyle = 'rgba(5, 8, 6, 0.55)';
     const labelBoxW = Math.min(width < 520 ? width - 24 : 520, width - 24);
@@ -303,9 +327,9 @@ export class GameRenderer {
     // Limpar tela
     this.ctx.clearRect(0, 0, width, height);
 
-    // 1. Desenhar Background da Tela Ativa
+    // 1. Desenhar Background da Tela Ativa (Estático/sem translação)
     if (this.activeView === 'town') {
-      this.drawTownGrid(game.town, width, height);
+      this.drawTownGridBg(game.town, width, height);
     } else {
       let bgKey = 'bg_forest';
       if (biome.id === 0) bgKey = 'bg_cave';
@@ -319,14 +343,23 @@ export class GameRenderer {
         this.ctx.fillRect(0, 0, width, height);
       }
 
-      // Filtro de tom verde pantanoso para o pÃ¢ntano
+      // Filtro de tom verde pantanoso para o pântano
       if (biome.id === 2) {
         this.ctx.fillStyle = 'rgba(46, 125, 50, 0.15)';
         this.ctx.fillRect(0, 0, width, height);
       }
     }
 
-    // 2. Criar a lista de objetos para ordenaÃ§Ã£o por profundidade (Y-sorting)
+    // === INICIALIZAR MUNDO (Salvar e aplicar translação da câmera) ===
+    this.ctx.save();
+    this.ctx.translate(-this.cameraX, -this.cameraY);
+
+    // Se for Cidade, desenha as tiles sob translação
+    if (this.activeView === 'town') {
+      this.drawTownGridTiles(game.town, width, height);
+    }
+
+    // 2. Criar a lista de objetos para ordenação por profundidade (Y-sorting)
     const renderList = [];
 
     if (this.activeView === 'town') {
@@ -349,7 +382,7 @@ export class GameRenderer {
           render: () => this.drawBuildingIndividual(game.town, b)
         });
       });
-      // HerÃ³is ativos na cidade
+      // Heróis ativos na cidade
       game.heroes.forEach(h => {
         if (h.currentMap === 'town') {
           renderList.push({
@@ -361,13 +394,13 @@ export class GameRenderer {
 
     } else {
       // === RENDER VIEW HUNT ===
-      // Portal de CaÃ§a
+      // Portal de Caça
       renderList.push({
         y: 100,
         render: () => this.drawDungeonPortal(480, 100, time)
       });
 
-      // Elementos de CaÃ§a dinÃ¢micos de Bioma Y-sorted
+      // Elementos de Caça dinâmicos de Bioma Y-sorted
       const huntDecorations = [
         { x: 150, y: 140 },
         { x: 300, y: 120 },
@@ -407,9 +440,9 @@ export class GameRenderer {
               else this.drawFlower(pt.x, pt.y);
             }
           });
-        } else if (biome.id === 2) { // PÃ¢ntano
+        } else if (biome.id === 2) { // Pântano
           if (typeIdx === 0) {
-            // PoÃ§a de lama plana
+            // Poça de lama plana
             this.drawMudPool(pt.x, pt.y);
           } else {
             renderList.push({
@@ -428,12 +461,12 @@ export class GameRenderer {
         if (m.hp > 0) {
           renderList.push({
             y: m.y,
-            render: () => this.drawMonsterIndividual(m)
+            render: () => this.drawMonsterIndividual(m, game)
           });
         }
       });
 
-      // HerÃ³is ativos na caÃ§ada
+      // Heróis ativos na caçada
       game.heroes.forEach(h => {
         if (h.currentMap === 'hunt') {
           renderList.push({
@@ -448,19 +481,27 @@ export class GameRenderer {
     renderList.sort((a, b) => a.y - b.y);
     renderList.forEach(obj => obj.render());
 
-    // 3. Atualizar e Desenhar PartÃ­culas de FumaÃ§a (Apenas em Town View)
+    // 3. Atualizar e Desenhar Partículas de Fumaça (Apenas em Town View)
     if (this.activeView === 'town') {
       this.updateAndDrawSmoke(game.town, dt);
     }
 
-    // 4. Desenhar Efeitos de Batalha (projÃ©teis)
+    // 4. Desenhar Efeitos de Batalha (projéteis)
     this.drawCombatEffects(game.heroes);
+
+    // 6. Desenhar Textos Flutuantes
+    this.drawFloaters(game.floaters);
+
+    // === RESTAURAR MUNDO (Sair da translação para desenhar UI e filtros fixos) ===
+    this.ctx.restore();
 
     // 5. Desenhar Filtro de Dia/Noite
     this.drawDayNightFilter(width, height);
 
-    // 6. Desenhar Textos Flutuantes
-    this.drawFloaters(game.floaters);
+    // Desenhar Label Box do Mapa em Cidade
+    if (this.activeView === 'town') {
+      this.drawTownGridLabel(game.town, width, height);
+    }
   }
 
   // --- RENDERIZADORES DE TERRENO TOP-DOWN ---
@@ -1370,41 +1411,139 @@ export class GameRenderer {
   }
 
   // --- RENDER MONSTROS TOP-DOWN ---
-  drawMonsterIndividual(monster) {
+  drawMonsterIndividual(monster, game) {
     const pos = this.toIso(monster.x, monster.y);
     const time = performance.now();
 
     this.ctx.save();
 
     const name = monster.name;
-    const imgKey = name.includes('Saci-PererÃª') ? 'monster_saci' : 
-                   name.includes('Curupira') ? 'monster_curupira' : null;
+    const nameLower = name.toLowerCase();
+    let imgKey = null;
+
+    if (nameLower.includes('saci')) {
+      imgKey = 'monster_saci';
+    } else if (nameLower.includes('curupira')) {
+      imgKey = 'monster_curupira';
+    } else if (nameLower.includes('boitatá') || nameLower.includes('boitata')) {
+      imgKey = 'monster_boitata';
+    } else if (nameLower.includes('corpo-seco') || nameLower.includes('caveira')) {
+      imgKey = 'monster_caveira';
+    } else if (nameLower.includes('coelho')) {
+      imgKey = 'monster_coelho';
+    } else if (nameLower.includes('varginha')) {
+      imgKey = 'monster_et_varginha';
+    } else if (nameLower.split(' ').includes('et') || nameLower.includes('alien')) {
+      imgKey = 'monster_et';
+    } else if (nameLower.includes('lagarto') || nameLower.includes('teju') || nameLower.includes('crocodilo')) {
+      imgKey = 'monster_lagarto';
+    } else if (nameLower.includes('lobisomem') || nameLower.includes('lobo') || nameLower.includes('capelobo')) {
+      imgKey = 'monster_lobisomen';
+    } else if (nameLower.includes('porco')) {
+      imgKey = 'monster_porco';
+    } else if (nameLower.includes('rato')) {
+      imgKey = 'monster_rato';
+    } else if (nameLower.includes('vampiro') || nameLower.includes('boto')) {
+      imgKey = 'monster_vampiro';
+    } else if (nameLower.includes('zoio') || nameLower.includes('olho') || nameLower.includes('morcego')) {
+      imgKey = 'monster_zoio';
+    } else if (nameLower.includes('zombie') || nameLower.includes('zumbi') || nameLower.includes('quibungo') || nameLower.includes('pisadeira') || nameLower.includes('chibamba')) {
+      imgKey = 'monster_zombie';
+    }
+
     const img = imgKey ? this.images[imgKey] : null;
 
     if (img && img.loaded) {
       // --- DESENHAR MONSTRO COM SPRITE DE PIXEL ART E BOUNCE ---
       this.ctx.save();
       
-      // Sombra sob os pÃ©s
+      // Sombra sob os pés
       const shadowSize = monster.isBoss ? 14 : 7;
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       this.ctx.beginPath();
       this.ctx.ellipse(pos.x, pos.y + 4, shadowSize * 1.0, shadowSize * 0.35, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // TranslaÃ§Ãµes para animaÃ§Ãµes
+      // Translações para animações
       this.ctx.translate(pos.x, pos.y);
 
-      // Bounce de caminhada se monstro ativo
-      const isFighting = monster.targetHero !== null;
-      if (!isFighting) {
-        const bounce = Math.abs(Math.sin(time * 0.012)) * 2;
-        this.ctx.translate(0, -bounce);
-      }
+      const isSpritesheet = (img.naturalWidth === 832 || img.width === 832);
 
-      // Desenhar sprite
-      const size = monster.isBoss ? 40 : (monster.isMiniBoss ? 32 : 24);
-      this.ctx.drawImage(img, -size / 2, -size + 2, size, size);
+      if (isSpritesheet) {
+        // --- LPC Spritesheet Cropping & Animation ---
+        let rowOffset = 10; // Walk South
+        let colCount = 9;
+        
+        // Scan heroes to see if they are fighting this monster
+        const targetHero = (game && game.heroes) ? game.heroes.find(h => h.currentMap === 'hunt' && h.targetMonster === monster) : null;
+        const isFighting = targetHero !== null && targetHero !== undefined;
+
+        // Calculate direction
+        const dx = monster.targetX - monster.x;
+        const dy = monster.targetY - monster.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!monster.facingDir) {
+          monster.facingDir = 'S';
+        }
+
+        if (dist > 2) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            monster.facingDir = dx > 0 ? 'E' : 'W';
+          } else {
+            monster.facingDir = dy > 0 ? 'S' : 'N';
+          }
+        } else if (isFighting && targetHero) {
+          const hx = targetHero.x - monster.x;
+          const hy = targetHero.y - monster.y;
+          if (Math.abs(hx) > Math.abs(hy)) {
+            monster.facingDir = hx > 0 ? 'E' : 'W';
+          } else {
+            monster.facingDir = hy > 0 ? 'S' : 'N';
+          }
+        }
+
+        if (isFighting) {
+          colCount = 6; // Slash has 6 frames
+          if (monster.facingDir === 'N') rowOffset = 12;
+          else if (monster.facingDir === 'W') rowOffset = 13;
+          else if (monster.facingDir === 'S') rowOffset = 14;
+          else if (monster.facingDir === 'E') rowOffset = 15;
+        } else {
+          colCount = 9; // Walk has 9 frames
+          if (monster.facingDir === 'N') rowOffset = 8;
+          else if (monster.facingDir === 'W') rowOffset = 9;
+          else if (monster.facingDir === 'S') rowOffset = 10;
+          else if (monster.facingDir === 'E') rowOffset = 11;
+        }
+
+        // Frame selection
+        let frameIndex = 0;
+        if (isFighting) {
+          frameIndex = Math.floor(time * 0.008) % colCount;
+        } else if (dist > 2) {
+          frameIndex = Math.floor(time * 0.012) % colCount;
+        } else {
+          frameIndex = 0;
+        }
+
+        const sx = frameIndex * 64;
+        const sy = rowOffset * 64;
+        const sw = 64;
+        const sh = 64;
+
+        const size = monster.isBoss ? 72 : (monster.isMiniBoss ? 56 : 42);
+        this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+      } else {
+        // --- Static 1024x1024 image ---
+        const isFighting = (game && game.heroes) ? game.heroes.some(h => h.currentMap === 'hunt' && h.targetMonster === monster) : false;
+        if (!isFighting) {
+          const bounce = Math.abs(Math.sin(time * 0.012)) * 2;
+          this.ctx.translate(0, -bounce);
+        }
+        const size = monster.isBoss ? 64 : (monster.isMiniBoss ? 50 : 36);
+        this.ctx.drawImage(img, -size / 2, -size + 2, size, size);
+      }
 
       this.ctx.restore();
 
@@ -1412,17 +1551,23 @@ export class GameRenderer {
       this.ctx.fillStyle = monster.isBoss ? '#ffea3a' : '#ff9f3a';
       this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(monster.name, pos.x, pos.y - (monster.isBoss ? 32 : 22));
+      const nameOffset = isSpritesheet ? 
+        (monster.isBoss ? 54 : (monster.isMiniBoss ? 42 : 30)) : 
+        (monster.isBoss ? 48 : (monster.isMiniBoss ? 38 : 28));
+      this.ctx.fillText(monster.name, pos.x, pos.y - nameOffset);
 
       // Barra de HP
       const hpPct = monster.hp / monster.maxHp;
       const barW = monster.isBoss ? 45 : (monster.isMiniBoss ? 30 : 20);
       const barH = 3;
       
+      const barOffset = isSpritesheet ? 
+        (monster.isBoss ? 48 : (monster.isMiniBoss ? 36 : 24)) : 
+        (monster.isBoss ? 42 : (monster.isMiniBoss ? 32 : 22));
       this.ctx.fillStyle = '#2c2e33';
-      this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 28 : 18), barW, barH);
+      this.ctx.fillRect(pos.x - barW / 2, pos.y - barOffset, barW, barH);
       this.ctx.fillStyle = '#ff3d3d';
-      this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 28 : 18), barW * hpPct, barH);
+      this.ctx.fillRect(pos.x - barW / 2, pos.y - barOffset, barW * hpPct, barH);
     } else {
       // --- FALLBACK PROCEDURAL ORIGINAL ---
       const shadowSize = monster.isBoss ? 16 : (monster.isMiniBoss ? 11 : 7);
@@ -1749,19 +1894,22 @@ export class GameRenderer {
     const img = this.images[imgKey];
 
     if (img && img.loaded) {
-      // --- DESENHAR HERÃ“I COM SPRITE DE PIXEL ART E ANIMAÃ‡Ã•ES PROCEDURAIS ---
+      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS ---
       this.ctx.save();
       
       // Sombra
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       this.ctx.beginPath();
-      this.ctx.ellipse(hx, hy + 4, 8, 2.5, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(hx, hy + 4, 12, 3.5, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Transladar para o ponto de base dos pÃ©s no chÃ£o
+      // Transladar para o ponto de base dos pés no chão
       this.ctx.translate(hx, hy);
 
-      // Efeito de caminhada (bounce e inclinaÃ§Ã£o leve)
+      // Escalar herói e equipamentos juntos por 1.4x
+      this.ctx.scale(1.4, 1.4);
+
+      // Efeito de caminhada (bounce e inclinação leve)
       if (isWalking) {
         const bounce = Math.abs(Math.sin(time * 0.015)) * 3;
         this.ctx.translate(0, -bounce);
@@ -1778,7 +1926,7 @@ export class GameRenderer {
         }
       }
 
-      // 1. DESENHAR ASAS (AtrÃ¡s do corpo)
+      // 1. DESENHAR ASAS (Atrás do corpo)
       this.drawHeroWingsStacked(hero, time);
 
       // 2. DESENHAR SPRITE CENTRADO (Corpo Base)
@@ -1789,7 +1937,7 @@ export class GameRenderer {
       // 3. DESENHAR ARMADURA (Por cima do corpo)
       this.drawHeroArmorStacked(hero);
 
-      // 4. DESENHAR CAPACETE (Por cima da cabeÃ§a)
+      // 4. DESENHAR CAPACETE (Por cima da cabeça)
       this.drawHeroHelmetStacked(hero);
 
       // 5. DESENHAR ARMA (Por cima de tudo)
@@ -1797,11 +1945,11 @@ export class GameRenderer {
 
       this.ctx.restore();
 
-      // Texto de Nome e Barra de Vida (nÃ£o rotacionam/balanÃ§am)
+      // Texto de Nome e Barra de Vida (não rotacionam/balançam)
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(hero.name, hx, hy - 30);
+      this.ctx.fillText(hero.name, hx, hy - 42);
 
       // Barra de Vida
       const hpPct = Math.max(0, hero.hp / hero.maxHp);
@@ -1809,17 +1957,17 @@ export class GameRenderer {
       const barH = 3;
       
       this.ctx.fillStyle = '#2c2e33';
-      this.ctx.fillRect(hx - barW / 2, hy - 26, barW, barH);
+      this.ctx.fillRect(hx - barW / 2, hy - 36, barW, barH);
       this.ctx.fillStyle = hpPct > 0.45 ? '#3aff7d' : '#ffea3a';
       if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
-      this.ctx.fillRect(hx - barW / 2, hy - 26, barW * hpPct, barH);
+      this.ctx.fillRect(hx - barW / 2, hy - 36, barW * hpPct, barH);
 
-      // AurÃ©ola flutuante se Sacerdote
+      // Auréola flutuante se Sacerdote
       if (hero.className === 'PRIEST') {
         this.ctx.strokeStyle = '#ffea3a';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
-        this.ctx.arc(hx, hy - 33, 2.5, 0, Math.PI * 2);
+        this.ctx.arc(hx, hy - 46, 2.5, 0, Math.PI * 2);
         this.ctx.stroke();
       }
     } else {

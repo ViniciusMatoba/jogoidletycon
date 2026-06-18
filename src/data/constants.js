@@ -87,7 +87,10 @@ export const BIOMES = [
       { name: 'Rato de Esgoto', hp: 50, atk: 6, def: 1, xp: 12, drops: [{ item: 'meat_raw', chance: 0.5 }, { item: 'rat_tail', chance: 0.4 }] },
       { name: 'Morcego Cavernoso', hp: 45, atk: 7, def: 0, xp: 10, drops: [{ item: 'bat_wing', chance: 0.5 }, { item: 'guano', chance: 0.3 }] },
       { name: 'Corpo-Seco', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'meat_raw', chance: 0.4 }, { item: 'os_seco', chance: 0.5 }] },
-      { name: 'Pisadeira', hp: 40, atk: 9, def: 0, xp: 14, drops: [{ item: 'unha_pisadeira', chance: 0.6 }] }
+      { name: 'Pisadeira', hp: 40, atk: 9, def: 0, xp: 14, drops: [{ item: 'unha_pisadeira', chance: 0.6 }] },
+      { name: 'Porco Mutante', hp: 55, atk: 7, def: 2, xp: 13, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'guano', chance: 0.3 }] },
+      { name: 'Alien Perdido', hp: 65, atk: 8, def: 1, xp: 15, drops: [{ item: 'bat_wing', chance: 0.4 }, { item: 'iron_ore', chance: 0.3 }] },
+      { name: 'ET de Varginha', hp: 70, atk: 10, def: 2, xp: 18, drops: [{ item: 'rat_fang', chance: 0.2 }, { item: 'iron_ore', chance: 0.4 }] }
     ],
     // Arrays de chefes para o spawner sortear
     miniBosses: [
@@ -113,11 +116,14 @@ export const BIOMES = [
       { name: 'Aranha Venenosa', hp: 150, atk: 20, def: 3, xp: 38, drops: [{ item: 'spider_silk', chance: 0.5 }, { item: 'poison_gland', chance: 0.3 }] },
       { name: 'Capelobo', hp: 200, atk: 24, def: 6, xp: 48, drops: [{ item: 'garra_capelobo', chance: 0.6 }, { item: 'wood_rough', chance: 0.3 }] },
       { name: 'Caipora', hp: 170, atk: 21, def: 5, xp: 45, drops: [{ item: 'dente_queixada', chance: 0.5 }, { item: 'meat_raw', chance: 0.4 }] },
-      { name: 'Quibungo', hp: 220, atk: 26, def: 8, xp: 50, drops: [{ item: 'couro_rigido', chance: 0.5 }, { item: 'poison_gland', chance: 0.3 }] }
+      { name: 'Quibungo', hp: 220, atk: 26, def: 8, xp: 50, drops: [{ item: 'couro_rigido', chance: 0.5 }, { item: 'poison_gland', chance: 0.3 }] },
+      { name: 'Lobisomem', hp: 190, atk: 25, def: 5, xp: 44, drops: [{ item: 'wolf_fur', chance: 0.6 }, { item: 'meat_raw', chance: 0.5 }] },
+      { name: 'Vampiro Sombrio', hp: 175, atk: 23, def: 4, xp: 42, drops: [{ item: 'poison_gland', chance: 0.4 }, { item: 'couro_rigido', chance: 0.3 }] }
     ],
     miniBosses: [
       { name: 'Chefe Goblin Corredor', hp: 700, atk: 45, def: 12, xp: 180, drops: [{ item: 'goblin_dagger', chance: 1.0 }, { item: 'wood_rough', chance: 1.0 }] },
-      { name: 'Mula sem Cabeça', hp: 750, atk: 48, def: 10, xp: 180, drops: [{ item: 'ferradura_fogo', chance: 1.0 }, { item: 'iron_ore', chance: 1.0 }] }
+      { name: 'Mula sem Cabeça', hp: 750, atk: 48, def: 10, xp: 180, drops: [{ item: 'ferradura_fogo', chance: 1.0 }, { item: 'iron_ore', chance: 1.0 }] },
+      { name: 'Coelho de Páscoa Sombrio', hp: 800, atk: 50, def: 14, xp: 200, drops: [{ item: 'ferradura_fogo', chance: 0.8 }, { item: 'wood_rough', chance: 1.0 }] }
     ],
     bosses: [
       { name: 'Aranha Rainha Viúva', hp: 2000, atk: 75, def: 20, xp: 600, drops: [{ item: 'queen_venom', chance: 1.0 }, { item: 'spider_silk', chance: 1.0 }] },
@@ -138,7 +144,8 @@ export const BIOMES = [
       { name: 'Crocodilo do Pântano', hp: 550, atk: 52, def: 18, xp: 110, drops: [{ item: 'crocodile_scale', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }] },
       { name: 'Ipupiara', hp: 480, atk: 46, def: 14, xp: 95, drops: [{ item: 'escama_ipupiara', chance: 0.6 }, { item: 'herbs_wild', chance: 0.3 }] },
       { name: 'Teju Jagua', hp: 600, atk: 50, def: 20, xp: 115, drops: [{ item: 'presa_teju', chance: 0.5 }, { item: 'steel_ore', chance: 0.3 }] },
-      { name: 'Boto Sedutor', hp: 420, atk: 48, def: 8, xp: 92, drops: [{ item: 'chapeu_boto', chance: 0.6 }, { item: 'meat_raw', chance: 0.4 }] }
+      { name: 'Boto Sedutor', hp: 420, atk: 48, def: 8, xp: 92, drops: [{ item: 'chapeu_boto', chance: 0.6 }, { item: 'meat_raw', chance: 0.4 }] },
+      { name: 'Zumbi do Pântano', hp: 460, atk: 42, def: 13, xp: 95, drops: [{ item: 'slime_bubble', chance: 0.5 }, { item: 'couro_rigido', chance: 0.4 }] }
     ],
     miniBosses: [
       { name: 'Sanguessuga Colossal', hp: 2200, atk: 95, def: 25, xp: 450, drops: [{ item: 'leech_tooth', chance: 1.0 }, { item: 'steel_ore', chance: 0.6 }] },

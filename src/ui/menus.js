@@ -100,6 +100,11 @@ export function setupUI(game) {
         // Reset filtering if opening craft-modal from the bottom menu
         if (targetId === 'craft-modal') {
           activeRecipeFilter = 'all';
+          const tabs = document.querySelectorAll('.craft-tab-btn');
+          tabs.forEach(tab => {
+            if (tab.getAttribute('data-filter') === 'all') tab.classList.add('active');
+            else tab.classList.remove('active');
+          });
           setupCraftingButtons(game);
         }
 
@@ -151,6 +156,8 @@ export function setupUI(game) {
       }
     });
   }
+
+  // 3. Contratação de Heróis
   const hireButtons = document.querySelectorAll('.hire-btn');
   hireButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -159,26 +166,37 @@ export function setupUI(game) {
       if (!res.success) {
         alert(res.reason);
       } else {
-        alert(`HerÃ³i ${res.hero.name} contratado com sucesso!`);
+        alert(`Herói ${res.hero.name} contratado com sucesso!`);
       }
     });
   });
 
-  // 4. VinculaÃ§Ã£o dos EdifÃ­cios e Craftings (Upgrades e ProduÃ§Ãµes)
+  // 4. Vinculação dos Edifícios e Craftings (Upgrades e Produções)
   setupBuildingUpgrades(game);
   setupCraftingButtons(game);
 
-  // 5. BotÃ£o Reset de Jogo
+  // Vinculação das abas de Crafting
+  const craftTabButtons = document.querySelectorAll('.craft-tab-btn');
+  craftTabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      craftTabButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeRecipeFilter = btn.getAttribute('data-filter');
+      setupCraftingButtons(game);
+    });
+  });
+
+  // 5. Botão Reset de Jogo
   const resetBtn = document.getElementById('reset-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (confirm('Tem certeza de que deseja resetar TODAS as suas construÃ§Ãµes e herÃ³is? O progresso serÃ¡ perdido.')) {
+      if (confirm('Tem certeza de que deseja resetar TODAS as suas construções e heróis? O progresso será perdido.')) {
         game.resetGame();
       }
     });
   }
 
-  // 6. Configurar as ImportaÃ§Ãµes RÃ¡pidas (Prefeitura)
+  // 6. Configurar as Importações Rápidas (Prefeitura)
   const importButtons = document.querySelectorAll('.import-btn');
   importButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -193,7 +211,7 @@ export function setupUI(game) {
     });
   });
 
-  // 7. Modal de Perfil Detalhado do CaÃ§ador
+  // 7. Modal de Perfil Detalhado do Caçador
   const profileModal = document.getElementById('hero-profile-modal');
   if (profileModal) {
     const closeProfileBtn = document.getElementById('close-profile-btn');
@@ -210,7 +228,7 @@ export function setupUI(game) {
       }
     });
 
-    // Abas de NavegaÃ§Ã£o internas do Perfil
+    // Abas de Navegação internas do Perfil
     const tabBtns = profileModal.querySelectorAll('.profile-tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -266,22 +284,116 @@ export function setupUI(game) {
     });
   }
 
-  // 8. Cliques no Canvas para InteraÃ§Ã£o (Evil Hunter Tycoon style)
+  // 8. Cliques e Movimentação no Canvas (Evil Hunter Tycoon style)
   const canvas = document.getElementById('game-canvas');
   if (canvas) {
-    canvas.addEventListener('mousemove', (e) => {
-      if (!window.gameRenderer || !pendingBuildingPlacement) return;
+    let isMouseDown = false;
+    let startX = 0;
+    let startY = 0;
+    let startCamX = 0;
+    let startCamY = 0;
 
+    canvas.addEventListener('mousedown', (e) => {
+      if (!window.gameRenderer) return;
+      isMouseDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startCamX = window.gameRenderer.cameraX;
+      startCamY = window.gameRenderer.cameraY;
+      window.gameRenderer.isDragging = true;
+      window.gameRenderer.hasDragged = false;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!window.gameRenderer) return;
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-      window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      if (isMouseDown) {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          window.gameRenderer.hasDragged = true;
+        }
+        window.gameRenderer.cameraX = Math.max(-300, Math.min(300, startCamX - dx * scaleX));
+        window.gameRenderer.cameraY = Math.max(-200, Math.min(200, startCamY - dy * scaleY));
+      }
+
+      if (pendingBuildingPlacement) {
+        const x = (e.clientX - rect.left) * scaleX + window.gameRenderer.cameraX;
+        const y = (e.clientY - rect.top) * scaleY + window.gameRenderer.cameraY;
+        window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isMouseDown = false;
+      if (window.gameRenderer) {
+        window.gameRenderer.isDragging = false;
+      }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      isMouseDown = false;
+      if (window.gameRenderer) {
+        window.gameRenderer.isDragging = false;
+      }
+    });
+
+    // Suporte para Toques no Celular (Touch Events)
+    canvas.addEventListener('touchstart', (e) => {
+      if (!window.gameRenderer || e.touches.length === 0) return;
+      isMouseDown = true;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startCamX = window.gameRenderer.cameraX;
+      startCamY = window.gameRenderer.cameraY;
+      window.gameRenderer.isDragging = true;
+      window.gameRenderer.hasDragged = false;
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (!window.gameRenderer || e.touches.length === 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      if (isMouseDown) {
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          window.gameRenderer.hasDragged = true;
+        }
+        window.gameRenderer.cameraX = Math.max(-300, Math.min(300, startCamX - dx * scaleX));
+        window.gameRenderer.cameraY = Math.max(-200, Math.min(200, startCamY - dy * scaleY));
+      }
+
+      if (pendingBuildingPlacement) {
+        const x = (e.touches[0].clientX - rect.left) * scaleX + window.gameRenderer.cameraX;
+        const y = (e.touches[0].clientY - rect.top) * scaleY + window.gameRenderer.cameraY;
+        window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
+      }
+    });
+
+    canvas.addEventListener('touchend', () => {
+      isMouseDown = false;
+      if (window.gameRenderer) {
+        window.gameRenderer.isDragging = false;
+      }
     });
 
     canvas.addEventListener('click', (e) => {
+      if (window.gameRenderer && window.gameRenderer.hasDragged) {
+        window.gameRenderer.hasDragged = false;
+        return;
+      }
+
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX + (window.gameRenderer ? window.gameRenderer.cameraX : 0);
+      const y = (e.clientY - rect.top) * scaleY + (window.gameRenderer ? window.gameRenderer.cameraY : 0);
 
       const activeView = window.gameRenderer ? window.gameRenderer.activeView : 'town';
 
@@ -304,7 +416,7 @@ export function setupUI(game) {
         return;
       }
       
-      // 1. Clicar em um caÃ§ador visÃ­vel
+      // 1. Clicar em um caçador visível
       let clickedHero = null;
       for (const h of game.heroes) {
         if (h.currentMap === activeView) {
@@ -342,9 +454,10 @@ export function setupUI(game) {
           return;
         }
       }
+
       // 3. Clicar no Portal da Masmorra (Apenas em Hunt View)
       if (activeView === 'hunt') {
-        const portalX = 480; // Nova coordenada do portal no centro-topo da caÃ§ada
+        const portalX = 480;
         const portalY = 100;
         const dist = Math.sqrt((x - portalX) * (x - portalX) + (y - (portalY - 20)) * (y - (portalY - 20)));
         if (dist < 40) {
@@ -455,6 +568,11 @@ function openBuildingFunctions(buildingKey, game, menuButtons) {
   // Filter crafting if opening craft-modal
   if (modalId === 'craft-modal') {
     activeRecipeFilter = buildingKey;
+    const tabs = document.querySelectorAll('.craft-tab-btn');
+    tabs.forEach(tab => {
+      if (tab.getAttribute('data-filter') === buildingKey) tab.classList.add('active');
+      else tab.classList.remove('active');
+    });
     setupCraftingButtons(game);
   } else {
     activeRecipeFilter = 'all';
