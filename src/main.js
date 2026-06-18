@@ -2,16 +2,42 @@ import { Game } from './core/game.js';
 import { GameRenderer } from './ui/renderer.js';
 import { setupUI, updateUI } from './ui/menus.js';
 
-window.addEventListener('DOMContentLoaded', () => {
-  // 1. Inicializar as instâncias principais
+let booted = false;
+
+function bootGame() {
+  if (booted) return;
+  booted = true;
+
   const game = new Game();
   const renderer = new GameRenderer('game-canvas');
+  window.game = game;
   window.gameRenderer = renderer;
 
-  // 2. Configurar os cliques e eventos da UI
+  function resizeCanvasToContainer() {
+    const canvas = renderer.canvas;
+    const container = canvas.parentElement;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const nextWidth = Math.max(360, Math.floor(rect.width * dpr));
+    const nextHeight = Math.max(360, Math.floor(rect.height * dpr));
+
+    if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+      canvas.width = nextWidth;
+      canvas.height = nextHeight;
+      renderer.ctx.imageSmoothingEnabled = false;
+    }
+  }
+
+  resizeCanvasToContainer();
+  window.addEventListener('resize', resizeCanvasToContainer);
+  if ('ResizeObserver' in window && renderer.canvas.parentElement) {
+    new ResizeObserver(resizeCanvasToContainer).observe(renderer.canvas.parentElement);
+  }
+
   setupUI(game);
 
-  // 3. Controles adicionais da UI de Velocidade do Jogo
   const speedButtons = {
     'speed-1x': 1.0,
     'speed-2x': 2.0,
@@ -20,51 +46,38 @@ window.addEventListener('DOMContentLoaded', () => {
 
   for (const btnId in speedButtons) {
     const btn = document.getElementById(btnId);
-    if (btn) {
-      btn.addEventListener('click', () => {
-        // Remover classe ativa dos outros
-        Object.keys(speedButtons).forEach(id => {
-          document.getElementById(id)?.classList.remove('active');
-        });
-        
-        // Adicionar ativo a este
-        btn.classList.add('active');
-        
-        // Definir velocidade no game
-        game.speed = speedButtons[btnId];
-        game.addFloater({ x: 400, y: 30, text: `Velocidade: ${game.speed}x`, color: '#ffea3a', time: 0.7 });
+    if (!btn) continue;
+
+    btn.addEventListener('click', () => {
+      Object.keys(speedButtons).forEach(id => {
+        document.getElementById(id)?.classList.remove('active');
       });
-    }
+
+      btn.classList.add('active');
+      game.speed = speedButtons[btnId];
+      game.addFloater({ x: 400, y: 30, text: `Velocidade: ${game.speed}x`, color: '#ffea3a', time: 0.7 });
+    });
   }
 
-  // 4. Configurar Loops de Game, Renderização e Salvamento Automático
   let lastTime = performance.now();
   let uiUpdateTimer = 0;
   let autoSaveTimer = 0;
 
   function gameLoop(currentTime) {
-    // Calcular delta time em segundos
     let dt = (currentTime - lastTime) / 1000;
-    
-    // Evitar saltos gigantescos se o jogador alternar abas
     if (dt > 1.5) dt = 1.5;
-    
     lastTime = currentTime;
 
-    // Atualizar lógica do Jogo
-    game.update(dt);
-
-    // Renderizar Canvas 2D
+    resizeCanvasToContainer();
+    game.update(dt, { width: renderer.canvas.width, height: renderer.canvas.height });
     renderer.render(game, dt);
 
-    // Atualizar UI de Texto (DOM) a cada 0.15 segundos para performance suave
     uiUpdateTimer += dt;
     if (uiUpdateTimer >= 0.15) {
       updateUI(game);
       uiUpdateTimer = 0;
     }
 
-    // Auto-salvamento a cada 6 segundos
     autoSaveTimer += dt;
     if (autoSaveTimer >= 6.0) {
       game.saveGame();
@@ -74,6 +87,11 @@ window.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(gameLoop);
   }
 
-  // Iniciar Loop
   requestAnimationFrame(gameLoop);
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', bootGame, { once: true });
+} else {
+  bootGame();
+}

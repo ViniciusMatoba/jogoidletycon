@@ -1,4 +1,13 @@
 import { HERO_CLASSES, ITEMS_INFO, CRAFT_RECIPES } from '../data/constants.js';
+import {
+  getBuildingTownPoint,
+  getHuntEntryPoint,
+  getHuntExitPoint,
+  getRandomHuntPoint,
+  getRandomTownPoint,
+  getTownExitPoint,
+  isPointInsideTown
+} from './navigation.js';
 
 const HERO_NAMES = [
   'Alistair', 'Boran', 'Cedric', 'Dalia', 'Elysia', 
@@ -23,7 +32,7 @@ export class Hero {
     this.className = className;
     this.classConfig = HERO_CLASSES[className];
 
-    // Características Cosméticas Físicas Aleatórias (Wow factor e individualidade)
+    // CaracterÃ­sticas CosmÃ©ticas FÃ­sicas AleatÃ³rias (Wow factor e individualidade)
     const hairColors = ['#f5d061', '#e65c40', '#7d4d33', '#2b2b2b', '#e0e0e0'];
     const skinColors = ['#ffd1a9', '#e0a97a', '#8c5835'];
     const hairStyles = ['short', 'long', 'spiky', 'bald'];
@@ -36,11 +45,11 @@ export class Hero {
       clothesColor: clothesColors[Math.floor(Math.random() * clothesColors.length)]
     };
 
-    // Status de Progressão
+    // Status de ProgressÃ£o
     this.level = 1;
     this.xp = 0;
     this.xpNeeded = 100;
-    this.gold = 50; // Começam com algum ouro para gastar na cidade
+    this.gold = 50; // ComeÃ§am com algum ouro para gastar na cidade
 
     // Status de Combate (Base + Equipamentos)
     this.equipment = {
@@ -63,7 +72,7 @@ export class Hero {
 
     this.recalculateStats();
 
-    // Vida atual começa cheia
+    // Vida atual comeÃ§a cheia
     this.hp = this.maxHp;
 
     // Necessidades (0 a 100)
@@ -71,12 +80,13 @@ export class Hero {
     this.energy = 80 + Math.random() * 20; // Energia
     this.mood = 80 + Math.random() * 20;   // Humor
 
-    // Inventário de Loot Coletado
+    // InventÃ¡rio de Loot Coletado
     this.inventory = {};
 
-    // Posição no canvas
+    // PosiÃ§Ã£o no canvas
     this.currentMap = 'town';
     this.tempTargetBuilding = null;
+    this.destinationBuilding = null;
     this.x = 200 + Math.random() * 500;
     this.y = 150 + Math.random() * 250;
     this.targetX = this.x;
@@ -88,17 +98,17 @@ export class Hero {
     this.state = 'IDLE_TOWN';
     this.targetMonster = null;
     this.cooldownTimer = 0;
-    this.stateTimer = 0; // Para contar tempo em ações fixas
+    this.stateTimer = 0; // Para contar tempo em aÃ§Ãµes fixas
     
-    // Histórico de logs de atividades do herói
-    this.logs = [`Chegou à cidade.`];
+    // HistÃ³rico de logs de atividades do herÃ³i
+    this.logs = [`Chegou Ã  cidade.`];
   }
 
   // Recalcula os status somando a classe e equipamentos
   recalculateStats() {
     const classBase = HERO_CLASSES[this.className];
     
-    // Crescimento de status por nível (ex: +10% por nível)
+    // Crescimento de status por nÃ­vel (ex: +10% por nÃ­vel)
     const levelMult = 1 + (this.level - 1) * 0.12;
 
     this.maxHp = Math.round(classBase.baseHp * levelMult);
@@ -106,7 +116,7 @@ export class Hero {
     this.def = Math.round(classBase.baseDef * levelMult);
     this.spd = classBase.baseSpd; // Ataques por segundo
 
-    // Somar bônus de todos os equipamentos equipados
+    // Somar bÃ´nus de todos os equipamentos equipados
     for (const slot in this.equipment) {
       const item = this.equipment[slot];
       if (item && item.stats) {
@@ -118,11 +128,11 @@ export class Hero {
   }
 
   addLog(msg) {
-    this.logs.unshift(msg); // Adiciona no início
-    if (this.logs.length > 5) this.logs.pop(); // Mantém os 5 mais recentes
+    this.logs.unshift(msg); // Adiciona no inÃ­cio
+    if (this.logs.length > 5) this.logs.pop(); // MantÃ©m os 5 mais recentes
   }
 
-  // Verifica se o inventário tem itens para vender
+  // Verifica se o inventÃ¡rio tem itens para vender
   hasLootToSell() {
     let count = 0;
     for (const key in this.inventory) {
@@ -140,17 +150,17 @@ export class Hero {
       this.level++;
       this.xpNeeded = Math.round(this.level * 120);
       this.recalculateStats();
-      this.hp = this.maxHp; // Cura ao subir de nível
-      this.addLog(`Subiu para o Nível ${this.level}!`);
+      this.hp = this.maxHp; // Cura ao subir de nÃ­vel
+      this.addLog(`Subiu para o NÃ­vel ${this.level}!`);
     }
   }
 
-  // Dá um item para o inventário do herói
+  // DÃ¡ um item para o inventÃ¡rio do herÃ³i
   lootItem(itemKey, qty = 1) {
     this.inventory[itemKey] = (this.inventory[itemKey] || 0) + qty;
   }
 
-  // Movimentação simples em direção ao alvo
+  // MovimentaÃ§Ã£o simples em direÃ§Ã£o ao alvo
   moveTowardsTarget(dt) {
     const dx = this.targetX - this.x;
     const dy = this.targetY - this.y;
@@ -167,29 +177,42 @@ export class Hero {
     return false; // Ainda andando
   }
 
-  // Escolhe novas coordenadas de alvo dentro do mapa de caça (tela cheia)
-  wanderForest() {
-    this.targetX = 100 + Math.random() * 760;
-    this.targetY = 100 + Math.random() * 340;
+  // Escolhe novas coordenadas de alvo dentro do mapa de caÃ§a (tela cheia)
+  wanderForest(viewport = {}) {
+    const point = getRandomHuntPoint(viewport.width, viewport.height);
+    this.targetX = point.x;
+    this.targetY = point.y;
   }
 
   // Escolhe novas coordenadas de alvo dentro da cidade (tela cheia)
-  wanderTown() {
-    this.targetX = 100 + Math.random() * 760;
-    this.targetY = 120 + Math.random() * 320;
+  wanderTown(town, viewport = {}) {
+    if (!town) return;
+    const point = getRandomTownPoint(town, viewport.width, viewport.height);
+    this.targetX = point.x;
+    this.targetY = point.y;
   }
 
-  // Define um prédio como alvo físico
-  targetBuilding(buildingType) {
-    const pos = BUILDING_POSITIONS[buildingType] || { x: 480, y: 270 };
-    // Pequena variação para heróis não ficarem sobrepostos
-    this.targetX = pos.x + (Math.random() * 20 - 10);
-    this.targetY = pos.y + (Math.random() * 20 - 10);
+  // Define um prÃ©dio como alvo fÃ­sico
+  targetBuilding(buildingType, town, viewport = {}) {
+    if (!town) return;
+    this.destinationBuilding = buildingType;
+    const pos = getBuildingTownPoint(town, buildingType, viewport.width, viewport.height) ||
+      getRandomTownPoint(town, viewport.width, viewport.height);
+    // Pequena variaÃ§Ã£o para herÃ³is nÃ£o ficarem sobrepostos
+    this.targetX = pos.x + (Math.random() * 12 - 6);
+    this.targetY = pos.y + (Math.random() * 8 - 4);
   }
 
-  // Ciclo principal de atualização da IA do Herói
-  update(dt, town, monsters, addFloater) {
+  // Ciclo principal de atualizaÃ§Ã£o da IA do HerÃ³i
+  update(dt, town, monsters, addFloater, viewport = {}) {
     this.cooldownTimer = Math.max(0, this.cooldownTimer - dt);
+
+    if (this.currentMap === 'town' && town && !isPointInsideTown(town, this.x, this.y, viewport.width, viewport.height)) {
+      const point = getRandomTownPoint(town, viewport.width, viewport.height);
+      this.x = point.x;
+      this.y = point.y;
+      this.wanderTown(town, viewport);
+    }
 
     // Necessidades decaem de forma lenta
     const decayRate = this.state === 'FIGHTING' || this.state === 'SEARCHING_MONSTER' ? 0.6 : 0.15;
@@ -200,46 +223,50 @@ export class Hero {
     // 1. Executa de acordo com o estado
     switch (this.state) {
       case 'IDLE_TOWN':
-        if (this.moveTowardsTarget(dt)) {
-          this.stateTimer += dt;
-          if (this.stateTimer > 2) {
-            this.stateTimer = 0;
-            // Avaliar necessidades antes de ir caçar
-            if (this.evaluateNeeds(town)) {
-              return;
-            }
-            // Ir caçar: Primeiro anda até o portão de saída no mapa da cidade
-            this.state = 'LEAVING_TOWN';
-            this.targetX = 480;
-            this.targetY = 510;
-            this.addLog(`Indo para o portão de caça.`);
-          } else {
-            this.wanderTown();
+        this.moveTowardsTarget(dt);
+        this.stateTimer += dt;
+        if (this.stateTimer > 2) {
+          this.stateTimer = 0;
+          // Avaliar necessidades antes de ir ca?ar
+          if (this.evaluateNeeds(town, viewport)) {
+            return;
           }
+          // Ir ca?ar: primeiro anda at? o port?o de sa?da no mapa da cidade.
+          this.state = 'LEAVING_TOWN';
+          const exitPoint = getTownExitPoint(town, viewport.width, viewport.height);
+          this.targetX = exitPoint.x;
+          this.targetY = exitPoint.y;
+          this.addLog(`Indo para o port?o de ca?a.`);
         }
         break;
 
       case 'LEAVING_TOWN':
+        {
+          const exitPoint = getTownExitPoint(town, viewport.width, viewport.height);
+          this.targetX = exitPoint.x;
+          this.targetY = exitPoint.y;
+        }
         if (this.moveTowardsTarget(dt)) {
-          // Chegou no portão da cidade. Teleporta para o portão do mapa de caça!
-          this.x = 480;
-          this.y = 480;
+          // Chegou no port?o da cidade. Teleporta para o port?o do mapa de ca?a.
+          const huntEntry = getHuntEntryPoint(viewport.width, viewport.height);
+          this.x = huntEntry.x;
+          this.y = huntEntry.y;
           this.currentMap = 'hunt';
           this.state = 'SEARCHING_MONSTER';
-          this.wanderForest();
-          this.addLog(`Entrou no campo de caça.`);
+          this.wanderForest(viewport);
+          this.addLog(`Entrou no campo de ca?a.`);
         }
         break;
 
       case 'SEARCHING_MONSTER':
         if (monsters.length === 0) {
           if (this.moveTowardsTarget(dt)) {
-            this.wanderForest();
+            this.wanderForest(viewport);
           }
           return;
         }
 
-        // Achar o monstro mais próximo
+        // Achar o monstro mais prÃ³ximo
         let closest = null;
         let minDist = Infinity;
         for (const monster of monsters) {
@@ -266,7 +293,7 @@ export class Hero {
           }
         } else {
           if (this.moveTowardsTarget(dt)) {
-            this.wanderForest();
+            this.wanderForest(viewport);
           }
         }
         break;
@@ -274,29 +301,30 @@ export class Hero {
       case 'FIGHTING':
         if (!this.targetMonster || this.targetMonster.hp <= 0) {
           this.targetMonster = null;
-          if (this.evaluateNeeds(town)) return;
+          if (this.evaluateNeeds(town, viewport)) return;
           this.state = 'SEARCHING_MONSTER';
-          this.wanderForest();
+          this.wanderForest(viewport);
           return;
         }
 
         if (this.cooldownTimer <= 0) {
-          this.attackMonster(this.targetMonster, addFloater);
+          this.attackMonster(this.targetMonster, addFloater, town);
           this.cooldownTimer = 1 / this.spd;
         }
 
-        // Se o herói morrer, ele foge
+        // Se o herÃ³i morrer, ele foge
         if (this.hp <= 0) {
           this.hp = 1;
           this.addLog(`Ficou inconsciente! Fugindo...`);
           if (this.currentMap === 'hunt') {
             this.tempTargetBuilding = 'hospital';
-            this.targetX = 480;
-            this.targetY = 510; // Ir para a saída
+            const huntExit = getHuntExitPoint(viewport.width, viewport.height);
+            this.targetX = huntExit.x;
+            this.targetY = huntExit.y; // Ir para a saÃ­da
             this.state = 'RETURNING_TOWN';
           } else {
             this.state = 'RETURNING_TOWN';
-            this.targetBuilding('hospital');
+            this.targetBuilding('hospital', town, viewport);
           }
         }
         break;
@@ -304,16 +332,17 @@ export class Hero {
       case 'RETURNING_TOWN':
         if (this.moveTowardsTarget(dt)) {
           if (this.currentMap === 'hunt') {
-            // Chegou no portão de saída do campo de caça. Teleporta para o portão de entrada da cidade!
-            this.x = 480;
-            this.y = 480;
+            // Chegou no portÃ£o de saÃ­da do campo de caÃ§a. Teleporta para o portÃ£o de entrada da cidade!
+            const townEntry = getTownExitPoint(town, viewport.width, viewport.height);
+            this.x = townEntry.x;
+            this.y = townEntry.y;
             this.currentMap = 'town';
-            this.targetBuilding(this.tempTargetBuilding);
+            this.targetBuilding(this.tempTargetBuilding, town, viewport);
             this.tempTargetBuilding = null;
             this.addLog(`Voltou para a cidade.`);
           } else {
-            // Chegou no prédio em town
-            this.enterBuilding(town);
+            // Chegou no prÃ©dio em town
+            this.enterBuilding(town, viewport);
           }
         }
         break;
@@ -326,21 +355,21 @@ export class Hero {
           
           this.stateTimer += dt;
           if (this.stateTimer >= 2.5 || this.hp >= this.maxHp) {
-            // Pagamento e finalização
+            // Pagamento e finalizaÃ§Ã£o
             town.resources.bandage_basic--;
             town.gold += 8;
             this.gold -= 8;
             this.hp = this.maxHp;
-            this.addLog(`Tratamento concluído.`);
+            this.addLog(`Tratamento concluÃ­do.`);
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         } else {
           // Sem recursos no hospital, cura passiva lenta
           this.hp = Math.min(this.maxHp, this.hp + 2 * dt);
           if (this.hp >= this.maxHp) {
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         }
         break;
@@ -356,16 +385,16 @@ export class Hero {
             town.gold += 8;
             this.gold -= 8;
             this.hunger = 100;
-            this.addLog(`Almoçou ensopado.`);
+            this.addLog(`AlmoÃ§ou ensopado.`);
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         } else {
-          // Sem comida, herói fica irritado mas volta a agir
+          // Sem comida, herÃ³i fica irritado mas volta a agir
           this.hunger = Math.min(100, this.hunger + 1.5 * dt);
           if (this.hunger >= 50) {
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         }
         break;
@@ -384,14 +413,14 @@ export class Hero {
             this.energy = 100;
             this.addLog(`Dormiu no hotel.`);
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         } else {
-          // Sem hotel construído ou sem ouro, cochila na rua de forma muito ineficiente
+          // Sem hotel construÃ­do ou sem ouro, cochila na rua de forma muito ineficiente
           this.energy = Math.min(100, this.energy + 2 * dt);
           if (this.energy >= 40) {
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         }
         break;
@@ -411,19 +440,24 @@ export class Hero {
             this.mood = 100;
             this.addLog(`Bebeu na taverna.`);
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         } else {
-          // Sem cerveja, recupera humor lentamente andando na praça
+          // Sem cerveja, recupera humor lentamente andando na praÃ§a
           this.mood = Math.min(100, this.mood + 2 * dt);
           if (this.mood >= 45) {
             this.state = 'IDLE_TOWN';
-            this.wanderTown();
+            this.wanderTown(town, viewport);
           }
         }
         break;
 
       case 'SELLING_LOOT':
+        if (!town.autoBuyHeroLoot) {
+          this.state = 'IDLE_TOWN';
+          this.wanderTown(town, viewport);
+          break;
+        }
         this.stateTimer += dt;
         if (this.stateTimer >= 1.5) {
           const result = town.buyLootFromHero(this);
@@ -435,41 +469,41 @@ export class Hero {
             this.addLog(`Prefeitura sem ouro para comprar meus itens.`);
           }
           this.state = 'IDLE_TOWN';
-          this.wanderTown();
+          this.wanderTown(town, viewport);
         }
         break;
     }
   }
 
-  // Avalia as necessidades do herói e define o estado apropriado
-  evaluateNeeds(town) {
+  // Avalia as necessidades do herÃ³i e define o estado apropriado
+  evaluateNeeds(town, viewport = {}) {
     let target = null;
     let logMsg = "";
 
     // 1. Hospital (Vida)
-    if (this.hp < this.maxHp * 0.35 && this.gold >= 8) {
+    if (this.hp < this.maxHp * 0.35 && this.gold >= 8 && town.isBuilt('hospital')) {
       target = 'hospital';
       logMsg = `Indo ao Hospital para curar HP.`;
     }
     // 2. Restaurante (Fome)
-    else if (this.hunger < 25 && this.gold >= 8) {
+    else if (this.hunger < 25 && this.gold >= 8 && town.isBuilt('restaurant')) {
       target = 'restaurant';
       logMsg = `Fome extrema. Indo ao restaurante.`;
     }
     // 3. Hotel (Energia)
-    else if (this.energy < 20 && this.gold >= 6) {
+    else if (this.energy < 20 && this.gold >= 6 && town.isBuilt('hotel')) {
       target = 'hotel';
       logMsg = `Exausto. Indo dormir no hotel.`;
     }
     // 4. Taverna (Humor)
-    else if (this.mood < 20 && this.gold >= 8) {
+    else if (this.mood < 20 && this.gold >= 8 && town.isBuilt('tavern')) {
       target = 'tavern';
-      logMsg = `Mau humor. Indo à Taverna beber.`;
+      logMsg = `Mau humor. Indo Ã  Taverna beber.`;
     }
     // 5. Prefeitura (Vender Loot)
-    else if (this.hasLootToSell()) {
+    else if (town.autoBuyHeroLoot && this.hasLootToSell() && town.isBuilt('townhall')) {
       target = 'townhall';
-      logMsg = `Inventário cheio. Indo vender loot.`;
+      logMsg = `InventÃ¡rio cheio. Indo vender loot.`;
     }
 
     if (target) {
@@ -478,10 +512,11 @@ export class Hero {
       this.stateTimer = 0;
       if (this.currentMap === 'hunt') {
         this.tempTargetBuilding = target;
-        this.targetX = 480;
-        this.targetY = 510;
+        const huntExit = getHuntExitPoint(viewport.width, viewport.height);
+        this.targetX = huntExit.x;
+        this.targetY = huntExit.y;
       } else {
-        this.targetBuilding(target);
+        this.targetBuilding(target, town, viewport);
       }
       return true;
     }
@@ -489,22 +524,28 @@ export class Hero {
     return false;
   }
 
-  // Entra no edifício correspondente quando chega perto
-  enterBuilding(town) {
-    let closestBuilding = null;
-    let minDist = Infinity;
-    for (const key in BUILDING_POSITIONS) {
-      const pos = BUILDING_POSITIONS[key];
-      const dx = this.x - pos.x;
-      const dy = this.y - pos.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < minDist) {
-        minDist = dist;
-        closestBuilding = key;
+  // Entra no edifÃ­cio correspondente quando chega perto
+  enterBuilding(town, viewport = {}) {
+    let closestBuilding = this.destinationBuilding;
+    let minDist = closestBuilding && town.isBuilt(closestBuilding) ? 0 : Infinity;
+
+    if (!closestBuilding || !town.isBuilt(closestBuilding)) {
+      closestBuilding = null;
+      for (const placed of town.getPlacedBuildings()) {
+        const pos = getBuildingTownPoint(town, placed.key, viewport.width, viewport.height);
+        if (!pos) continue;
+        const dx = this.x - pos.x;
+        const dy = this.y - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist) {
+          minDist = dist;
+          closestBuilding = placed.key;
+        }
       }
     }
 
     if (minDist < 40) {
+      this.destinationBuilding = null;
       if (closestBuilding === 'townhall') {
         this.state = 'SELLING_LOOT';
         this.stateTimer = 0;
@@ -522,19 +563,19 @@ export class Hero {
         this.stateTimer = 0;
       } else {
         this.state = 'IDLE_TOWN';
-        this.wanderTown();
+        this.wanderTown(town, viewport);
       }
-    } else {
+} else {
       this.state = 'IDLE_TOWN';
-      this.wanderTown();
+      this.wanderTown(town, viewport);
     }
   }
 
   // Executa o ataque ao monstro
-  attackMonster(monster, addFloater) {
+  attackMonster(monster, addFloater, town) {
     // Calcular dano com base na defesa do monstro
     const netDamage = Math.max(1, this.atk - monster.def);
-    monster.takeDamage(netDamage, this, addFloater);
+    monster.takeDamage(netDamage, this, addFloater, town);
     
     // Mostrar flutuante de dano no Canvas
     addFloater({
@@ -547,7 +588,7 @@ export class Hero {
     });
 
     // Se o monstro revidar (Simulado para simplificar e dar dano ao herói)
-    // O monstro revida com 40% do dano base dele
+    // O monstro revida com 45% do dano base dele
     if (monster.hp > 0) {
       const monsterDmg = Math.max(1, Math.round(monster.atk * 0.45) - this.def);
       this.hp = Math.max(0, this.hp - monsterDmg);
@@ -569,18 +610,18 @@ export class Hero {
 
     const forgeTier = town.buildings.forge;
 
-    // Para cada slot de equipamento, vamos encontrar a melhor receita disponível
+    // Para cada slot de equipamento, vamos encontrar a melhor receita disponÃ­vel
     const bestRecipesBySlot = {};
 
     for (const recipeKey in CRAFT_RECIPES) {
       const recipe = CRAFT_RECIPES[recipeKey];
       
-      // Filtra por equipamento, classe do herói e tier permitido pela Forja
+      // Filtra por equipamento, classe do herÃ³i e tier permitido pela Forja
       if (recipe.stats && recipe.class.includes(this.className) && recipe.tier <= forgeTier) {
         const slot = recipe.slot;
         if (slot in this.equipment) {
           const currentItem = this.equipment[slot];
-          // Se o herói não tiver o item ou a receita for de maior tier
+          // Se o herÃ³i nÃ£o tiver o item ou a receita for de maior tier
           if (!currentItem || recipe.tier > currentItem.tier) {
             if (this.gold >= recipe.cost.gold && this.canTownAffordRecipe(town, recipe)) {
               const bestForSlot = bestRecipesBySlot[slot];
@@ -597,7 +638,7 @@ export class Hero {
     let boughtAny = false;
     for (const slot in bestRecipesBySlot) {
       const bestRecipe = bestRecipesBySlot[slot];
-      // Verifica se o herói ainda tem ouro e a cidade ainda tem materiais
+      // Verifica se o herÃ³i ainda tem ouro e a cidade ainda tem materiais
       if (this.gold >= bestRecipe.cost.gold && this.canTownAffordRecipe(town, bestRecipe)) {
         this.gold -= bestRecipe.cost.gold;
         town.gold += bestRecipe.cost.gold;
@@ -615,7 +656,7 @@ export class Hero {
 
   canTownAffordRecipe(town, recipe) {
     for (const res in recipe.cost) {
-      if (res === 'gold') continue; // Ouro é pago pelo herói
+      if (res === 'gold') continue; // Ouro Ã© pago pelo herÃ³i
       if ((town.resources[res] || 0) < recipe.cost[res]) {
         return false;
       }
@@ -630,3 +671,4 @@ export class Hero {
     }
   }
 }
+

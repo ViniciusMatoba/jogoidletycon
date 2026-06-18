@@ -1,10 +1,23 @@
-import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
+﻿import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
+
+import { getBuildingVisualStage } from './renderer.js';
 
 let activeProfileHero = null;
 let activeProfileTab = 'stats';
+let pendingBuildingPlacement = null;
+let activeBuildingKey = null;
+
+const BUILDING_ACTION_LABELS = {
+  townhall: { name: 'Centro da Cidade', icon: '🏛️', modalId: 'town-modal' },
+  hotel: { name: 'Hotel', icon: '🏨', modalId: 'town-modal' },
+  restaurant: { name: 'Restaurante', icon: '🍲', modalId: 'town-modal' },
+  hospital: { name: 'Hospital', icon: '🏥', modalId: 'town-modal' },
+  tavern: { name: 'Taverna', icon: '🍺', modalId: 'town-modal' },
+  forge: { name: 'Forja', icon: '⚒️', modalId: 'craft-modal' }
+};
 
 export function setupUI(game) {
-  // 1. Controle de Janelas Modais Retro (Menu de Rodapé)
+  // 1. Controle de Janelas Modais Retro (Menu de RodapÃ©)
   const menuButtons = document.querySelectorAll('.menu-btn-retro');
   const modalOverlays = document.querySelectorAll('.modal-overlay');
 
@@ -12,12 +25,12 @@ export function setupUI(game) {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
       
-      // Se for Cidade ou Caça, apenas mudamos a tela do canvas (e fechamos modais abertos)
+      // Se for Cidade ou CaÃ§a, apenas mudamos a tela do canvas (e fechamos modais abertos)
       if (targetId === 'town-modal') {
         if (window.gameRenderer) {
           window.gameRenderer.activeView = 'town';
         }
-        // Desativa status ativo de botões e modais de gerenciamento
+        const modal = document.getElementById('town-modal');
         menuButtons.forEach(b => {
           const t = b.getAttribute('data-target');
           if (t !== 'town-modal') b.classList.remove('active');
@@ -26,6 +39,10 @@ export function setupUI(game) {
           if (m.id !== 'town-modal') m.classList.remove('active');
         });
         btn.classList.add('active');
+        if (modal) {
+          renderBuildings(game);
+          modal.classList.add('active');
+        }
         return;
       }
       
@@ -44,13 +61,13 @@ export function setupUI(game) {
         return;
       }
 
-      // Outros modais (Heróis, Crafting, Prefeitura) abrem normalmente como overlays
+      // Outros modais (HerÃ³is, Crafting, Prefeitura) abrem normalmente como overlays
       const modal = document.getElementById(targetId);
       if (modal) {
         if (modal.classList.contains('active')) {
           modal.classList.remove('active');
           btn.classList.remove('active');
-          // Re-ativa o botão da tela de fundo ativa
+          // Re-ativa o botÃ£o da tela de fundo ativa
           const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
           menuButtons.forEach(b => {
             const t = b.getAttribute('data-target');
@@ -61,7 +78,7 @@ export function setupUI(game) {
           return;
         }
 
-        // Fecha outros overlays de gerenciamento (Heróis, Craft, Config)
+        // Fecha outros overlays de gerenciamento (HerÃ³is, Craft, Config)
         menuButtons.forEach(b => {
           const t = b.getAttribute('data-target');
           if (t !== 'town-modal' && t !== 'dungeons-modal') {
@@ -80,7 +97,7 @@ export function setupUI(game) {
     });
   });
 
-  // Configura fechamento de todos os modais (botão [X] ou cliques no overlay de fundo)
+  // Configura fechamento de todos os modais (botÃ£o [X] ou cliques no overlay de fundo)
   modalOverlays.forEach(modal => {
     const closeBtn = modal.querySelector('.close-modal-btn');
     const closeAction = () => {
@@ -90,7 +107,7 @@ export function setupUI(game) {
           btn.classList.remove('active');
         }
       });
-      // Re-ativa o botão da tela de fundo ativa
+      // Re-ativa o botÃ£o da tela de fundo ativa
       const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
       menuButtons.forEach(b => {
         const t = b.getAttribute('data-target');
@@ -111,7 +128,7 @@ export function setupUI(game) {
     });
   });
 
-  // 2. Vinculação do Bioma
+  // 2. VinculaÃ§Ã£o do Bioma
   const biomeSelect = document.getElementById('biome-select');
   if (biomeSelect) {
     biomeSelect.addEventListener('change', (e) => {
@@ -123,7 +140,7 @@ export function setupUI(game) {
     });
   }
 
-  // 3. Contratação de Heróis
+  // 3. ContrataÃ§Ã£o de HerÃ³is
   const hireButtons = document.querySelectorAll('.hire-btn');
   hireButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -132,26 +149,26 @@ export function setupUI(game) {
       if (!res.success) {
         alert(res.reason);
       } else {
-        alert(`Herói ${res.hero.name} contratado com sucesso!`);
+        alert(`HerÃ³i ${res.hero.name} contratado com sucesso!`);
       }
     });
   });
 
-  // 4. Vinculação dos Edifícios e Craftings (Upgrades e Produções)
+  // 4. VinculaÃ§Ã£o dos EdifÃ­cios e Craftings (Upgrades e ProduÃ§Ãµes)
   setupBuildingUpgrades(game);
   setupCraftingButtons(game);
 
-  // 5. Botão Reset de Jogo
+  // 5. BotÃ£o Reset de Jogo
   const resetBtn = document.getElementById('reset-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (confirm('Tem certeza de que deseja resetar TODAS as suas construções e heróis? O progresso será perdido.')) {
+      if (confirm('Tem certeza de que deseja resetar TODAS as suas construÃ§Ãµes e herÃ³is? O progresso serÃ¡ perdido.')) {
         game.resetGame();
       }
     });
   }
 
-  // 6. Configurar as Importações Rápidas (Prefeitura)
+  // 6. Configurar as ImportaÃ§Ãµes RÃ¡pidas (Prefeitura)
   const importButtons = document.querySelectorAll('.import-btn');
   importButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -166,7 +183,7 @@ export function setupUI(game) {
     });
   });
 
-  // 7. Modal de Perfil Detalhado do Caçador
+  // 7. Modal de Perfil Detalhado do CaÃ§ador
   const profileModal = document.getElementById('hero-profile-modal');
   if (profileModal) {
     const closeProfileBtn = document.getElementById('close-profile-btn');
@@ -183,7 +200,7 @@ export function setupUI(game) {
       }
     });
 
-    // Abas de Navegação internas do Perfil
+    // Abas de NavegaÃ§Ã£o internas do Perfil
     const tabBtns = profileModal.querySelectorAll('.profile-tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -197,17 +214,69 @@ export function setupUI(game) {
     });
   }
 
-  // 8. Cliques no Canvas para Interação (Evil Hunter Tycoon style)
+  const openFunctionsBtn = document.getElementById('building-open-functions-btn');
+  if (openFunctionsBtn) {
+    openFunctionsBtn.addEventListener('click', () => {
+      if (!activeBuildingKey) return;
+      openBuildingFunctions(activeBuildingKey, game, menuButtons);
+    });
+  }
+
+  const moveBuildingBtn = document.getElementById('building-move-btn');
+  if (moveBuildingBtn) {
+    moveBuildingBtn.addEventListener('click', () => {
+      if (!activeBuildingKey || !window.gameRenderer) return;
+
+      pendingBuildingPlacement = activeBuildingKey;
+      window.gameRenderer.activeView = 'town';
+      window.gameRenderer.pendingPlacement = activeBuildingKey;
+      window.gameRenderer.hoveredTile = null;
+
+      const actionsModal = document.getElementById('building-actions-modal');
+      if (actionsModal) actionsModal.classList.remove('active');
+      activeBuildingKey = null;
+    });
+  }
+
+  // 8. Cliques no Canvas para InteraÃ§Ã£o (Evil Hunter Tycoon style)
   const canvas = document.getElementById('game-canvas');
   if (canvas) {
+    canvas.addEventListener('mousemove', (e) => {
+      if (!window.gameRenderer || !pendingBuildingPlacement) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+      window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
+    });
+
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) * (canvas.width / rect.width);
       const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
       const activeView = window.gameRenderer ? window.gameRenderer.activeView : 'town';
+
+      if (activeView === 'town' && pendingBuildingPlacement && window.gameRenderer) {
+        const tile = window.gameRenderer.screenToGrid(x, y, game.town);
+        if (!tile) return;
+
+        const result = game.town.buildAt(pendingBuildingPlacement, tile.col, tile.row);
+        if (result.success) {
+          const placed = pendingBuildingPlacement;
+          pendingBuildingPlacement = null;
+          window.gameRenderer.pendingPlacement = null;
+          window.gameRenderer.hoveredTile = null;
+          game.addFloater({ x, y, text: result.moved ? 'Movido!' : 'Construido!', color: '#3aff7d' });
+          renderBuildings(game);
+          game.saveGame();
+        } else {
+          alert(result.reason || 'Nao foi possivel construir aqui.');
+        }
+        return;
+      }
       
-      // 1. Clicar em um caçador visível
+      // 1. Clicar em um caÃ§ador visÃ­vel
       let clickedHero = null;
       for (const h of game.heroes) {
         if (h.currentMap === activeView) {
@@ -224,71 +293,30 @@ export function setupUI(game) {
         return;
       }
 
-      // 2. Clicar em construções (Apenas em Town View)
-      if (activeView === 'town') {
-        const buildings = [
-          { key: 'townhall', x: 480, y: 150 },
-          { key: 'hotel', x: 260, y: 240 },
-          { key: 'restaurant', x: 700, y: 240 },
-          { key: 'hospital', x: 200, y: 400 },
-          { key: 'tavern', x: 760, y: 400 },
-          { key: 'forge', x: 480, y: 430 }
-        ];
-
+      // 2. Clicar em construcoes posicionadas na cidade
+      if (activeView === 'town' && window.gameRenderer) {
         let clickedBuilding = null;
-        for (const b of buildings) {
-          const wSize = b.key === 'townhall' ? 76 : 60;
-          const hSize = b.key === 'townhall' ? 76 : 60;
-          const rx = b.x - wSize / 2;
-          const ry = b.y - hSize + 8;
+        for (const placed of game.town.getPlacedBuildings()) {
+          const pos = window.gameRenderer.getBuildingScreenPosition(game.town, placed.key);
+          if (!pos) continue;
+          const wSize = placed.key === 'townhall' ? 86 : 66;
+          const hSize = placed.key === 'townhall' ? 86 : 66;
+          const rx = pos.x - wSize / 2;
+          const ry = pos.y - hSize + 8;
           if (x >= rx && x <= rx + wSize && y >= ry && y <= ry + hSize) {
-            clickedBuilding = b;
+            clickedBuilding = placed;
             break;
           }
         }
 
         if (clickedBuilding) {
-          if (clickedBuilding.key === 'townhall') {
-            const modal = document.getElementById('town-modal');
-            if (modal) {
-              modal.classList.add('active');
-              menuButtons.forEach(b => {
-                if (b.getAttribute('data-target') === 'town-modal') b.classList.add('active');
-                else b.classList.remove('active');
-              });
-            }
-          } else if (clickedBuilding.key === 'forge') {
-            const modal = document.getElementById('craft-modal');
-            if (modal) {
-              modal.classList.add('active');
-              menuButtons.forEach(b => {
-                if (b.getAttribute('data-target') === 'craft-modal') b.classList.add('active');
-                else b.classList.remove('active');
-              });
-            }
-          } else {
-            const modal = document.getElementById('town-modal');
-            if (modal) {
-              modal.classList.add('active');
-              menuButtons.forEach(b => {
-                if (b.getAttribute('data-target') === 'town-modal') b.classList.add('active');
-                else b.classList.remove('active');
-              });
-              setTimeout(() => {
-                const card = document.querySelector(`[data-building="${clickedBuilding.key}"]`)?.closest('.building-card');
-                if (card) {
-                  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-              }, 100);
-            }
-          }
+          openBuildingActions(clickedBuilding.key);
           return;
         }
       }
-
       // 3. Clicar no Portal da Masmorra (Apenas em Hunt View)
       if (activeView === 'hunt') {
-        const portalX = 480; // Nova coordenada do portal no centro-topo da caçada
+        const portalX = 480; // Nova coordenada do portal no centro-topo da caÃ§ada
         const portalY = 100;
         const dist = Math.sqrt((x - portalX) * (x - portalX) + (y - (portalY - 20)) * (y - (portalY - 20)));
         if (dist < 40) {
@@ -306,12 +334,68 @@ export function setupUI(game) {
   }
 }
 
-// Configura botões de upgrade de edifícios
+function openBuildingActions(buildingKey) {
+  const modal = document.getElementById('building-actions-modal');
+  if (!modal) return;
+
+  activeBuildingKey = buildingKey;
+  const meta = BUILDING_ACTION_LABELS[buildingKey] || { name: buildingKey, icon: '🏠' };
+  const config = window.game?.town?.getBuildingConfig(buildingKey);
+
+  const titleEl = document.getElementById('building-actions-title');
+  const iconEl = document.getElementById('building-actions-icon');
+  const nameEl = document.getElementById('building-actions-name');
+  const levelEl = document.getElementById('building-actions-level');
+
+  if (titleEl) titleEl.innerText = meta.name.toUpperCase();
+  if (iconEl) iconEl.innerText = meta.icon;
+  if (nameEl) nameEl.innerText = meta.name;
+  if (levelEl) {
+    const level = config?.level || 1;
+    levelEl.innerText = `Nivel ${level} - ${getBuildingVisualStage(level).name}`;
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    if (m.id !== 'building-actions-modal') m.classList.remove('active');
+  });
+  modal.classList.add('active');
+}
+
+function openBuildingFunctions(buildingKey, game, menuButtons) {
+  const meta = BUILDING_ACTION_LABELS[buildingKey] || { modalId: 'town-modal' };
+  const modalId = meta.modalId;
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  const actionsModal = document.getElementById('building-actions-modal');
+  if (actionsModal) actionsModal.classList.remove('active');
+
+  if (modalId === 'town-modal') {
+    renderBuildings(game);
+  }
+
+  modal.classList.add('active');
+  menuButtons.forEach(b => {
+    if (b.getAttribute('data-target') === modalId) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+
+  if (modalId === 'town-modal') {
+    setTimeout(() => {
+      const card = document.querySelector(`[data-building="${buildingKey}"]`)?.closest('.building-card');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+
+  activeBuildingKey = null;
+}
+
+// Configura botÃµes de upgrade de edifÃ­cios
 function setupBuildingUpgrades(game) {
   const upgradeContainer = document.getElementById('buildings-list');
   if (!upgradeContainer) return;
 
-  // Render inicial dos edifícios
+  // Render inicial dos edifÃ­cios
   renderBuildings(game);
 }
 
@@ -326,15 +410,17 @@ export function renderBuildings(game) {
     const itemEl = document.createElement('div');
     itemEl.className = 'building-card';
 
-    // Status da construção
+    // Status da construÃ§Ã£o
     const isBuilt = config.level > 0;
     const isMax = config.next === null;
+    const currentVisualStage = getBuildingVisualStage(Math.max(config.level, 1));
+    const nextVisualStage = !isMax ? getBuildingVisualStage(config.level + 1) : null;
 
     let costHtml = '';
     if (!isMax) {
       const costs = [];
       for (const res in config.next.cost) {
-        const icon = res === 'gold' ? '🪙' : ITEMS_INFO[res]?.icon || '📦';
+        const icon = res === 'gold' ? 'ðŸª™' : ITEMS_INFO[res]?.icon || 'ðŸ“¦';
         const name = res === 'gold' ? 'Ouro' : ITEMS_INFO[res]?.name || res;
         const required = config.next.cost[res];
         const owned = res === 'gold' ? game.town.gold : game.town.resources[res] || 0;
@@ -348,26 +434,38 @@ export function renderBuildings(game) {
       <div class="building-info-header">
         <span class="building-icon">${config.icon}</span>
         <div class="building-title-desc">
-          <h4>${config.name} ${isBuilt ? `(Nív. ${config.level})` : '<span class="locked-text">(Bloqueado)</span>'}</h4>
+          <h4>${config.name} ${isBuilt ? `(NÃ­v. ${config.level})` : '<span class="locked-text">(Bloqueado)</span>'}</h4>
           <p class="building-desc-text">${config.description}</p>
         </div>
       </div>
       <div class="building-perks">
-        <p class="current-perk">Efeito Atual: ${isBuilt ? (config.current?.desc || 'Edifício Funcional') : 'Inativo'}</p>
-        ${!isMax ? `<p class="next-perk">Próximo Nível: ${config.next.desc}</p>` : '<p class="max-perk">Nível Máximo Atingido!</p>'}
+        <p class="visual-perk">Visual: ${isBuilt ? currentVisualStage.name : 'Projeto inicial'}${nextVisualStage && nextVisualStage.name !== currentVisualStage.name ? ` -> ${nextVisualStage.name}` : ''}</p>
+        <p class="current-perk">Efeito Atual: ${isBuilt ? (config.current?.desc || 'EdifÃ­cio Funcional') : 'Inativo'}</p>
+        ${!isMax ? `<p class="next-perk">PrÃ³ximo NÃ­vel: ${config.next.desc}</p>` : '<p class="max-perk">NÃ­vel MÃ¡ximo Atingido!</p>'}
       </div>
       ${costHtml}
       <button class="upgrade-btn action-btn-retro ${isMax ? 'disabled' : ''}" data-building="${bKey}">
-        ${isBuilt ? (isMax ? 'Nível Máximo' : 'Melhorar') : 'Construir'}
+        ${isBuilt ? (isMax ? 'NÃ­vel MÃ¡ximo' : 'Melhorar') : 'Construir'}
       </button>
     `;
 
     const button = itemEl.querySelector('.upgrade-btn');
     if (button && !isMax) {
       button.addEventListener('click', () => {
+        if (!isBuilt) {
+          pendingBuildingPlacement = bKey;
+          if (window.gameRenderer) {
+            window.gameRenderer.activeView = 'town';
+            window.gameRenderer.pendingPlacement = bKey;
+          }
+          document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+          alert('Escolha um espaco livre no mapa para posicionar a construcao.');
+          return;
+        }
+
         const result = game.town.upgradeBuilding(bKey);
         if (result.success) {
-          game.addFloater({ x: 200, y: 150, text: `Evoluído!`, color: '#3aff7d' });
+          game.addFloater({ x: 200, y: 150, text: 'Evoluido!', color: '#3aff7d' });
           renderBuildings(game);
           game.saveGame();
         } else {
@@ -375,12 +473,11 @@ export function renderBuildings(game) {
         }
       });
     }
-
     upgradeContainer.appendChild(itemEl);
   }
 }
 
-// Configura botões de craft
+// Configura botÃµes de craft
 function setupCraftingButtons(game) {
   const craftContainer = document.getElementById('recipes-list');
   if (!craftContainer) return;
@@ -400,9 +497,9 @@ function setupCraftingButtons(game) {
     // Montar custos
     const costs = [];
     for (const res in recipe.cost) {
-      const icon = res === 'gold' ? '🪙' : ITEMS_INFO[res]?.icon || '📦';
+      const icon = res === 'gold' ? 'ðŸª™' : ITEMS_INFO[res]?.icon || 'ðŸ“¦';
       const required = recipe.cost[res];
-      const owned = res === 'gold' ? 0 : game.town.resources[res] || 0; // Ouro de equip é do herói, consumíveis usam cidade
+      const owned = res === 'gold' ? 0 : game.town.resources[res] || 0; // Ouro de equip Ã© do herÃ³i, consumÃ­veis usam cidade
       
       costs.push(`<span>${icon} ${required}</span>`);
     }
@@ -414,13 +511,13 @@ function setupCraftingButtons(game) {
                     <p class="recipe-stats">Efeitos: +${recipe.stats.atk ? `${recipe.stats.atk} Atk` : ''} ${recipe.stats.hp ? `+${recipe.stats.hp} HP` : ''} ${recipe.stats.def ? `+${recipe.stats.def} Def` : ''}</p>`;
     } else {
       const sourceBuildingName = BUILDINGS_CONFIG[recipe.building]?.name || recipe.building;
-      targetText = `<p class="recipe-target">Prédio: <strong>${sourceBuildingName}</strong></p>
+      targetText = `<p class="recipe-target">PrÃ©dio: <strong>${sourceBuildingName}</strong></p>
                     <p class="recipe-desc">${resultItem.desc || ''}</p>`;
     }
 
     card.innerHTML = `
       <div class="recipe-header">
-        <span class="recipe-icon">${resultItem.icon || '⚔️'}</span>
+        <span class="recipe-icon">${resultItem.icon || 'âš”ï¸'}</span>
         <div class="recipe-title-section">
           <h4>${resultItem.name}</h4>
           ${targetText}
@@ -430,7 +527,7 @@ function setupCraftingButtons(game) {
         Custos: ${costs.join(' | ')}
       </div>
       <button class="craft-btn action-btn-retro ${isEquip ? 'disabled' : ''}" data-recipe="${recipeKey}" ${isEquip ? 'disabled' : ''}>
-        ${isEquip ? 'Heróis Compram Auto' : 'Fabricar'}
+        ${isEquip ? 'HerÃ³is Compram Auto' : 'Fabricar'}
       </button>
     `;
 
@@ -450,26 +547,26 @@ function setupCraftingButtons(game) {
   }
 }
 
-// Atualiza dinamicamente as tabelas de recursos e heróis a cada frame/tick
+// Atualiza dinamicamente as tabelas de recursos e herÃ³is a cada frame/tick
 export function updateUI(game) {
   // 1. Atualizar Recursos Globais da Cidade na Barra Superior
   const goldEl = document.getElementById('town-gold');
   if (goldEl) goldEl.innerText = game.town.gold;
 
-  // Atualizar vagas de heróis no topo minimalista
+  // Atualizar vagas de herÃ³is no topo minimalista
   const heroesCountEl = document.getElementById('town-heroes-count');
   if (heroesCountEl) {
-    const maxHeroes = game.town.getBuildingConfig('townhall').current.maxHeroes;
+    const maxHeroes = game.town.getMaxHeroes();
     heroesCountEl.innerText = `${game.heroes.length} / ${maxHeroes}`;
   }
 
-  // Atualizar Armazém de Recursos da Prefeitura
+  // Atualizar ArmazÃ©m de Recursos da Prefeitura
   updateTownInventory(game);
 
-  // 2. Atualizar Lista de Heróis (Aba Heróis)
+  // 2. Atualizar Lista de HerÃ³is (Aba HerÃ³is)
   updateHeroesTab(game);
 
-  // 3. Atualizar Informações de Batalha (Lado Direito / Superior)
+  // 3. Atualizar InformaÃ§Ãµes de Batalha (Lado Direito / Superior)
   const biomeNameEl = document.getElementById('current-biome-name');
   if (biomeNameEl) {
     const b = game.spawner.getBiomeConfig();
@@ -491,7 +588,7 @@ export function updateUI(game) {
   const queueContainer = document.getElementById('craft-queue-list');
   if (queueContainer) {
     if (game.town.craftQueue.length === 0) {
-      queueContainer.innerHTML = '<p class="empty-queue-text">Fila de fabricação vazia.</p>';
+      queueContainer.innerHTML = '<p class="empty-queue-text">Fila de fabricaÃ§Ã£o vazia.</p>';
     } else {
       queueContainer.innerHTML = game.town.craftQueue.map(job => {
         const item = CRAFT_RECIPES[job.recipeId];
@@ -510,19 +607,19 @@ export function updateUI(game) {
     }
   }
 
-  // Atualizar Logs de Eventos de Caça
+  // Atualizar Logs de Eventos de CaÃ§a
   const logsContainer = document.getElementById('system-logs');
   if (logsContainer) {
     logsContainer.innerHTML = game.spawner.logs.slice(0, 8).map(log => `<li>${log}</li>`).join('');
   }
 
-  // Desabilitar botões de contratação se o limite for atingido
-  const maxHeroes = game.town.getBuildingConfig('townhall').current.maxHeroes;
+  // Desabilitar botÃµes de contrataÃ§Ã£o se o limite for atingido
+  const maxHeroes = game.town.getMaxHeroes();
   const countHeroes = game.heroes.length;
   const hireBtnContainer = document.getElementById('hiring-cost-display');
   if (hireBtnContainer) {
     const cost = game.getHiringCost();
-    hireBtnContainer.innerHTML = `Vagas: <strong>${countHeroes} / ${maxHeroes}</strong>. Custo do próximo herói: 🪙 <strong>${cost} Ouro</strong>`;
+    hireBtnContainer.innerHTML = `Vagas: <strong>${countHeroes} / ${maxHeroes}</strong>. Custo do prÃ³ximo herÃ³i: ðŸª™ <strong>${cost} Ouro</strong>`;
   }
 
   // Atualizar modal de perfil em tempo real se aberto
@@ -532,7 +629,7 @@ export function updateUI(game) {
   }
 }
 
-// Injeta dinamicamente os materiais e provisões no baú do modal prefeitura
+// Injeta dinamicamente os materiais e provisÃµes no baÃº do modal prefeitura
 function updateTownInventory(game) {
   const gridEl = document.getElementById('town-inventory-grid');
   if (!gridEl) return;
@@ -556,7 +653,7 @@ function updateTownInventory(game) {
   }
 }
 
-// Abre a ficha detalhada do caçador
+// Abre a ficha detalhada do caÃ§ador
 export function openHeroProfile(hero, game) {
   const modal = document.getElementById('hero-profile-modal');
   if (!modal) return;
@@ -574,28 +671,28 @@ export function openHeroProfile(hero, game) {
     }
   });
 
-  // Nome do Herói
+  // Nome do HerÃ³i
   const nameEl = document.getElementById('profile-hero-name');
   if (nameEl) nameEl.innerText = hero.name;
 
-  // Botão de Trava de Perfil (Apenas cosmético)
+  // BotÃ£o de Trava de Perfil (Apenas cosmÃ©tico)
   const lockBtn = modal.querySelector('.lock-profile-btn');
   if (lockBtn) {
     let isLocked = false;
     lockBtn.onclick = () => {
       isLocked = !isLocked;
-      lockBtn.innerText = isLocked ? '🔒' : '🔓';
+      lockBtn.innerText = isLocked ? 'ðŸ”’' : 'ðŸ”“';
     };
   }
 
   // Abrir o modal
   modal.classList.add('active');
 
-  // Atualização inicial imediata
+  // AtualizaÃ§Ã£o inicial imediata
   refreshHeroProfile(hero, game);
 }
 
-// Atualiza o modal de perfil com dados dinâmicos do caçador
+// Atualiza o modal de perfil com dados dinÃ¢micos do caÃ§ador
 function refreshHeroProfile(hero, game) {
   // Ouro Individual
   const goldEl = document.getElementById('profile-hero-gold');
@@ -610,7 +707,7 @@ function refreshHeroProfile(hero, game) {
     expText.innerText = `EXP ${Math.round(hero.xp)} / ${hero.xpNeeded}`;
   }
 
-  // Renderização dos 15 slots de equipamento
+  // RenderizaÃ§Ã£o dos 15 slots de equipamento
   const slots = [
     'helmet', 'necklace', 'armor', 'weapon', 'gloves',
     'ring', 'belt', 'boots', 'pants',
@@ -624,10 +721,10 @@ function refreshHeroProfile(hero, game) {
       if (item) {
         slotEl.classList.add('equipped');
         const starsCount = Math.min(5, item.tier + 2);
-        const starsHtml = '<span>✦</span>'.repeat(starsCount);
+        const starsHtml = '<span>âœ¦</span>'.repeat(starsCount);
 
         slotEl.innerHTML = `
-          <span class="slot-placeholder">${item.icon || '⚔️'}</span>
+          <span class="slot-placeholder">${item.icon || 'âš”ï¸'}</span>
           <div class="slot-stars">${starsHtml}</div>
         `;
         slotEl.title = `${item.name} (Grau ${item.tier})`;
@@ -635,9 +732,9 @@ function refreshHeroProfile(hero, game) {
         slotEl.classList.remove('equipped');
         
         const placeholders = {
-          helmet: '🪖', necklace: '📿', armor: '🧥', weapon: '⚔️', gloves: '🧤',
-          ring: '💍', belt: '🥋', boots: '🥾', pants: '👖',
-          accessory1: 'G', pet: '🐾', weapon_skin: '⚔️', armor_skin: '🧥', wings: '🪶', accessory2: '⬡'
+          helmet: 'ðŸª–', necklace: 'ðŸ“¿', armor: 'ðŸ§¥', weapon: 'âš”ï¸', gloves: 'ðŸ§¤',
+          ring: 'ðŸ’', belt: 'ðŸ¥‹', boots: 'ðŸ¥¾', pants: 'ðŸ‘–',
+          accessory1: 'G', pet: 'ðŸ¾', weapon_skin: 'âš”ï¸', armor_skin: 'ðŸ§¥', wings: 'ðŸª¶', accessory2: 'â¬¡'
         };
         slotEl.innerHTML = `<span class="slot-placeholder">${placeholders[slot]}</span>`;
         slotEl.title = `Slot Vazio: ${slot.toUpperCase()}`;
@@ -645,7 +742,7 @@ function refreshHeroProfile(hero, game) {
     }
   });
 
-  // Atualizar painel de conteúdo da aba selecionada
+  // Atualizar painel de conteÃºdo da aba selecionada
   const panel = document.querySelector('.profile-stats-panel');
   if (panel) {
     if (activeProfileTab === 'stats') {
@@ -670,23 +767,23 @@ function refreshHeroProfile(hero, game) {
         </div>
         <div class="profile-combat-col">
           <div class="combat-stat-line">
-            <span class="label">⚔️ ATK</span>
+            <span class="label">âš”ï¸ ATK</span>
             <span class="value">${hero.atk}</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">🛡️ DEF</span>
+            <span class="label">ðŸ›¡ï¸ DEF</span>
             <span class="value">${hero.def}</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">💥 CRIT</span>
+            <span class="label">ðŸ’¥ CRIT</span>
             <span class="value">${hero.className === 'ARCHER' ? '30%' : '8%'}</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">⚡ ATK SPD</span>
+            <span class="label">âš¡ ATK SPD</span>
             <span class="value">${hero.spd.toFixed(2)}/s</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">👤 Evasion</span>
+            <span class="label">ðŸ‘¤ Evasion</span>
             <span class="value">${hero.className === 'MERCENARY' ? '15%' : '5%'}</span>
           </div>
         </div>
@@ -709,7 +806,7 @@ function refreshHeroProfile(hero, game) {
           <div><span style="color: #a08c80;">Classe:</span> <strong style="color: ${hero.classConfig.color};">${hero.classConfig.name}</strong></div>
           <div><span style="color: #a08c80;">Pele:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.skinColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.skinColor}</div>
           <div><span style="color: #a08c80;">Cabelo:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.hairColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.hairColor} (${hero.cosmetics.hairStyle})</div>
-          <div><span style="color: #a08c80;">Túnica:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.clothesColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.clothesColor}</div>
+          <div><span style="color: #a08c80;">TÃºnica:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.clothesColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.clothesColor}</div>
           <div><span style="color: #a08c80;">Status:</span> <span style="color: #3aff7d;">${formatHeroState(hero.state)}</span></div>
         </div>
       `;
@@ -722,7 +819,7 @@ function refreshHeroProfile(hero, game) {
               <span style="font-size: 28px;">${petItem.icon}</span>
               <div>
                 <strong style="color: #ff33aa; font-size: 14px;">${petItem.name}</strong>
-                <p style="color: #a08c80; font-size: 11px;">Mascote de Caça</p>
+                <p style="color: #a08c80; font-size: 11px;">Mascote de CaÃ§a</p>
               </div>
             </div>
             <div style="margin-top: 8px; font-size: 12px; color: #3aff7d;">
@@ -741,7 +838,7 @@ function refreshHeroProfile(hero, game) {
       const invItems = [];
       for (const key in hero.inventory) {
         if (hero.inventory[key] > 0) {
-          invItems.push(`<span style="background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 2px; border: 1px solid #3d2b1f; display: inline-block; margin: 2px;">${ITEMS_INFO[key]?.icon || '📦'} ${ITEMS_INFO[key]?.name || key} x${hero.inventory[key]}</span>`);
+          invItems.push(`<span style="background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 2px; border: 1px solid #3d2b1f; display: inline-block; margin: 2px;">${ITEMS_INFO[key]?.icon || 'ðŸ“¦'} ${ITEMS_INFO[key]?.name || key} x${hero.inventory[key]}</span>`);
         }
       }
       const invHtml = invItems.length > 0 ? invItems.join(' ') : '<span style="color: #a08c80;">Mochila vazia</span>';
@@ -750,7 +847,7 @@ function refreshHeroProfile(hero, game) {
       panel.innerHTML = `
         <div style="width: 100%; display: flex; flex-direction: column; text-align: left; font-family: var(--font-retro); font-size: 12px; gap: 6px; overflow-y: auto; max-height: 120px; padding: 4px;">
           <div>
-            <strong style="color: #ff9f3a;">Inventário do Herói:</strong>
+            <strong style="color: #ff9f3a;">InventÃ¡rio do HerÃ³i:</strong>
             <div style="margin-top: 3px;">${invHtml}</div>
           </div>
           <div style="border-top: 1px solid #3d2b1f; padding-top: 4px;">
@@ -766,7 +863,7 @@ function refreshHeroProfile(hero, game) {
   drawHeroOnProfileCanvas(hero);
 }
 
-// Desenha o sprite ampliado e nítido do herói no canvas da ficha de perfil
+// Desenha o sprite ampliado e nÃ­tido do herÃ³i no canvas da ficha de perfil
 function drawHeroOnProfileCanvas(hero) {
   const canvas = document.getElementById('hero-profile-canvas');
   if (!canvas) return;
@@ -897,14 +994,14 @@ function drawHeroOnProfileCanvas(hero) {
     ctx.stroke();
   }
 
-  // Asas / Wings (Cosmético se equipado!)
+  // Asas / Wings (CosmÃ©tico se equipado!)
   if (hero.equipment.wings) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.fillRect(hx - 12, hy - 6, 7, 10);
     ctx.fillRect(hx + 5, hy - 6, 7, 10);
   }
 
-  // 4. Arma Dinâmica
+  // 4. Arma DinÃ¢mica
   const wx = hx - 6.5;
   const wy = hy + 2;
 
@@ -951,7 +1048,7 @@ function drawHeroOnProfileCanvas(hero) {
   ctx.restore();
 }
 
-// Renderiza a lista de heróis simplificada (clicar abre a ficha detalhada)
+// Renderiza a lista de herÃ³is simplificada (clicar abre a ficha detalhada)
 function updateHeroesTab(game) {
   const listEl = document.getElementById('heroes-list-container');
   if (!listEl) return;
@@ -974,17 +1071,17 @@ function updateHeroesTab(game) {
         </div>
         <div class="hero-needs-bars">
           <div class="need-bar-mini" title="Vida">
-            <span class="need-icon">❤️</span>
+            <span class="need-icon">â¤ï¸</span>
             <div class="bar"><div class="fill hp" style="width: ${hpPct}%"></div></div>
             <span class="val">${Math.round(hero.hp)}/${hero.maxHp}</span>
           </div>
           <div class="need-bar-mini" title="Fome">
-            <span class="need-icon">🍲</span>
+            <span class="need-icon">ðŸ²</span>
             <div class="bar"><div class="fill hunger" style="width: ${hungerPct}%"></div></div>
             <span class="val">${Math.round(hero.hunger)}/100</span>
           </div>
           <div class="need-bar-mini" title="Energia">
-            <span class="need-icon">⚡</span>
+            <span class="need-icon">âš¡</span>
             <div class="bar"><div class="fill energy" style="width: ${energyPct}%"></div></div>
             <span class="val">${Math.round(hero.energy)}/100</span>
           </div>
@@ -1008,13 +1105,15 @@ function formatHeroState(state) {
   const states = {
     'IDLE_TOWN': 'Vagando na Cidade',
     'SEARCHING_MONSTER': 'Buscando Monstros',
-    'FIGHTING': '⚔️ Em Combate',
+    'FIGHTING': 'âš”ï¸ Em Combate',
     'RETURNING_TOWN': 'Voltando para Cidade',
-    'RESTING_HOTEL': '💤 Dormindo (Hotel)',
-    'EATING_REST': '🍲 Comendo (Restaurante)',
-    'HEALING_HOSP': '🩹 Em Tratamento (Hospital)',
-    'DRINKING_TAVERN': '🍺 Bebendo (Taverna)',
-    'SELLING_LOOT': '🪙 Vendendo Coletas'
+    'RESTING_HOTEL': 'ðŸ’¤ Dormindo (Hotel)',
+    'EATING_REST': 'ðŸ² Comendo (Restaurante)',
+    'HEALING_HOSP': 'ðŸ©¹ Em Tratamento (Hospital)',
+    'DRINKING_TAVERN': 'ðŸº Bebendo (Taverna)',
+    'SELLING_LOOT': 'ðŸª™ Vendendo Coletas'
   };
   return states[state] || state;
 }
+
+

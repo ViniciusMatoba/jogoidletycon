@@ -1,23 +1,40 @@
-import { HERO_CLASSES, BIOMES, ITEMS_INFO } from '../data/constants.js';
+﻿import { HERO_CLASSES, BIOMES, ITEMS_INFO } from '../data/constants.js';
+
+import {
+  getTownGridMetrics,
+  gridToScreen,
+  screenToGrid
+} from '../core/navigation.js';
+
+const BUILDING_VISUAL_STAGES = [
+  { key: 'straw', name: 'Palha', wall: '#8f6b38', wallDark: '#5d4428', roof: '#d0a84f', roofDark: '#8c6428', trim: '#4a301a', foundation: '#5c4938' },
+  { key: 'wood', name: 'Madeira', wall: '#8a5632', wallDark: '#55321f', roof: '#7d3326', roofDark: '#4e2018', trim: '#2c1a12', foundation: '#6d5b48' },
+  { key: 'stone', name: 'Pedra', wall: '#747d82', wallDark: '#3e484d', roof: '#6d4633', roofDark: '#3c281e', trim: '#252b2e', foundation: '#4f5a5f' },
+  { key: 'brick', name: 'Tijolo', wall: '#9a4939', wallDark: '#5c2b24', roof: '#bd6b33', roofDark: '#743817', trim: '#2f2119', foundation: '#66706f' }
+];
+
+export function getBuildingVisualStage(level) {
+  return BUILDING_VISUAL_STAGES[Math.min(Math.max(level, 1), BUILDING_VISUAL_STAGES.length) - 1];
+}
 
 export class GameRenderer {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     if (!this.canvas) {
-      throw new Error(`Canvas com ID ${canvasId} não encontrado!`);
+      throw new Error(`Canvas com ID ${canvasId} nÃ£o encontrado!`);
     }
     this.ctx = this.canvas.getContext('2d');
 
-    // Desabilitar suavização para garantir visual de pixels nítido
+    // Desabilitar suavizaÃ§Ã£o para garantir visual de pixels nÃ­tido
     this.ctx.imageSmoothingEnabled = false;
 
     // Ciclo de dia e noite
     this.dayNightCycle = 0;
 
-    // Lista de partículas de fumaça das chaminés
+    // Lista de partÃ­culas de fumaÃ§a das chaminÃ©s
     this.smokeParticles = [];
 
-    // Lista de árvores fixas no mapa para Y-sorting
+    // Lista de Ã¡rvores fixas no mapa para Y-sorting
     this.trees = [
       { x: 530, y: 60 },
       { x: 880, y: 80 },
@@ -28,11 +45,13 @@ export class GameRenderer {
       { x: 60, y: 280 }
     ];
 
-    // Dicionário de imagens dos assets
+    // DicionÃ¡rio de imagens dos assets
     this.images = {};
-    // Dicionário de padrões (patterns) de repetição de solo
+    // DicionÃ¡rio de padrÃµes (patterns) de repetiÃ§Ã£o de solo
     this.patterns = {};
     this.activeView = 'town';
+    this.pendingPlacement = null;
+    this.hoveredTile = null;
     this.loadImages();
   }
 
@@ -48,13 +67,13 @@ export class GameRenderer {
       const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
       const data = imageData.data;
 
-      // Cor de fundo padrão (pixel superior esquerdo)
+      // Cor de fundo padrÃ£o (pixel superior esquerdo)
       const bgR = data[0];
       const bgG = data[1];
       const bgB = data[2];
       const bgA = data[3];
 
-      // Tolerância para variação de cores
+      // TolerÃ¢ncia para variaÃ§Ã£o de cores
       const tolerance = 45;
 
       for (let i = 0; i < data.length; i += 4) {
@@ -63,14 +82,14 @@ export class GameRenderer {
         const b = data[i + 2];
         const a = data[i + 3];
 
-        // 1. Remover se for idêntico/próximo à cor do canto superior esquerdo
+        // 1. Remover se for idÃªntico/prÃ³ximo Ã  cor do canto superior esquerdo
         const distFromBg = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
         if (distFromBg < tolerance) {
           data[i + 3] = 0;
           continue;
         }
 
-        // 2. Remover fundo branco dominante típico de falsos PNGs de IA
+        // 2. Remover fundo branco dominante tÃ­pico de falsos PNGs de IA
         if (bgR > 180 && bgG > 180 && bgB > 180) {
           if (r > 200 && g > 200 && b > 200) {
             data[i + 3] = 0;
@@ -120,14 +139,13 @@ export class GameRenderer {
       'tile_dirt': 'assets/terrain/tile_dirt.png',
       'tile_water': 'assets/terrain/tile_water.png',
       'tile_road': 'assets/terrain/tile_road.png',
-      // Edifícios
+      // Edificios
       'townhall': 'assets/buildings/townhall.png',
       'hotel': 'assets/buildings/hotel.png',
       'restaurant': 'assets/buildings/restaurant.png',
       'hospital': 'assets/buildings/hospital.png',
       'tavern': 'assets/buildings/tavern.png',
-      'forge': 'assets/buildings/forge.png',
-      // Heróis
+      'forge': 'assets/buildings/forge.png',      // HerÃ³is
       'hero_warrior': 'assets/sprites/hero_warrior.png',
       'hero_mage': 'assets/sprites/hero_mage.png',
       'hero_archer': 'assets/sprites/hero_archer.png',
@@ -144,7 +162,7 @@ export class GameRenderer {
         cleanCanvas.loaded = true;
         this.images[key] = cleanCanvas;
         
-        // Se for um tile de solo, cria o padrão de repetição do Canvas
+        // Se for um tile de solo, cria o padrÃ£o de repetiÃ§Ã£o do Canvas
         if (key.startsWith('tile_')) {
           this.patterns[key] = this.ctx.createPattern(cleanCanvas, 'repeat');
         }
@@ -157,17 +175,120 @@ export class GameRenderer {
     }
   }
 
-  // Câmera Top-Down Clássica (2D Ortogonal vista de cima): Mapeia as coordenadas 1:1 diretamente
+  // CÃ¢mera Top-Down ClÃ¡ssica (2D Ortogonal vista de cima): Mapeia as coordenadas 1:1 diretamente
   toIso(x, y) {
     return { x: x, y: y };
   }
 
-  // Função auxiliar para interpolar linearmente entre dois pontos
+  // FunÃ§Ã£o auxiliar para interpolar linearmente entre dois pontos
   interpolate(p1, p2, t) {
     return {
       x: p1.x + (p2.x - p1.x) * t,
       y: p1.y + (p2.y - p1.y) * t
     };
+  }
+
+  getTownGridMetrics(town, width = this.canvas.width, height = this.canvas.height) {
+    return getTownGridMetrics(town, width, height);
+  }
+
+  gridToScreen(col, row, metrics) {
+    return gridToScreen(col, row, metrics);
+  }
+
+  screenToGrid(x, y, town) {
+    return screenToGrid(x, y, town, this.canvas.width, this.canvas.height);
+  }
+
+  getBuildingScreenPosition(town, buildingType) {
+    const placement = town.getBuildingPlacement(buildingType);
+    if (!placement) return null;
+
+    const footprint = town.getBuildingFootprint(buildingType);
+    const metrics = this.getTownGridMetrics(town);
+    const center = this.gridToScreen(
+      placement.col + footprint.w / 2,
+      placement.row + footprint.h / 2,
+      metrics
+    );
+
+    return {
+      x: center.x,
+      y: center.y + metrics.tileH * footprint.h * 0.34
+    };
+  }
+
+  drawIsoTile(col, row, metrics, fill, stroke = 'rgba(24, 34, 28, 0.75)') {
+    const p = this.gridToScreen(col, row, metrics);
+    const hw = metrics.tileW / 2;
+    const hh = metrics.tileH / 2;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(p.x, p.y);
+    this.ctx.lineTo(p.x + hw, p.y + hh);
+    this.ctx.lineTo(p.x, p.y + metrics.tileH);
+    this.ctx.lineTo(p.x - hw, p.y + hh);
+    this.ctx.closePath();
+    this.ctx.fillStyle = fill;
+    this.ctx.fill();
+    this.ctx.strokeStyle = stroke;
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
+  }
+
+  drawTownGrid(town, width, height) {
+    const metrics = this.getTownGridMetrics(town, width, height);
+
+    this.ctx.fillStyle = '#172118';
+    this.ctx.fillRect(0, 0, width, height);
+
+    const skyBand = this.ctx.createLinearGradient(0, 0, 0, height);
+    skyBand.addColorStop(0, '#101820');
+    skyBand.addColorStop(1, '#1f2c1d');
+    this.ctx.fillStyle = skyBand;
+    this.ctx.fillRect(0, 0, width, height);
+
+    for (let row = 0; row < town.grid.rows; row++) {
+      for (let col = 0; col < town.grid.cols; col++) {
+        const checker = (col + row) % 2 === 0;
+        this.drawIsoTile(col, row, metrics, checker ? '#365f31' : '#31582e');
+      }
+    }
+
+    if (this.pendingPlacement && this.hoveredTile) {
+      const footprint = town.getBuildingFootprint(this.pendingPlacement);
+      const canPlace = town.isAreaFree(this.hoveredTile.col, this.hoveredTile.row, footprint, this.pendingPlacement);
+      for (let y = 0; y < footprint.h; y++) {
+        for (let x = 0; x < footprint.w; x++) {
+          this.drawIsoTile(
+            this.hoveredTile.col + x,
+            this.hoveredTile.row + y,
+            metrics,
+            canPlace ? 'rgba(88, 214, 141, 0.55)' : 'rgba(255, 75, 75, 0.55)',
+            canPlace ? '#d7ff9b' : '#ffdddd'
+          );
+        }
+      }
+    }
+
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(5, 8, 6, 0.55)';
+    const labelBoxW = Math.min(width < 520 ? width - 24 : 520, width - 24);
+    this.ctx.fillRect(12, 12, labelBoxW, 34);
+    this.ctx.strokeStyle = '#6d5638';
+    this.ctx.strokeRect(12.5, 12.5, labelBoxW, 34);
+    this.ctx.fillStyle = '#f1d78a';
+    this.ctx.font = `${width < 520 ? 11 : 14}px monospace`;
+    this.ctx.textAlign = 'left';
+    const label = width < 520
+      ? (this.pendingPlacement ? 'Toque em um espaco livre' : (town.isBuilt('townhall') ? 'Centro construido: expanda a vila' : 'Construa o Centro da Cidade'))
+      : (this.pendingPlacement
+        ? 'Escolha um espaco livre para posicionar a construcao'
+        : town.isBuilt('townhall')
+          ? 'Centro construido: expanda a vila posicionando novas construcoes'
+          : 'Cidade em fundacao: construa o Centro da Cidade para desbloquear a vila');
+    this.ctx.fillText(label, 22, 34);
+    this.ctx.restore();
   }
 
   render(game, dt) {
@@ -184,13 +305,7 @@ export class GameRenderer {
 
     // 1. Desenhar Background da Tela Ativa
     if (this.activeView === 'town') {
-      const bg = this.images['bg_town'];
-      if (bg && bg.loaded) {
-        this.ctx.drawImage(bg, 0, 0, width, height);
-      } else {
-        this.ctx.fillStyle = '#7a6b5e';
-        this.ctx.fillRect(0, 0, width, height);
-      }
+      this.drawTownGrid(game.town, width, height);
     } else {
       let bgKey = 'bg_forest';
       if (biome.id === 0) bgKey = 'bg_cave';
@@ -204,72 +319,37 @@ export class GameRenderer {
         this.ctx.fillRect(0, 0, width, height);
       }
 
-      // Filtro de tom verde pantanoso para o pântano
+      // Filtro de tom verde pantanoso para o pÃ¢ntano
       if (biome.id === 2) {
         this.ctx.fillStyle = 'rgba(46, 125, 50, 0.15)';
         this.ctx.fillRect(0, 0, width, height);
       }
     }
 
-    // 2. Criar a lista de objetos para ordenação por profundidade (Y-sorting)
+    // 2. Criar a lista de objetos para ordenaÃ§Ã£o por profundidade (Y-sorting)
     const renderList = [];
 
     if (this.activeView === 'town') {
-      // Edifícios da Cidade (Novas coordenadas de tela cheia)
-      const buildings = [
-        { key: 'townhall', x: 480, y: 150, name: 'Prefeitura', icon: '🏛️' },
-        { key: 'hotel', x: 260, y: 240, name: 'Hotel', icon: '🏨' },
-        { key: 'restaurant', x: 700, y: 240, name: 'Restaurante', icon: '🍲' },
-        { key: 'hospital', x: 200, y: 400, name: 'Hospital', icon: '🏥' },
-        { key: 'tavern', x: 760, y: 400, name: 'Taverna', icon: '🍺' },
-        { key: 'forge', x: 480, y: 430, name: 'Forja', icon: '⚒️' }
-      ];
-      buildings.forEach(b => {
+      const buildingLabels = {
+        townhall: { name: 'Centro da Cidade', icon: '🏛️' },
+        hotel: { name: 'Hotel', icon: '🏨' },
+        restaurant: { name: 'Restaurante', icon: '🍲' },
+        hospital: { name: 'Hospital', icon: '🏥' },
+        tavern: { name: 'Taverna', icon: '🍺' },
+        forge: { name: 'Forja', icon: '⚒️' }
+      };
+
+      game.town.getPlacedBuildings().forEach(placed => {
+        const pos = this.getBuildingScreenPosition(game.town, placed.key);
+        if (!pos) return;
+        const meta = buildingLabels[placed.key] || { name: placed.key, icon: '🏠' };
+        const b = { key: placed.key, x: pos.x, y: pos.y, name: meta.name, icon: meta.icon };
         renderList.push({
           y: b.y,
           render: () => this.drawBuildingIndividual(game.town, b)
         });
       });
-
-      // Postes de Lampião
-      const lamps = [
-        { x: 360, y: 240 },
-        { x: 600, y: 240 },
-        { x: 340, y: 400 },
-        { x: 580, y: 400 }
-      ];
-      lamps.forEach(l => {
-        renderList.push({
-          y: l.y,
-          render: () => this.drawStreetLamp(l.x, l.y)
-        });
-      });
-
-      // Poço de Água
-      renderList.push({
-        y: 130,
-        render: () => this.drawWaterWell(280, 130)
-      });
-
-      // Barris e Caixas
-      renderList.push({
-        y: 430,
-        render: () => this.drawBarrel(440, 430)
-      });
-      renderList.push({
-        y: 430,
-        render: () => this.drawBox(520, 430)
-      });
-      renderList.push({
-        y: 400,
-        render: () => this.drawBarrel(720, 400)
-      });
-      renderList.push({
-        y: 400,
-        render: () => this.drawBox(240, 400)
-      });
-
-      // Heróis ativos na cidade
+      // HerÃ³is ativos na cidade
       game.heroes.forEach(h => {
         if (h.currentMap === 'town') {
           renderList.push({
@@ -281,13 +361,13 @@ export class GameRenderer {
 
     } else {
       // === RENDER VIEW HUNT ===
-      // Portal de Caça
+      // Portal de CaÃ§a
       renderList.push({
         y: 100,
         render: () => this.drawDungeonPortal(480, 100, time)
       });
 
-      // Elementos de Caça dinâmicos de Bioma Y-sorted
+      // Elementos de CaÃ§a dinÃ¢micos de Bioma Y-sorted
       const huntDecorations = [
         { x: 150, y: 140 },
         { x: 300, y: 120 },
@@ -327,9 +407,9 @@ export class GameRenderer {
               else this.drawFlower(pt.x, pt.y);
             }
           });
-        } else if (biome.id === 2) { // Pântano
+        } else if (biome.id === 2) { // PÃ¢ntano
           if (typeIdx === 0) {
-            // Poça de lama plana
+            // PoÃ§a de lama plana
             this.drawMudPool(pt.x, pt.y);
           } else {
             renderList.push({
@@ -353,7 +433,7 @@ export class GameRenderer {
         }
       });
 
-      // Heróis ativos na caçada
+      // HerÃ³is ativos na caÃ§ada
       game.heroes.forEach(h => {
         if (h.currentMap === 'hunt') {
           renderList.push({
@@ -368,12 +448,12 @@ export class GameRenderer {
     renderList.sort((a, b) => a.y - b.y);
     renderList.forEach(obj => obj.render());
 
-    // 3. Atualizar e Desenhar Partículas de Fumaça (Apenas em Town View)
+    // 3. Atualizar e Desenhar PartÃ­culas de FumaÃ§a (Apenas em Town View)
     if (this.activeView === 'town') {
       this.updateAndDrawSmoke(game.town, dt);
     }
 
-    // 4. Desenhar Efeitos de Batalha (projéteis)
+    // 4. Desenhar Efeitos de Batalha (projÃ©teis)
     this.drawCombatEffects(game.heroes);
 
     // 5. Desenhar Filtro de Dia/Noite
@@ -406,12 +486,12 @@ export class GameRenderer {
     let forestColor = '#243b23';
     if (biome.id === 0) forestColor = '#222326'; // Cavernas
     if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
-    if (biome.id === 2) forestColor = '#1b231e'; // Pântano/Igarapés
+    if (biome.id === 2) forestColor = '#1b231e'; // PÃ¢ntano/IgarapÃ©s
 
     this.ctx.fillStyle = this.patterns['tile_dirt'] || forestColor;
     this.ctx.fillRect(480, 0, w - 480, h);
 
-    // 4. Fosso de Água da Cidade (Moat) - X = 450 a 480
+    // 4. Fosso de Ãgua da Cidade (Moat) - X = 450 a 480
     this.ctx.fillStyle = this.patterns['tile_water'] || '#2d6ab3';
     this.ctx.fillRect(450, 0, 30, h);
 
@@ -435,12 +515,12 @@ export class GameRenderer {
     // 5. Desenhar as Muralhas de Pedra da Cidade
     this.drawStoneWall(this.ctx, h);
 
-    // 6. Caminhos de cobblestone na cidade (ligando prédios e saindo no portão)
+    // 6. Caminhos de cobblestone na cidade (ligando prÃ©dios e saindo no portÃ£o)
     this.ctx.fillStyle = '#546e7a';
     this.ctx.fillRect(222, 100, 16, 350); // Estrada principal norte-sul
     this.ctx.fillRect(120, 192, 220, 16); // Estrada horizontal superior
     this.ctx.fillRect(120, 332, 220, 16); // Estrada horizontal inferior
-    this.ctx.fillRect(230, 262, 210, 16); // Caminho até o portão
+    this.ctx.fillRect(230, 262, 210, 16); // Caminho atÃ© o portÃ£o
 
     // Detalhe de tijolos na estrada
     this.ctx.fillStyle = '#37474f';
@@ -468,7 +548,7 @@ export class GameRenderer {
       this.ctx.stroke();
     }
     
-    // Corrimão da ponte
+    // CorrimÃ£o da ponte
     this.ctx.fillStyle = '#3e2723';
     this.ctx.fillRect(446, 247, 38, 3);
     this.ctx.fillRect(446, 290, 38, 3);
@@ -489,7 +569,7 @@ export class GameRenderer {
     ctx.fillRect(0, 35, 440, 10);
     ctx.fillRect(0, h - 25, 440, 10);
     
-    // Muralha Direita (com portão de 250 a 290)
+    // Muralha Direita (com portÃ£o de 250 a 290)
     ctx.fillRect(440, 40, 10, 210);
     ctx.fillRect(440, 290, 10, h - 310);
     
@@ -521,7 +601,7 @@ export class GameRenderer {
       ctx.fillRect(wx, h - 28, 10, 3);
     }
 
-    // Pilares do Portão
+    // Pilares do PortÃ£o
     ctx.fillStyle = '#37474f';
     ctx.fillRect(438, 245, 14, 5);
     ctx.fillRect(438, 290, 14, 5);
@@ -552,7 +632,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- DESENHO DE ÁRVORE RETRÔ TOP-DOWN ---
+  // --- DESENHO DE ÃRVORE RETRÃ” TOP-DOWN ---
   drawPixelTree(x, y) {
     this.ctx.save();
     // Tronco
@@ -577,7 +657,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART E LOTES FISICOS) ---
+  // --- RENDER DE EDIFÃCIO (COM IMAGEM PIXEL ART E LOTES FISICOS) ---
   drawBuildingIndividual(town, b) {
     const level = town.buildings[b.key];
     const isBuilt = level > 0;
@@ -590,64 +670,12 @@ export class GameRenderer {
 
     this.ctx.save();
 
-    // 1. Fundação do Lote (Terra/pedra compactada)
-    const rx = bx - wSize / 2;
-    const ry = by - hSize + 10;
-    const rw = wSize;
-    const rh = hSize - 10;
-
-    this.ctx.fillStyle = '#3a2e2b';
-    this.ctx.fillRect(rx, ry, rw, rh);
-    this.ctx.strokeStyle = '#221917';
-    this.ctx.lineWidth = 1.5;
-    this.ctx.strokeRect(rx, ry, rw, rh);
-
-    // Detalhes de solo do lote
-    this.ctx.fillStyle = '#2d2321';
-    this.ctx.fillRect(rx + 4, ry + 4, 3, 3);
-    this.ctx.fillRect(rx + rw - 8, ry + 6, 4, 2);
+    this.drawBuildingLot(bx, by, wSize, hSize, isBuilt ? level : 1);
 
     if (isBuilt) {
-      // --- SE CONSTRUÍDO: Desenhar prédio por cima da base ---
-      const img = this.images[b.key];
-      if (img && img.loaded) {
-        this.ctx.drawImage(img, bx - wSize / 2, by - hSize + 8, wSize, hSize);
+      this.drawBuildingByStage(b, level, wSize, hSize);
 
-        this.ctx.font = '14px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText(b.icon, bx, by - hSize + 4);
-      } else {
-        // Fallback vetorial original
-        this.ctx.fillStyle = '#5c4530';
-        this.ctx.fillRect(bx - 22, by - 12, 44, 28);
-
-        this.ctx.fillStyle = '#8c3523';
-        this.ctx.beginPath();
-        this.ctx.moveTo(bx - 26, by - 12);
-        this.ctx.lineTo(bx + 26, by - 12);
-        this.ctx.lineTo(bx, by - 28);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        this.ctx.fillStyle = '#2e1c0c';
-        this.ctx.fillRect(bx - 6, by + 6, 12, 10);
-
-        if (b.key !== 'townhall' && b.key !== 'hotel') {
-          this.ctx.fillStyle = '#3d2e20';
-          this.ctx.fillRect(bx + 11, by - 18, 6, 10);
-        }
-
-        const isNight = this.isNightTime();
-        this.ctx.fillStyle = isNight ? (Math.random() > 0.05 ? '#ffea3a' : '#aa9e27') : '#2e1c0c';
-        this.ctx.fillRect(bx - 14, by - 4, 6, 6);
-        this.ctx.fillRect(bx + 8, by - 4, 6, 6);
-
-        this.ctx.font = '14px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText(b.icon, bx, by - 32);
-      }
-
-      // Nível do Prédio
+      // NÃ­vel do PrÃ©dio
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
@@ -684,7 +712,7 @@ export class GameRenderer {
       this.ctx.moveTo(rx + rw - 8, ry + 16); this.ctx.lineTo(bx, ry + rh - 12);
       this.ctx.stroke();
 
-      // Viga do telhado (triângulo)
+      // Viga do telhado (triÃ¢ngulo)
       this.ctx.strokeStyle = beamColor;
       this.ctx.lineWidth = 2.5;
       this.ctx.beginPath();
@@ -706,18 +734,277 @@ export class GameRenderer {
       
       // Martelo flutuante no centro
       this.ctx.font = '14px Arial';
-      this.ctx.fillText('🔨', bx, by + 4);
+      this.ctx.fillText('ðŸ”¨', bx, by + 4);
       
-      // Rótulo: 🔒 Trancado
+      // RÃ³tulo: ðŸ”’ Trancado
       this.ctx.fillStyle = '#b0bec5';
       this.ctx.font = '9px monospace';
-      this.ctx.fillText('🔒 Trancado', bx, by + 16);
+      this.ctx.fillText('ðŸ”’ Trancado', bx, by + 16);
     }
 
     this.ctx.restore();
   }
 
-  // --- ELEMENTOS DE DECORAÇÃO DE BACKGROUND (MURAIS, LAMPIÕES, PORTAIS) ---
+  drawBuildingLot(bx, by, wSize, hSize, level) {
+    const stage = getBuildingVisualStage(level);
+    const rx = bx - wSize / 2;
+    const ry = by - hSize + 10;
+    const rw = wSize;
+    const rh = hSize - 10;
+
+    this.ctx.fillStyle = stage.foundation;
+    this.ctx.fillRect(rx, ry, rw, rh);
+    this.ctx.strokeStyle = '#221917';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.strokeRect(rx, ry, rw, rh);
+
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    this.ctx.fillRect(rx + 4, ry + 4, 3, 3);
+    this.ctx.fillRect(rx + rw - 8, ry + 6, 4, 2);
+
+    if (level >= 3) {
+      this.ctx.fillStyle = '#394246';
+      for (let x = rx + 6; x < rx + rw - 6; x += 12) {
+        this.ctx.fillRect(x, ry + rh - 7, 8, 3);
+      }
+    }
+  }
+
+  drawBuildingByStage(b, level, wSize, hSize) {
+    const stage = getBuildingVisualStage(level);
+    const bx = b.x;
+    const by = b.y;
+    const shape = this.getBuildingShape(b.key, level);
+    const bodyW = shape.bodyW;
+    const bodyH = shape.bodyH;
+    const roofH = level === 1 ? 16 : 20;
+    const bodyX = bx - bodyW / 2;
+    const bodyY = by - bodyH - 8;
+    const roofY = bodyY - roofH + 6;
+
+    this.ctx.save();
+
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    this.ctx.fillRect(bodyX + 3, by - 9, bodyW, 7);
+
+    this.ctx.fillStyle = stage.wallDark;
+    this.ctx.fillRect(bodyX + 4, bodyY + 4, bodyW, bodyH);
+    this.ctx.fillStyle = stage.wall;
+    this.ctx.fillRect(bodyX, bodyY, bodyW, bodyH);
+
+    if (stage.key === 'wood') {
+      this.ctx.fillStyle = stage.wallDark;
+      for (let x = bodyX + 7; x < bodyX + bodyW - 3; x += 11) {
+        this.ctx.fillRect(x, bodyY + 2, 2, bodyH - 4);
+      }
+    }
+
+    if (stage.key === 'stone' || stage.key === 'brick') {
+      this.ctx.strokeStyle = stage.wallDark;
+      this.ctx.lineWidth = 1;
+      for (let y = bodyY + 7; y < bodyY + bodyH - 2; y += 8) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(bodyX + 2, y);
+        this.ctx.lineTo(bodyX + bodyW - 2, y);
+        this.ctx.stroke();
+      }
+      for (let x = bodyX + 10; x < bodyX + bodyW - 3; x += 14) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, bodyY + 7);
+        this.ctx.lineTo(x, bodyY + bodyH - 2);
+        this.ctx.stroke();
+      }
+    }
+
+    this.ctx.fillStyle = stage.roofDark;
+    this.ctx.beginPath();
+    this.ctx.moveTo(bx - bodyW / 2 - 5, bodyY + 2);
+    this.ctx.lineTo(bx + bodyW / 2 + 5, bodyY + 2);
+    this.ctx.lineTo(bx + 3, roofY + 3);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    this.ctx.fillStyle = stage.roof;
+    this.ctx.beginPath();
+    this.ctx.moveTo(bx - bodyW / 2 - 7, bodyY);
+    this.ctx.lineTo(bx + bodyW / 2 + 7, bodyY);
+    this.ctx.lineTo(bx, roofY);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    if (stage.key === 'straw') {
+      this.ctx.strokeStyle = stage.roofDark;
+      this.ctx.lineWidth = 1;
+      for (let x = bx - bodyW / 2; x <= bx + bodyW / 2; x += 7) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, bodyY - 1);
+        this.ctx.lineTo(bx, roofY + 2);
+        this.ctx.stroke();
+      }
+    } else {
+      this.ctx.fillStyle = stage.roofDark;
+      for (let x = bx - bodyW / 2 - 2; x < bx + bodyW / 2; x += 9) {
+        this.ctx.fillRect(x, bodyY - 2, 6, 3);
+      }
+    }
+
+    this.ctx.fillStyle = stage.trim;
+    this.ctx.fillRect(bx - 6, by - 18, 12, 18);
+
+    const isNight = this.isNightTime();
+    const windowColor = isNight ? '#ffea3a' : '#172027';
+    this.ctx.fillStyle = windowColor;
+    this.ctx.fillRect(bodyX + 7, bodyY + 13, 7, 7);
+    this.ctx.fillRect(bodyX + bodyW - 14, bodyY + 13, 7, 7);
+
+    if (level >= 2 && b.key !== 'hotel') {
+      this.ctx.fillStyle = stage.trim;
+      this.ctx.fillRect(bodyX + bodyW - 8, roofY + 5, 6, 13);
+      this.ctx.fillStyle = '#1a120d';
+      this.ctx.fillRect(bodyX + bodyW - 7, roofY + 3, 4, 3);
+    }
+
+    this.drawBuildingTypeDetails(b.key, bx, by, bodyX, bodyY, bodyW, bodyH, roofY, stage, level, windowColor);
+
+    if (level >= 4) {
+      this.ctx.fillStyle = '#c39b34';
+      this.ctx.fillRect(bx - 2, roofY - 19, 4, 10);
+      this.ctx.fillStyle = '#d63c2f';
+      this.ctx.fillRect(bx + 2, roofY - 19, 10, 5);
+    }
+
+    this.ctx.font = '13px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(b.icon, bx, roofY - 6);
+
+    this.ctx.restore();
+  }
+
+  getBuildingShape(key, level) {
+    const shapes = {
+      townhall: { bodyW: 50, bodyH: level >= 2 ? 40 : 34 },
+      hotel: { bodyW: 44, bodyH: level >= 2 ? 38 : 30 },
+      restaurant: { bodyW: 40, bodyH: 29 },
+      hospital: { bodyW: 42, bodyH: 31 },
+      tavern: { bodyW: 42, bodyH: 30 },
+      forge: { bodyW: 40, bodyH: 28 }
+    };
+    return shapes[key] || { bodyW: 38, bodyH: 27 };
+  }
+
+  drawBuildingTypeDetails(key, bx, by, bodyX, bodyY, bodyW, bodyH, roofY, stage, level, windowColor) {
+    this.ctx.save();
+
+    if (key === 'townhall') {
+      const towerW = level >= 3 ? 18 : 14;
+      const towerH = level >= 2 ? 25 : 16;
+      this.ctx.fillStyle = stage.wallDark;
+      this.ctx.fillRect(bx - towerW / 2 + 2, roofY - towerH + 2, towerW, towerH);
+      this.ctx.fillStyle = stage.wall;
+      this.ctx.fillRect(bx - towerW / 2, roofY - towerH, towerW, towerH);
+      this.ctx.fillStyle = stage.roof;
+      this.ctx.fillRect(bx - towerW / 2 - 3, roofY - towerH - 5, towerW + 6, 5);
+      this.ctx.fillStyle = windowColor;
+      this.ctx.fillRect(bx - 3, roofY - towerH + 8, 6, 6);
+      this.ctx.fillStyle = '#c39b34';
+      this.ctx.fillRect(bx - 1, roofY - towerH - 13, 2, 8);
+      this.ctx.fillStyle = '#d63c2f';
+      this.ctx.fillRect(bx + 1, roofY - towerH - 13, 9, 5);
+    }
+
+    if (key === 'hotel') {
+      this.ctx.fillStyle = stage.wallDark;
+      this.ctx.fillRect(bodyX + 5, bodyY - 12, bodyW - 10, 13);
+      this.ctx.fillStyle = stage.wall;
+      this.ctx.fillRect(bodyX + 3, bodyY - 14, bodyW - 10, 13);
+      this.ctx.fillStyle = stage.roof;
+      this.ctx.fillRect(bodyX + 1, bodyY - 17, bodyW - 5, 5);
+      this.ctx.fillStyle = windowColor;
+      this.ctx.fillRect(bodyX + 9, bodyY - 8, 6, 5);
+      this.ctx.fillRect(bodyX + bodyW - 18, bodyY - 8, 6, 5);
+      this.ctx.fillStyle = '#f1d78a';
+      this.ctx.font = 'bold 7px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('INN', bx, bodyY - 20);
+    }
+
+    if (key === 'restaurant') {
+      this.drawHangingSign(bx, bodyY - 5, '#d08731', '🍲');
+      this.ctx.fillStyle = '#2b1a11';
+      this.ctx.fillRect(bodyX + bodyW - 8, roofY + 5, 6, 14);
+      this.ctx.fillStyle = '#c9c2a5';
+      this.ctx.fillRect(bodyX + bodyW - 7, roofY + 2, 4, 3);
+      this.ctx.fillStyle = '#f0d08a';
+      this.ctx.fillRect(bodyX + 6, by - 8, bodyW - 12, 3);
+    }
+
+    if (key === 'hospital') {
+      this.ctx.fillStyle = '#f4efe3';
+      this.ctx.fillRect(bx - 3, roofY - 11, 6, 18);
+      this.ctx.fillRect(bx - 9, roofY - 5, 18, 6);
+      this.ctx.fillStyle = '#c43a32';
+      this.ctx.fillRect(bx - 2, roofY - 10, 4, 16);
+      this.ctx.fillRect(bx - 8, roofY - 4, 16, 4);
+      if (level >= 2) {
+        this.ctx.fillStyle = '#d8e9ef';
+        this.ctx.fillRect(bodyX + 6, bodyY + bodyH - 9, bodyW - 12, 4);
+      }
+    }
+
+    if (key === 'tavern') {
+      this.drawHangingSign(bx, bodyY - 6, '#7c4a2a', '🍺');
+      this.ctx.fillStyle = '#3a2115';
+      this.ctx.fillRect(bodyX + 5, by - 14, bodyW - 10, 4);
+      this.ctx.fillStyle = '#c39b34';
+      this.ctx.fillRect(bodyX + 8, by - 13, 4, 2);
+      this.ctx.fillRect(bodyX + bodyW - 12, by - 13, 4, 2);
+      if (level >= 3) {
+        this.ctx.fillStyle = '#5e2d1e';
+        this.ctx.fillRect(bodyX - 5, bodyY + 8, 6, 15);
+      }
+    }
+
+    if (key === 'forge') {
+      this.ctx.fillStyle = '#2b1a11';
+      this.ctx.fillRect(bodyX + bodyW - 8, roofY + 2, 8, 20);
+      this.ctx.fillStyle = '#1a100b';
+      this.ctx.fillRect(bodyX + bodyW - 10, roofY, 12, 4);
+      this.ctx.fillStyle = '#ff7a2d';
+      this.ctx.fillRect(bodyX + 8, bodyY + bodyH - 13, 8, 6);
+      this.ctx.fillStyle = '#ffd36a';
+      this.ctx.fillRect(bodyX + 10, bodyY + bodyH - 11, 4, 3);
+      this.ctx.fillStyle = '#394246';
+      this.ctx.fillRect(bodyX + bodyW - 22, by - 8, 15, 4);
+      this.ctx.fillRect(bodyX + bodyW - 18, by - 12, 5, 4);
+    }
+
+    this.ctx.restore();
+  }
+
+  drawHangingSign(x, y, color, icon) {
+    this.ctx.save();
+    this.ctx.strokeStyle = '#2c1a12';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 12, y - 4);
+    this.ctx.lineTo(x + 12, y - 4);
+    this.ctx.moveTo(x - 8, y - 4);
+    this.ctx.lineTo(x - 8, y + 5);
+    this.ctx.moveTo(x + 8, y - 4);
+    this.ctx.lineTo(x + 8, y + 5);
+    this.ctx.stroke();
+
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(x - 13, y + 4, 26, 12);
+    this.ctx.strokeStyle = '#2c1a12';
+    this.ctx.strokeRect(x - 13, y + 4, 26, 12);
+    this.ctx.font = '10px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(icon, x, y + 14);
+    this.ctx.restore();
+  }
+
+  // --- ELEMENTOS DE DECORAÃ‡ÃƒO DE BACKGROUND (MURAIS, LAMPIÃ•ES, PORTAIS) ---
   drawStreetLamp(x, y) {
     this.ctx.save();
     
@@ -733,7 +1020,7 @@ export class GameRenderer {
     this.ctx.fillStyle = '#455a64';
     this.ctx.fillRect(x - 2, y - 32, 10, 2);
     
-    // Lampião
+    // LampiÃ£o
     this.ctx.fillStyle = '#37474f';
     this.ctx.fillRect(x + 5, y - 30, 4, 6);
     
@@ -771,7 +1058,7 @@ export class GameRenderer {
     this.ctx.fillRect(x - 10, y - 6, 4, 3);
     this.ctx.fillRect(x + 6, y - 5, 5, 2);
     
-    // Água
+    // Ãgua
     this.ctx.fillStyle = '#1565c0';
     this.ctx.fillRect(x - 11, y - 8, 22, 1);
     
@@ -858,7 +1145,7 @@ export class GameRenderer {
     this.ctx.fillStyle = '#ea80fc';
     this.ctx.font = 'bold 9px monospace';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText('PORTAL DA CAÇA', x, y - 52);
+    this.ctx.fillText('PORTAL DA CAÃ‡A', x, y - 52);
     
     this.ctx.restore();
   }
@@ -900,7 +1187,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- DETALHES DE BIOMAS DE CAÇA ---
+  // --- DETALHES DE BIOMAS DE CAÃ‡A ---
   drawCrystal(x, y, time, index) {
     const bounce = Math.sin((time * 0.003) + index) * 2;
     const cy = y - 6 + bounce;
@@ -1023,7 +1310,7 @@ export class GameRenderer {
     this.ctx.fillRect(x - 1.5, y - 4.5, 3, 3);
   }
 
-  // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
+  // --- PARTÃCULAS DE FUMAÃ‡A DAS CHAMINÃ‰S ---
   getChaminePos(town, bKey) {
     const buildings = {
       restaurant: { x: 700, y: 240 },
@@ -1035,7 +1322,7 @@ export class GameRenderer {
     const pos = buildings[bKey];
     if (!pos || !town.isBuilt(bKey)) return null;
     
-    // A chaminé cartesiana fica na parte superior direita do prédio
+    // A chaminÃ© cartesiana fica na parte superior direita do prÃ©dio
     return {
       x: pos.x + 14,
       y: pos.y - 16
@@ -1090,7 +1377,7 @@ export class GameRenderer {
     this.ctx.save();
 
     const name = monster.name;
-    const imgKey = name.includes('Saci-Pererê') ? 'monster_saci' : 
+    const imgKey = name.includes('Saci-PererÃª') ? 'monster_saci' : 
                    name.includes('Curupira') ? 'monster_curupira' : null;
     const img = imgKey ? this.images[imgKey] : null;
 
@@ -1098,14 +1385,14 @@ export class GameRenderer {
       // --- DESENHAR MONSTRO COM SPRITE DE PIXEL ART E BOUNCE ---
       this.ctx.save();
       
-      // Sombra sob os pés
+      // Sombra sob os pÃ©s
       const shadowSize = monster.isBoss ? 14 : 7;
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       this.ctx.beginPath();
       this.ctx.ellipse(pos.x, pos.y + 4, shadowSize * 1.0, shadowSize * 0.35, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Translações para animações
+      // TranslaÃ§Ãµes para animaÃ§Ãµes
       this.ctx.translate(pos.x, pos.y);
 
       // Bounce de caminhada se monstro ativo
@@ -1144,13 +1431,13 @@ export class GameRenderer {
       this.ctx.ellipse(pos.x, pos.y + 8, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
-      if (name.includes('Saci-Pererê')) {
+      if (name.includes('Saci-PererÃª')) {
         this.drawSaci(pos.x, pos.y, time);
       } else if (name.includes('Curupira')) {
         this.drawCurupira(pos.x, pos.y, time);
-      } else if (name.includes('Mula sem Cabeça')) {
+      } else if (name.includes('Mula sem CabeÃ§a')) {
         this.drawMula(pos.x, pos.y, time);
-      } else if (name.includes('Boitatá')) {
+      } else if (name.includes('BoitatÃ¡')) {
         this.drawBoitata(monster.x, monster.y, time);
       } else if (name.includes('Mapinguari')) {
         this.drawMapinguari(pos.x, pos.y, time);
@@ -1228,7 +1515,7 @@ export class GameRenderer {
     this.ctx.fillStyle = '#ff9f3a';
     this.ctx.fillRect(x + 5.5, py - 5, 1, 2);
 
-    // Calção e perna
+    // CalÃ§Ã£o e perna
     this.ctx.fillStyle = '#ff0000';
     this.ctx.fillRect(x - 3.5, py - 3, 7, 6);
     this.ctx.fillStyle = '#2e1c10';
@@ -1426,7 +1713,7 @@ export class GameRenderer {
     this.ctx.save();
     const time = performance.now();
 
-    // Cálculo do Dash de Combate
+    // CÃ¡lculo do Dash de Combate
     let dx = 0;
     let dy = 0;
     if (hero.state === 'FIGHTING' && hero.targetMonster) {
@@ -1445,11 +1732,11 @@ export class GameRenderer {
       }
     }
 
-    // Posição cartesiana do herói com o dash aplicado
+    // PosiÃ§Ã£o cartesiana do herÃ³i com o dash aplicado
     const cartX = hero.x + dx;
     const cartY = hero.y + dy;
 
-    // Projeção isométrica (Top-Down é 1:1)
+    // ProjeÃ§Ã£o isomÃ©trica (Top-Down Ã© 1:1)
     const pos = this.toIso(cartX, cartY);
     const hx = pos.x;
     const hy = pos.y;
@@ -1462,7 +1749,7 @@ export class GameRenderer {
     const img = this.images[imgKey];
 
     if (img && img.loaded) {
-      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS ---
+      // --- DESENHAR HERÃ“I COM SPRITE DE PIXEL ART E ANIMAÃ‡Ã•ES PROCEDURAIS ---
       this.ctx.save();
       
       // Sombra
@@ -1471,10 +1758,10 @@ export class GameRenderer {
       this.ctx.ellipse(hx, hy + 4, 8, 2.5, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Transladar para o ponto de base dos pés no chão
+      // Transladar para o ponto de base dos pÃ©s no chÃ£o
       this.ctx.translate(hx, hy);
 
-      // Efeito de caminhada (bounce e inclinação leve)
+      // Efeito de caminhada (bounce e inclinaÃ§Ã£o leve)
       if (isWalking) {
         const bounce = Math.abs(Math.sin(time * 0.015)) * 3;
         this.ctx.translate(0, -bounce);
@@ -1491,7 +1778,7 @@ export class GameRenderer {
         }
       }
 
-      // 1. DESENHAR ASAS (Atrás do corpo)
+      // 1. DESENHAR ASAS (AtrÃ¡s do corpo)
       this.drawHeroWingsStacked(hero, time);
 
       // 2. DESENHAR SPRITE CENTRADO (Corpo Base)
@@ -1502,7 +1789,7 @@ export class GameRenderer {
       // 3. DESENHAR ARMADURA (Por cima do corpo)
       this.drawHeroArmorStacked(hero);
 
-      // 4. DESENHAR CAPACETE (Por cima da cabeça)
+      // 4. DESENHAR CAPACETE (Por cima da cabeÃ§a)
       this.drawHeroHelmetStacked(hero);
 
       // 5. DESENHAR ARMA (Por cima de tudo)
@@ -1510,7 +1797,7 @@ export class GameRenderer {
 
       this.ctx.restore();
 
-      // Texto de Nome e Barra de Vida (não rotacionam/balançam)
+      // Texto de Nome e Barra de Vida (nÃ£o rotacionam/balanÃ§am)
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
@@ -1527,7 +1814,7 @@ export class GameRenderer {
       if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
       this.ctx.fillRect(hx - barW / 2, hy - 26, barW * hpPct, barH);
 
-      // Auréola flutuante se Sacerdote
+      // AurÃ©ola flutuante se Sacerdote
       if (hero.className === 'PRIEST') {
         this.ctx.strokeStyle = '#ffea3a';
         this.ctx.lineWidth = 1;
@@ -1551,7 +1838,7 @@ export class GameRenderer {
       this.ctx.fillRect(hx - 4.5, hy + 10 + step, 3, 1.5);
       this.ctx.fillRect(hx + 0.5, hy + 10 - step, 3, 1.5);
 
-      // Corpo / Armadura Dinâmica
+      // Corpo / Armadura DinÃ¢mica
       let bodyColor = hero.cosmetics.clothesColor;
       let isLendaria = false;
 
@@ -1597,7 +1884,7 @@ export class GameRenderer {
       this.ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
       this.ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
 
-      // Cabelo e Chapéus
+      // Cabelo e ChapÃ©us
       this.ctx.fillStyle = hero.cosmetics.hairColor;
       const hairStyle = hero.cosmetics.hairStyle;
 
@@ -1640,10 +1927,10 @@ export class GameRenderer {
         this.ctx.stroke();
       }
 
-      // Arma Dinâmica
+      // Arma DinÃ¢mica
       this.drawHeroWeapon(hx, hy, hero);
 
-      // Nome do Herói
+      // Nome do HerÃ³i
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
@@ -1928,7 +2215,7 @@ export class GameRenderer {
         this.ctx.fill();
       }
 
-      // Arqueiro (Parábola 2D clássica)
+      // Arqueiro (ParÃ¡bola 2D clÃ¡ssica)
       if (hero.className === 'ARCHER' && hero.cooldownTimer > 0.3) {
         const pct = (1 - hero.cooldownTimer);
         const cartX = hero.x + (monster.x - hero.x) * pct;
@@ -1981,7 +2268,7 @@ export class GameRenderer {
         this.ctx.fillStyle = '#ffea3a';
         this.ctx.font = '9px monospace';
         this.ctx.textAlign = 'left';
-        this.ctx.fillText('🌙 Noite', 14, 19);
+        this.ctx.fillText('ðŸŒ™ Noite', 14, 19);
       }
       this.ctx.restore();
     } else {
@@ -1991,7 +2278,7 @@ export class GameRenderer {
       this.ctx.fillStyle = '#3aff7d';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'left';
-      this.ctx.fillText('☀️ Dia', 16, 19);
+      this.ctx.fillText('â˜€ï¸ Dia', 16, 19);
       this.ctx.restore();
     }
   }
@@ -2018,3 +2305,6 @@ export class GameRenderer {
     });
   }
 }
+
+
+

@@ -2,16 +2,15 @@ import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO } from '../data/constants.j
 
 export class Town {
   constructor() {
-    this.gold = 300; // Ouro inicial da cidade
+    this.gold = 300;
     this.resources = {
-      // Loots básicos coletados
       meat_raw: 5,
       rat_tail: 0,
       bat_wing: 0,
       guano: 0,
       rat_fang: 0,
       king_crown_fragment: 0,
-      
+
       goblin_ear: 0,
       wolf_fur: 0,
       spider_silk: 0,
@@ -25,71 +24,149 @@ export class Town {
       leech_tooth: 0,
       hydra_scale: 0,
 
-      // Matérias primas
       wood_rough: 10,
       iron_ore: 5,
       steel_ore: 0,
       herbs_wild: 5,
       linho: 5,
 
-      // Gemas
       gem_ruby: 0,
       gem_emerald: 0,
       gem_sapphire: 0,
 
-      // Consumíveis fabricados
       meal_cooked: 2,
       bandage_basic: 2,
       beer_refreshing: 2
     };
 
     this.buildings = {
-      townhall: 1, // Prefeitura começa no nível 1
-      hotel: 0,    // Outros prédios começam bloqueados (nível 0)
+      townhall: 0,
+      hotel: 0,
       restaurant: 0,
       hospital: 0,
       tavern: 0,
       forge: 0
     };
 
-    // Fila de fabricação em andamento
+    this.autoBuyHeroLoot = false;
+    this.grid = { cols: 14, rows: 12 };
+    this.buildingFootprints = {
+      townhall: { w: 3, h: 3 },
+      hotel: { w: 2, h: 2 },
+      restaurant: { w: 2, h: 2 },
+      hospital: { w: 2, h: 2 },
+      tavern: { w: 2, h: 2 },
+      forge: { w: 2, h: 2 }
+    };
+    this.buildingPlacements = {};
     this.craftQueue = [];
   }
 
-  // Verifica se o prédio está construído
   isBuilt(buildingType) {
-    return this.buildings[buildingType] > 0;
+    return (this.buildings[buildingType] || 0) > 0;
   }
 
-  // Obtém configuração do nível atual do prédio
+  getMaxHeroes() {
+    const info = this.getBuildingConfig('townhall');
+    return info?.current?.maxHeroes || 1;
+  }
+
+  getBuildingFootprint(buildingType) {
+    return this.buildingFootprints[buildingType] || { w: 2, h: 2 };
+  }
+
+  getBuildingPlacement(buildingType) {
+    return this.buildingPlacements[buildingType] || null;
+  }
+
+  getPlacedBuildings() {
+    return Object.keys(this.buildingPlacements)
+      .filter(key => this.isBuilt(key))
+      .map(key => ({
+        key,
+        ...this.buildingPlacements[key],
+        footprint: this.getBuildingFootprint(key)
+      }));
+  }
+
+  isInsideGrid(col, row, footprint) {
+    return col >= 0 && row >= 0 &&
+      col + footprint.w <= this.grid.cols &&
+      row + footprint.h <= this.grid.rows;
+  }
+
+  isAreaFree(col, row, footprint, ignoredBuilding = null) {
+    if (!this.isInsideGrid(col, row, footprint)) return false;
+
+    const test = { col, row, w: footprint.w, h: footprint.h };
+    for (const key in this.buildingPlacements) {
+      if (key === ignoredBuilding || !this.isBuilt(key)) continue;
+
+      const placed = this.buildingPlacements[key];
+      const fp = this.getBuildingFootprint(key);
+      const other = { col: placed.col, row: placed.row, w: fp.w, h: fp.h };
+      const overlaps = test.col < other.col + other.w &&
+        test.col + test.w > other.col &&
+        test.row < other.row + other.h &&
+        test.row + test.h > other.row;
+
+      if (overlaps) return false;
+    }
+
+    return true;
+  }
+
+  buildAt(buildingType, col, row) {
+    const footprint = this.getBuildingFootprint(buildingType);
+    if (!this.isAreaFree(col, row, footprint, buildingType)) {
+      return { success: false, reason: 'Esse espaco nao comporta a construcao.' };
+    }
+
+    if (this.isBuilt(buildingType)) {
+      this.buildingPlacements[buildingType] = { col, row };
+      return { success: true, moved: true };
+    }
+
+    const result = this.upgradeBuilding(buildingType);
+    if (!result.success) return result;
+
+    this.buildingPlacements[buildingType] = { col, row };
+    return { success: true, level: this.buildings[buildingType] };
+  }
+
   getBuildingConfig(buildingType) {
-    const level = this.buildings[buildingType];
+    const level = this.buildings[buildingType] || 0;
     const config = BUILDINGS_CONFIG[buildingType];
     if (!config) return null;
-    
-    // Se o nível for 0 (não construído), retorna os dados de custo de construção (nível 1)
+
     if (level === 0) {
-      return { level: 0, next: config.upgrades[0], name: config.name, icon: config.icon, description: config.description };
+      return {
+        level: 0,
+        next: config.upgrades[0],
+        name: config.name,
+        icon: config.icon,
+        description: config.description
+      };
     }
-    
+
     const current = config.upgrades[level - 1];
     const next = config.upgrades[level] || null;
     return { level, current, next, name: config.name, icon: config.icon, description: config.description };
   }
 
-  // Constrói ou melhora um prédio
   upgradeBuilding(buildingType) {
     const info = this.getBuildingConfig(buildingType);
-    if (!info || !info.next) return false;
+    if (!info || !info.next) return { success: false, reason: 'Construcao desconhecida.' };
 
-    const cost = info.next.cost;
-
-    // Verificar se a prefeitura atende o requisito de nível se necessário
-    if (buildingType !== 'townhall' && this.buildings[buildingType] >= this.buildings.townhall) {
-      return { success: false, reason: 'Melhore a Prefeitura antes para subir este prédio!' };
+    if (buildingType !== 'townhall' && this.buildings.townhall <= 0) {
+      return { success: false, reason: 'Construa o Centro da Cidade primeiro!' };
     }
 
-    // Verificar ouro e recursos
+    if (buildingType !== 'townhall' && this.buildings[buildingType] >= this.buildings.townhall) {
+      return { success: false, reason: 'Melhore a Prefeitura antes para subir este predio!' };
+    }
+
+    const cost = info.next.cost;
     if (this.gold < (cost.gold || 0)) {
       return { success: false, reason: 'Ouro insuficiente na prefeitura!' };
     }
@@ -101,34 +178,30 @@ export class Town {
       }
     }
 
-    // Deduzir custos
     this.gold -= cost.gold || 0;
     for (const res in cost) {
-      if (res === 'gold') continue;
-      this.resources[res] -= cost[res];
+      if (res !== 'gold') this.resources[res] -= cost[res];
     }
 
-    // Incrementar nível
-    this.buildings[buildingType]++;
+    this.buildings[buildingType] = (this.buildings[buildingType] || 0) + 1;
     return { success: true, level: this.buildings[buildingType] };
   }
 
-  // Adiciona recursos à prefeitura
   addResource(type, amount) {
     if (this.resources[type] !== undefined) {
       this.resources[type] += amount;
+    } else if (type === 'gold') {
+      this.gold += amount;
     } else {
       this.resources[type] = amount;
     }
   }
 
-  // Compra loot do inventário de um herói
   buyLootFromHero(hero) {
     let transactionCount = 0;
     let goldPaid = 0;
     const itemsToSell = [];
 
-    // Encontrar itens de loot do herói
     for (const itemKey in hero.inventory) {
       const qty = hero.inventory[itemKey];
       if (qty > 0) {
@@ -141,74 +214,65 @@ export class Town {
 
     for (const transaction of itemsToSell) {
       const totalPrice = transaction.qty * transaction.price;
-      
-      // Prefeitura precisa ter ouro para pagar
       if (this.gold >= totalPrice) {
         this.gold -= totalPrice;
         hero.gold += totalPrice;
         hero.inventory[transaction.key] = 0;
-        this.resources[transaction.key] += transaction.qty;
+        this.resources[transaction.key] = (this.resources[transaction.key] || 0) + transaction.qty;
         goldPaid += totalPrice;
         transactionCount++;
       } else {
-        // Compra parcial se não tiver ouro suficiente
         const maxAffordable = Math.floor(this.gold / transaction.price);
         if (maxAffordable > 0) {
           const partialPrice = maxAffordable * transaction.price;
           this.gold -= partialPrice;
           hero.gold += partialPrice;
           hero.inventory[transaction.key] -= maxAffordable;
-          this.resources[transaction.key] += maxAffordable;
+          this.resources[transaction.key] = (this.resources[transaction.key] || 0) + maxAffordable;
           goldPaid += partialPrice;
           transactionCount++;
         }
-        break; // Sem ouro para o resto
+        break;
       }
     }
 
     return { transactionCount, goldPaid };
   }
 
-  // Inicia o craft de um consumível
   craftConsumable(recipeId, quantity = 1) {
     const recipe = CRAFT_RECIPES[recipeId];
     if (!recipe) return { success: false, reason: 'Receita desconhecida.' };
 
     const building = recipe.building;
     if (!this.isBuilt(building)) {
-      return { success: false, reason: `É necessário construir o(a) ${BUILDINGS_CONFIG[building].name}!` };
+      return { success: false, reason: `E necessario construir o(a) ${BUILDINGS_CONFIG[building].name}!` };
     }
 
-    // Calcular custo total
     const totalCost = {};
     for (const key in recipe.cost) {
       totalCost[key] = recipe.cost[key] * quantity;
     }
 
-    // Verificar se possui recursos
     for (const key in totalCost) {
       if ((this.resources[key] || 0) < totalCost[key]) {
         return { success: false, reason: `Falta de recurso: ${ITEMS_INFO[key]?.name || key}` };
       }
     }
 
-    // Deduzir recursos
     for (const key in totalCost) {
       this.resources[key] -= totalCost[key];
     }
 
-    // Adicionar na fila de fabricação
-    const craftTime = 3000; // 3 segundos base por item
+    const craftTime = 3000;
     const speedMult = this.getBuildingConfig(building).current?.craftSpeed || 1.0;
     const duration = (craftTime * quantity) / speedMult;
-
     const job = {
       id: Date.now() + Math.random(),
       recipeId,
       result: recipe.result,
       quantity: quantity * recipe.qty,
       timeLeft: duration,
-      duration: duration,
+      duration,
       building
     };
 
@@ -216,16 +280,14 @@ export class Town {
     return { success: true, job };
   }
 
-  // Atualiza a fila de craft (executado a cada tick)
   updateCrafting(dt) {
     const completedJobs = [];
-    
+
     for (let i = this.craftQueue.length - 1; i >= 0; i--) {
       const job = this.craftQueue[i];
       job.timeLeft -= dt;
-      
+
       if (job.timeLeft <= 0) {
-        // Craft completo!
         this.addResource(job.result, job.quantity);
         completedJobs.push(job);
         this.craftQueue.splice(i, 1);
@@ -235,7 +297,6 @@ export class Town {
     return completedJobs;
   }
 
-  // Compra de matérias primas adicionais pela prefeitura (Importações básicas)
   importMaterials(itemKey, amount, costGold) {
     if (this.gold >= costGold) {
       this.gold -= costGold;
