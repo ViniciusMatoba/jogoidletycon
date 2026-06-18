@@ -57,8 +57,8 @@ body {
 
 /* App Layout */
 .game-container {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 65px 1fr 55px;
   width: 100vw;
   height: 100vh;
   max-width: 1200px;
@@ -68,6 +68,7 @@ body {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85);
   border-radius: 6px;
   position: relative;
+  overflow: hidden;
 }
 
 /* BARRA SUPERIOR (ESTOQUE) */
@@ -165,13 +166,12 @@ body {
 
 /* ÁREA CENTRAL DO MAPA EXPANDIDO */
 .game-main-expanded {
-  flex: 1;
   display: flex;
   flex-direction: column;
   background-color: #0b0c10;
   position: relative;
-  height: calc(100% - 120px); /* Descontando header e footer */
   min-height: 0;
+  overflow: hidden;
 }
 
 .canvas-container-large {
@@ -771,6 +771,7 @@ body {
     height: 100vh;
     max-height: none;
     border: none;
+    grid-template-rows: auto 1fr 50px;
   }
   .town-header {
     flex-direction: column;
@@ -783,7 +784,8 @@ body {
     justify-content: center;
   }
   .game-main-expanded {
-    height: calc(100vh - 170px);
+    min-height: 0;
+    overflow: hidden;
   }
   .retro-footer-menu {
     height: 50px;
