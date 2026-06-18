@@ -95,50 +95,70 @@ body {
   color: var(--text-muted);
 }
 
-.resources-bar {
+/* Cabeçalho Minimalista */
+.town-minimal-stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  max-width: 68%;
+  gap: 12px;
+  align-items: center;
 }
-
-.res-item {
+.stat-badge-header {
   display: flex;
   align-items: center;
-  gap: 3px;
-  background-color: rgba(0, 0, 0, 0.35);
-  padding: 2px 6px;
-  border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  gap: 5px;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1.5px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: 4px;
 }
-.res-icon {
-  font-size: 12px;
-}
-.res-val {
-  font-family: var(--font-retro);
+.stat-icon {
   font-size: 15px;
-  font-weight: bold;
+}
+.stat-val {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--border-gold);
 }
 
-.supplies-bar {
-  display: flex;
+/* Grade do Baú de Inventário (Modal Prefeitura) */
+.town-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  max-height: 180px;
+  overflow-y: auto;
 }
-.supply-item {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  background: linear-gradient(135deg, #1b212f, #0d121c);
-  border: 1.5px solid var(--border-gold);
-  padding: 3px 6px;
+.inventory-item-card {
+  background-color: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 4px;
   border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
-.sup-icon {
-  font-size: 12px;
+.inventory-item-card:hover {
+  border-color: var(--border-gold);
 }
-.sup-val {
-  font-family: var(--font-retro);
+.inv-icon {
   font-size: 16px;
+}
+.inv-name {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.inv-qty-badge {
+  font-family: var(--font-retro);
+  font-size: 14px;
   font-weight: bold;
   color: var(--border-gold);
 }

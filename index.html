@@ -18,95 +18,22 @@
   <!-- App Wrapper -->
   <div class="game-container">
     
-    <!-- Barra Superior de Recursos da Cidade -->
+    <!-- Barra Superior Minimalista -->
     <header class="town-header">
       <div class="header-logo">
         <h3>GUILDA IDLE</h3>
-        <p>Painel Administrativo</p>
+        <p>Painel de Gestão</p>
       </div>
       
-      <!-- Estoque da Cidade -->
-      <div class="resources-bar">
-        <div class="res-item" title="Ouro da Prefeitura">
-          <span class="res-icon">🪙</span>
-          <span id="town-gold" class="res-val">0</span>
+      <!-- Informações Globais Rápidas -->
+      <div class="town-minimal-stats">
+        <div class="stat-badge-header" title="Ouro da Prefeitura">
+          <span class="stat-icon">🪙</span>
+          <span id="town-gold" class="stat-val">0</span>
         </div>
-        <div class="res-item" title="Madeira Bruta">
-          <span class="res-icon">🪵</span>
-          <span id="town-wood" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Minério de Ferro">
-          <span class="res-icon">🪨</span>
-          <span id="town-iron" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Minério de Aço">
-          <span class="res-icon">⛓️</span>
-          <span id="town-steel" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Ervas Selvagens">
-          <span class="res-icon">🌿</span>
-          <span id="town-herbs" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Tecido de Linho">
-          <span class="res-icon">🧵</span>
-          <span id="town-linho" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Carne Crua">
-          <span class="res-icon">🥩</span>
-          <span id="town-meat" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Asa de Morcego">
-          <span class="res-icon">🦇</span>
-          <span id="town-bat-wing" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Cauda de Rato">
-          <span class="res-icon">🐀</span>
-          <span id="town-rat-tail" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Teia de Aranha">
-          <span class="res-icon">🕸️</span>
-          <span id="town-spider-silk" class="res-val">0</span>
-        </div>
-        <!-- Novos itens do folclore -->
-        <div class="res-item" title="Gorro do Saci (Raro)">
-          <span class="res-icon">🧢</span>
-          <span id="town-gorro-saci" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Cabelo de Fogo (Raro)">
-          <span class="res-icon">🔥</span>
-          <span id="town-cabelo-fogo" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Olho de Boitatá (Raro)">
-          <span class="res-icon">👁️</span>
-          <span id="town-olho-boitata" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Ferradura de Fogo">
-          <span class="res-icon">🐴</span>
-          <span id="town-ferradura-fogo" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Garra de Mapinguari">
-          <span class="res-icon">🐾</span>
-          <span id="town-garra-mapinguari" class="res-val">0</span>
-        </div>
-        <div class="res-item" title="Folha de Bananeira">
-          <span class="res-icon">🍃</span>
-          <span id="town-folha-banana" class="res-val">0</span>
-        </div>
-      </div>
-
-      <!-- Barra de Suprimentos Prontos -->
-      <div class="supplies-bar">
-        <div class="supply-item" title="Curativos Simples (Curar HP)">
-          <span class="sup-icon">🩹</span>
-          <span id="town-bandage" class="sup-val">0</span>
-        </div>
-        <div class="supply-item" title="Ensopados de Carne (Alimentar Fome)">
-          <span class="sup-icon">🍲</span>
-          <span id="town-meal" class="sup-val">0</span>
-        </div>
-        <div class="supply-item" title="Cervejas Fortes (Recuperar Humor)">
-          <span class="sup-icon">🍺</span>
-          <span id="town-beer" class="sup-val">0</span>
+        <div class="stat-badge-header" title="Heróis da Guilda / Vagas">
+          <span class="stat-icon">👥</span>
+          <span id="town-heroes-count" class="stat-val">0 / 0</span>
         </div>
       </div>
     </header>
@@ -261,6 +188,14 @@
         <button class="close-modal-btn">&times;</button>
       </div>
       <div class="modal-body">
+        <h3>Armazém e Baú da Cidade</h3>
+        <p class="tab-subtitle">Estoque global de materiais e consumíveis da prefeitura obtidos pelos heróis.</p>
+        <div id="town-inventory-grid" class="town-inventory-grid">
+          <!-- Injetado dinamicamente -->
+        </div>
+
+        <hr class="retro-divider" />
+
         <h3>Importações Estratégicas de Emergência</h3>
         <p class="tab-subtitle">Pague ouro da cidade para comprar matérias-primas básicas do mercado caso seus heróis não estejam trazendo suprimentos.</p>
         

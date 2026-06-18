@@ -258,37 +258,40 @@ export function updateUI(game) {
   const goldEl = document.getElementById('town-gold');
   if (goldEl) goldEl.innerText = game.town.gold;
 
-  const resourceElements = {
-    'town-wood': 'wood_rough',
-    'town-iron': 'iron_ore',
-    'town-steel': 'steel_ore',
-    'town-herbs': 'herbs_wild',
-    'town-linho': 'linho',
-    'town-meat': 'meat_raw',
-    'town-rat-tail': 'rat_tail',
-    'town-bat-wing': 'bat_wing',
-    'town-spider-silk': 'spider_silk',
-    'town-gorro-saci': 'gorro_vermelho',
-    'town-cabelo-fogo': 'cabelo_fogo',
-    'town-olho-boitata': 'olho_boitata',
-    'town-ferradura-fogo': 'ferradura_fogo',
-    'town-garra-mapinguari': 'garra_mapinguari',
-    'town-folha-banana': 'bananier_leaf',
-    
-    // Consumíveis
-    'town-meal': 'meal_cooked',
-    'town-bandage': 'bandage_basic',
-    'town-beer': 'beer_refreshing'
-  };
-
-  for (const id in resourceElements) {
-    const el = document.getElementById(id);
-    if (el) {
-      const resKey = resourceElements[id];
-      el.innerText = game.town.resources[resKey] || 0;
-    }
+  // Atualizar vagas de heróis no topo minimalista
+  const heroesCountEl = document.getElementById('town-heroes-count');
+  if (heroesCountEl) {
+    const maxHeroes = game.town.getBuildingConfig('townhall').current.maxHeroes;
+    heroesCountEl.innerText = `${game.heroes.length} / ${maxHeroes}`;
   }
 
+  // Atualizar Armazém de Recursos da Prefeitura
+  updateTownInventory(game);
+}
+
+// Injeta dinamicamente os materiais e provisões no baú do modal prefeitura
+function updateTownInventory(game) {
+  const gridEl = document.getElementById('town-inventory-grid');
+  if (!gridEl) return;
+
+  gridEl.innerHTML = '';
+
+  for (const key in game.town.resources) {
+    const qty = game.town.resources[key];
+    const info = ITEMS_INFO[key];
+    if (info) {
+      const card = document.createElement('div');
+      card.className = 'inventory-item-card';
+      card.title = `${info.name} (Origem: ${info.source || 'Cidade'})`;
+      card.innerHTML = `
+        <span class="inv-icon">${info.icon}</span>
+        <span class="inv-name">${info.name}</span>
+        <span class="inv-qty-badge">${qty}</span>
+      `;
+      gridEl.appendChild(card);
+    }
+  }
+}
   // 2. Atualizar Lista de Heróis (Aba Heróis)
   updateHeroesTab(game);
 
