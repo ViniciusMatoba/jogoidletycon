@@ -227,6 +227,166 @@
     </div>
   </div>
 
+  <!-- 6. Modal Perfil do Caçador Detalhado (Evil Hunter Tycoon Style) -->
+  <div id="hero-profile-modal" class="modal-overlay">
+    <div class="retro-modal hero-profile-window">
+      <div class="modal-header">
+        <div class="profile-header-left">
+          <span class="profile-user-icon">👤</span>
+        </div>
+        <h3 id="profile-hero-name">Strong Triana</h3>
+        <button class="lock-profile-btn" title="Bloquear caçador">🔒</button>
+      </div>
+      <div class="modal-body profile-body">
+        
+        <!-- Top Decor: Reincarnation e Gold -->
+        <div class="profile-top-bar">
+          <div class="reincarnation-box">
+            <span class="stars-pink">✦✦✦✦✦</span>
+            <span class="reinc-text">Reincarnation</span>
+          </div>
+          <div class="individual-gold-box">
+            <span class="gold-icon">🪙</span>
+            <span id="profile-hero-gold">0</span>
+          </div>
+        </div>
+
+        <!-- Círculo de Slots e Sprite central -->
+        <div class="slots-layout-container">
+          <div class="circle-slots-wrapper">
+            <!-- Canvas Central para renderizar o caçador com visual pixelated -->
+            <div class="profile-avatar-center">
+              <canvas id="hero-profile-canvas" width="128" height="128"></canvas>
+            </div>
+
+            <!-- 14 Slots de Equipamento Solares/Absolutos -->
+            <!-- Inner Ring -->
+            <div class="equip-slot inner-slot slot-helmet" data-slot="helmet" title="Elmo/Capacete">
+              <span class="slot-placeholder">🪖</span>
+            </div>
+            <div class="equip-slot inner-slot slot-necklace" data-slot="necklace" title="Colar">
+              <span class="slot-placeholder">📿</span>
+            </div>
+            <div class="equip-slot inner-slot slot-armor" data-slot="armor" title="Armadura">
+              <span class="slot-placeholder">🧥</span>
+            </div>
+            <div class="equip-slot inner-slot slot-weapon" data-slot="weapon" title="Arma">
+              <span class="slot-placeholder">⚔️</span>
+            </div>
+            <div class="equip-slot inner-slot slot-gloves" data-slot="gloves" title="Luvas">
+              <span class="slot-placeholder">🧤</span>
+            </div>
+            <div class="equip-slot inner-slot slot-ring" data-slot="ring" title="Anel">
+              <span class="slot-placeholder">💍</span>
+            </div>
+            <div class="equip-slot inner-slot slot-belt" data-slot="belt" title="Cinto">
+              <span class="slot-placeholder">🥋</span>
+            </div>
+            <div class="equip-slot inner-slot slot-boots" data-slot="boots" title="Botas">
+              <span class="slot-placeholder">🥾</span>
+            </div>
+            <div class="equip-slot inner-slot slot-pants" data-slot="pants" title="Calças">
+              <span class="slot-placeholder">👖</span>
+            </div>
+
+            <!-- Outer Ring (Purple Borders) -->
+            <div class="equip-slot outer-slot slot-accessory1" data-slot="accessory1" title="Acessório Especial (G)">
+              <span class="slot-placeholder">G</span>
+            </div>
+            <div class="equip-slot outer-slot slot-pet" data-slot="pet" title="Mascote/Pet">
+              <span class="slot-placeholder">🐾</span>
+            </div>
+            <div class="equip-slot outer-slot slot-weapon-skin" data-slot="weapon_skin" title="Aparência de Arma">
+              <span class="slot-placeholder">⚔️</span>
+            </div>
+            <div class="equip-slot outer-slot slot-armor-skin" data-slot="armor_skin" title="Aparência de Armadura">
+              <span class="slot-placeholder">🧥</span>
+            </div>
+            <div class="equip-slot outer-slot slot-wings" data-slot="wings" title="Asas/Capa">
+              <span class="slot-placeholder">🪶</span>
+            </div>
+            <div class="equip-slot outer-slot slot-accessory2" data-slot="accessory2" title="Gema de Acessório">
+              <span class="slot-placeholder">⬡</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra Fina Roxa de EXP -->
+        <div class="profile-exp-bar-container">
+          <div class="profile-exp-bar-fill" id="profile-exp-fill"></div>
+          <span id="profile-exp-text" class="profile-exp-text">EXP 0 / 0</span>
+        </div>
+
+        <!-- Abas de Navegação (Fidelidade do Screenshot) -->
+        <div class="profile-tabs-row">
+          <button class="profile-tab-btn active" data-tab="stats">📋</button>
+          <button class="profile-tab-btn" data-tab="skills">📜</button>
+          <button class="profile-tab-btn" data-tab="traits">📚</button>
+          <button class="profile-tab-btn" data-tab="pet">🐴</button>
+          <button class="profile-tab-btn" data-tab="inventory">💼</button>
+        </div>
+
+        <!-- Painel Inferior de Estatísticas (Duas Colunas) -->
+        <div class="profile-stats-panel">
+          <!-- Esquerda: Necessidades (HP, Fome, Humor, Stamina/Energia) -->
+          <div class="profile-needs-col">
+            <div class="profile-need-bar hp-bar" title="Vida (HP)">
+              <div class="fill" id="profile-need-hp-fill"></div>
+              <span id="profile-need-hp-val">HP 0/0</span>
+            </div>
+            <div class="profile-need-bar hunger-bar" title="Fome (Satiety)">
+              <div class="fill" id="profile-need-hunger-fill"></div>
+              <span id="profile-need-hunger-val">Fome 0/100</span>
+            </div>
+            <div class="profile-need-bar mood-bar" title="Humor (Mood)">
+              <div class="fill" id="profile-need-mood-fill"></div>
+              <span id="profile-need-mood-val">Humor 0/100</span>
+            </div>
+            <div class="profile-need-bar energy-bar" title="Energia (Stamina)">
+              <div class="fill" id="profile-need-energy-fill"></div>
+              <span id="profile-need-energy-val">Energia 0/100</span>
+            </div>
+          </div>
+
+          <!-- Direita: Atributos de Combate textuais dourados -->
+          <div class="profile-combat-col">
+            <div class="combat-stat-line">
+              <span class="label">⚔️ ATK</span>
+              <span class="value" id="profile-stat-atk">0</span>
+            </div>
+            <div class="combat-stat-line">
+              <span class="label">🛡️ DEF</span>
+              <span class="value" id="profile-stat-def">0</span>
+            </div>
+            <div class="combat-stat-line">
+              <span class="label">💥 CRIT</span>
+              <span class="value" id="profile-stat-crit">8%</span>
+            </div>
+            <div class="combat-stat-line">
+              <span class="label">⚡ ATK SPD</span>
+              <span class="value" id="profile-stat-spd">0</span>
+            </div>
+            <div class="combat-stat-line">
+              <span class="label">👤 Evasion</span>
+              <span class="value" id="profile-stat-eva">10%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Linha Extra: Awakening e Close Button -->
+        <div class="profile-bottom-line">
+          <div class="awakening-badge">
+            <span>Awakening</span>
+            <strong class="aw-val">⚔️ 0 / 4</strong>
+          </div>
+        </div>
+
+        <button class="profile-close-btn" id="close-profile-btn">Close</button>
+
+      </div>
+    </div>
+  </div>
+
   <!-- Script Bootstrap Principal -->
   <script type="module" src="src/main.js"></script>
 </body>

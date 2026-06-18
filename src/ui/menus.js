@@ -1,5 +1,8 @@
 import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
 
+let activeProfileHero = null;
+let activeProfileTab = 'stats';
+
 export function setupUI(game) {
   // 1. Controle de Janelas Modais Retro (Menu de Rodapé)
   const menuButtons = document.querySelectorAll('.menu-btn-retro');
@@ -106,6 +109,37 @@ export function setupUI(game) {
       }
     });
   });
+
+  // 7. Modal de Perfil Detalhado do Caçador
+  const profileModal = document.getElementById('hero-profile-modal');
+  if (profileModal) {
+    const closeProfileBtn = document.getElementById('close-profile-btn');
+    if (closeProfileBtn) {
+      closeProfileBtn.addEventListener('click', () => {
+        profileModal.classList.remove('active');
+        activeProfileHero = null;
+      });
+    }
+    profileModal.addEventListener('click', (e) => {
+      if (e.target === profileModal) {
+        profileModal.classList.remove('active');
+        activeProfileHero = null;
+      }
+    });
+
+    // Abas de Navegação internas do Perfil
+    const tabBtns = profileModal.querySelectorAll('.profile-tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeProfileTab = btn.getAttribute('data-tab');
+        if (activeProfileHero) {
+          refreshHeroProfile(activeProfileHero, game);
+        }
+      });
+    });
+  }
 }
 
 // Configura botões de upgrade de edifícios
@@ -267,31 +301,7 @@ export function updateUI(game) {
 
   // Atualizar Armazém de Recursos da Prefeitura
   updateTownInventory(game);
-}
 
-// Injeta dinamicamente os materiais e provisões no baú do modal prefeitura
-function updateTownInventory(game) {
-  const gridEl = document.getElementById('town-inventory-grid');
-  if (!gridEl) return;
-
-  gridEl.innerHTML = '';
-
-  for (const key in game.town.resources) {
-    const qty = game.town.resources[key];
-    const info = ITEMS_INFO[key];
-    if (info) {
-      const card = document.createElement('div');
-      card.className = 'inventory-item-card';
-      card.title = `${info.name} (Origem: ${info.source || 'Cidade'})`;
-      card.innerHTML = `
-        <span class="inv-icon">${info.icon}</span>
-        <span class="inv-name">${info.name}</span>
-        <span class="inv-qty-badge">${qty}</span>
-      `;
-      gridEl.appendChild(card);
-    }
-  }
-}
   // 2. Atualizar Lista de Heróis (Aba Heróis)
   updateHeroesTab(game);
 
@@ -350,11 +360,434 @@ function updateTownInventory(game) {
     const cost = game.getHiringCost();
     hireBtnContainer.innerHTML = `Vagas: <strong>${countHeroes} / ${maxHeroes}</strong>. Custo do próximo herói: 🪙 <strong>${cost} Ouro</strong>`;
   }
+
+  // Atualizar modal de perfil em tempo real se aberto
+  const profileModal = document.getElementById('hero-profile-modal');
+  if (profileModal && profileModal.classList.contains('active') && activeProfileHero) {
+    refreshHeroProfile(activeProfileHero, game);
+  }
 }
 
-// Renderiza a lista detalhada de heróis na aba correspondente
-let lastSelectedHeroId = null;
+// Injeta dinamicamente os materiais e provisões no baú do modal prefeitura
+function updateTownInventory(game) {
+  const gridEl = document.getElementById('town-inventory-grid');
+  if (!gridEl) return;
 
+  gridEl.innerHTML = '';
+
+  for (const key in game.town.resources) {
+    const qty = game.town.resources[key];
+    const info = ITEMS_INFO[key];
+    if (info && qty > 0) {
+      const card = document.createElement('div');
+      card.className = 'inventory-item-card';
+      card.title = `${info.name} (Origem: ${info.source || 'Cidade'})`;
+      card.innerHTML = `
+        <span class="inv-icon">${info.icon}</span>
+        <span class="inv-name">${info.name}</span>
+        <span class="inv-qty-badge">${qty}</span>
+      `;
+      gridEl.appendChild(card);
+    }
+  }
+}
+
+// Abre a ficha detalhada do caçador
+export function openHeroProfile(hero, game) {
+  const modal = document.getElementById('hero-profile-modal');
+  if (!modal) return;
+
+  activeProfileHero = hero;
+  activeProfileTab = 'stats';
+
+  // Configura aba ativa visualmente
+  const tabBtns = modal.querySelectorAll('.profile-tab-btn');
+  tabBtns.forEach(btn => {
+    if (btn.getAttribute('data-tab') === 'stats') {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Nome do Herói
+  const nameEl = document.getElementById('profile-hero-name');
+  if (nameEl) nameEl.innerText = hero.name;
+
+  // Botão de Trava de Perfil (Apenas cosmético)
+  const lockBtn = modal.querySelector('.lock-profile-btn');
+  if (lockBtn) {
+    let isLocked = false;
+    lockBtn.onclick = () => {
+      isLocked = !isLocked;
+      lockBtn.innerText = isLocked ? '🔒' : '🔓';
+    };
+  }
+
+  // Abrir o modal
+  modal.classList.add('active');
+
+  // Atualização inicial imediata
+  refreshHeroProfile(hero, game);
+}
+
+// Atualiza o modal de perfil com dados dinâmicos do caçador
+function refreshHeroProfile(hero, game) {
+  // Ouro Individual
+  const goldEl = document.getElementById('profile-hero-gold');
+  if (goldEl) goldEl.innerText = Math.round(hero.gold).toLocaleString();
+
+  // Barra de EXP
+  const expFill = document.getElementById('profile-exp-fill');
+  const expText = document.getElementById('profile-exp-text');
+  if (expFill && expText) {
+    const pct = (hero.xp / hero.xpNeeded) * 100;
+    expFill.style.width = `${pct}%`;
+    expText.innerText = `EXP ${Math.round(hero.xp)} / ${hero.xpNeeded}`;
+  }
+
+  // Renderização dos 15 slots de equipamento
+  const slots = [
+    'helmet', 'necklace', 'armor', 'weapon', 'gloves',
+    'ring', 'belt', 'boots', 'pants',
+    'accessory1', 'pet', 'weapon_skin', 'armor_skin', 'wings', 'accessory2'
+  ];
+
+  slots.forEach(slot => {
+    const slotEl = document.querySelector(`.slot-${slot.replace('_', '-')}`);
+    if (slotEl) {
+      const item = hero.equipment[slot];
+      if (item) {
+        slotEl.classList.add('equipped');
+        const starsCount = Math.min(5, item.tier + 2);
+        const starsHtml = '<span>✦</span>'.repeat(starsCount);
+
+        slotEl.innerHTML = `
+          <span class="slot-placeholder">${item.icon || '⚔️'}</span>
+          <div class="slot-stars">${starsHtml}</div>
+        `;
+        slotEl.title = `${item.name} (Grau ${item.tier})`;
+      } else {
+        slotEl.classList.remove('equipped');
+        
+        const placeholders = {
+          helmet: '🪖', necklace: '📿', armor: '🧥', weapon: '⚔️', gloves: '🧤',
+          ring: '💍', belt: '🥋', boots: '🥾', pants: '👖',
+          accessory1: 'G', pet: '🐾', weapon_skin: '⚔️', armor_skin: '🧥', wings: '🪶', accessory2: '⬡'
+        };
+        slotEl.innerHTML = `<span class="slot-placeholder">${placeholders[slot]}</span>`;
+        slotEl.title = `Slot Vazio: ${slot.toUpperCase()}`;
+      }
+    }
+  });
+
+  // Atualizar painel de conteúdo da aba selecionada
+  const panel = document.querySelector('.profile-stats-panel');
+  if (panel) {
+    if (activeProfileTab === 'stats') {
+      panel.innerHTML = `
+        <div class="profile-needs-col">
+          <div class="profile-need-bar hp-bar" title="Vida (HP)">
+            <div class="fill" style="width: ${(hero.hp / hero.maxHp) * 100}%"></div>
+            <span>HP ${Math.round(hero.hp)}/${hero.maxHp}</span>
+          </div>
+          <div class="profile-need-bar hunger-bar" title="Fome (Satiety)">
+            <div class="fill" style="width: ${hero.hunger}%"></div>
+            <span>Fome ${Math.round(hero.hunger)}/100</span>
+          </div>
+          <div class="profile-need-bar mood-bar" title="Humor (Mood)">
+            <div class="fill" style="width: ${hero.mood}%"></div>
+            <span>Humor ${Math.round(hero.mood)}/100</span>
+          </div>
+          <div class="profile-need-bar energy-bar" title="Energia (Stamina)">
+            <div class="fill" style="width: ${hero.energy}%"></div>
+            <span>Energia ${Math.round(hero.energy)}/100</span>
+          </div>
+        </div>
+        <div class="profile-combat-col">
+          <div class="combat-stat-line">
+            <span class="label">⚔️ ATK</span>
+            <span class="value">${hero.atk}</span>
+          </div>
+          <div class="combat-stat-line">
+            <span class="label">🛡️ DEF</span>
+            <span class="value">${hero.def}</span>
+          </div>
+          <div class="combat-stat-line">
+            <span class="label">💥 CRIT</span>
+            <span class="value">${hero.className === 'ARCHER' ? '30%' : '8%'}</span>
+          </div>
+          <div class="combat-stat-line">
+            <span class="label">⚡ ATK SPD</span>
+            <span class="value">${hero.spd.toFixed(2)}/s</span>
+          </div>
+          <div class="combat-stat-line">
+            <span class="label">👤 Evasion</span>
+            <span class="value">${hero.className === 'MERCENARY' ? '15%' : '5%'}</span>
+          </div>
+        </div>
+      `;
+    } else if (activeProfileTab === 'skills') {
+      const skillsHtml = hero.classConfig.skills.map(s => `
+        <div class="profile-skill-row" style="margin-bottom: 6px;">
+          <strong style="color: #ff9f3a; font-size: 13px;">${s.name}</strong> <span style="color: #a08c80; font-size: 11px;">(cd: ${s.cd}s)</span>
+          <p style="color: #e2e8f0; font-size: 11px; margin-top: 1px;">${s.desc}</p>
+        </div>
+      `).join('');
+      panel.innerHTML = `
+        <div style="width: 100%; display: flex; flex-direction: column; overflow-y: auto; max-height: 120px; text-align: left; padding: 4px;">
+          ${skillsHtml}
+        </div>
+      `;
+    } else if (activeProfileTab === 'traits') {
+      panel.innerHTML = `
+        <div style="width: 100%; text-align: left; font-size: 13px; font-family: var(--font-retro); display: flex; flex-direction: column; gap: 4px; padding: 4px;">
+          <div><span style="color: #a08c80;">Classe:</span> <strong style="color: ${hero.classConfig.color};">${hero.classConfig.name}</strong></div>
+          <div><span style="color: #a08c80;">Pele:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.skinColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.skinColor}</div>
+          <div><span style="color: #a08c80;">Cabelo:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.hairColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.hairColor} (${hero.cosmetics.hairStyle})</div>
+          <div><span style="color: #a08c80;">Túnica:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.clothesColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.clothesColor}</div>
+          <div><span style="color: #a08c80;">Status:</span> <span style="color: #3aff7d;">${formatHeroState(hero.state)}</span></div>
+        </div>
+      `;
+    } else if (activeProfileTab === 'pet') {
+      const petItem = hero.equipment.pet;
+      if (petItem) {
+        panel.innerHTML = `
+          <div style="width: 100%; text-align: left; font-family: var(--font-retro); padding: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 28px;">${petItem.icon}</span>
+              <div>
+                <strong style="color: #ff33aa; font-size: 14px;">${petItem.name}</strong>
+                <p style="color: #a08c80; font-size: 11px;">Mascote de Caça</p>
+              </div>
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: #3aff7d;">
+              Atributo: +${petItem.stats.atk || 0} ATK
+            </div>
+          </div>
+        `;
+      } else {
+        panel.innerHTML = `
+          <div style="width: 100%; display: flex; align-items: center; justify-content: center; color: #a08c80; font-family: var(--font-retro); font-size: 13px;">
+            Nenhum mascote equipado. Fabrique na Forja!
+          </div>
+        `;
+      }
+    } else if (activeProfileTab === 'inventory') {
+      const invItems = [];
+      for (const key in hero.inventory) {
+        if (hero.inventory[key] > 0) {
+          invItems.push(`<span style="background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 2px; border: 1px solid #3d2b1f; display: inline-block; margin: 2px;">${ITEMS_INFO[key]?.icon || '📦'} ${ITEMS_INFO[key]?.name || key} x${hero.inventory[key]}</span>`);
+        }
+      }
+      const invHtml = invItems.length > 0 ? invItems.join(' ') : '<span style="color: #a08c80;">Mochila vazia</span>';
+      const logsHtml = hero.logs.map(log => `<li style="font-family: monospace; font-size: 9.5px; color: #8892b0; margin-bottom: 2px; list-style: none;">&gt; ${log}</li>`).join('');
+
+      panel.innerHTML = `
+        <div style="width: 100%; display: flex; flex-direction: column; text-align: left; font-family: var(--font-retro); font-size: 12px; gap: 6px; overflow-y: auto; max-height: 120px; padding: 4px;">
+          <div>
+            <strong style="color: #ff9f3a;">Inventário do Herói:</strong>
+            <div style="margin-top: 3px;">${invHtml}</div>
+          </div>
+          <div style="border-top: 1px solid #3d2b1f; padding-top: 4px;">
+            <strong style="color: #ff9f3a;">Atividades:</strong>
+            <ul style="padding: 0; margin: 3px 0 0 0;">${logsHtml}</ul>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Desenhar avatar no Canvas
+  drawHeroOnProfileCanvas(hero);
+}
+
+// Desenha o sprite ampliado e nítido do herói no canvas da ficha de perfil
+function drawHeroOnProfileCanvas(hero) {
+  const canvas = document.getElementById('hero-profile-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+
+  const scale = 5;
+  ctx.scale(scale, scale);
+  
+  const hx = (canvas.width / 2) / scale;
+  const hy = ((canvas.height / 2) / scale) + 2; 
+  const step = 0; // standing still
+
+  // Sombra
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(hx, hy + 11, 10, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 1. Pernas
+  ctx.fillStyle = hero.cosmetics.skinColor;
+  ctx.fillRect(hx - 3.5, hy + 5, 2, 6);
+  ctx.fillRect(hx + 1.5, hy + 5, 2, 6);
+  
+  let bootsColor = '#4a2c11';
+  if (hero.equipment.boots) {
+    bootsColor = '#1a1a1a'; // Ex: botas escuras
+  }
+  ctx.fillStyle = bootsColor;
+  ctx.fillRect(hx - 4.5, hy + 10, 3, 1.5);
+  ctx.fillRect(hx + 0.5, hy + 10, 3, 1.5);
+
+  // 2. Corpo
+  let bodyColor = hero.cosmetics.clothesColor;
+  let isLendaria = false;
+
+  if (hero.equipment.armor) {
+    const tier = hero.equipment.armor.tier;
+    if (tier === 1) {
+      bodyColor = hero.className === 'WARRIOR' ? '#818b96' : '#634731';
+    } else if (tier === 2) {
+      bodyColor = '#4e5a66';
+    } else if (tier === 3) {
+      bodyColor = hero.equipment.armor.key.includes('mapinguari') ? '#ab5522' : '#cca93d';
+      isLendaria = true;
+    }
+  }
+
+  ctx.fillStyle = bodyColor;
+  ctx.fillRect(hx - 5, hy - 4, 10, 10); 
+
+  if (isLendaria) {
+    ctx.strokeStyle = '#ffea3a';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(hx - 5.5, hy - 4.5, 11, 11);
+  }
+
+  // Guerreiro Escudo
+  if (hero.className === 'WARRIOR' && !isLendaria) {
+    ctx.fillStyle = '#656e78';
+    ctx.strokeStyle = '#32373c';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(hx - 4, hy + 1, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Cinto
+  ctx.fillStyle = '#261c11';
+  ctx.fillRect(hx - 5, hy + 3, 10, 1.5);
+
+  // 3. Rosto
+  ctx.fillStyle = hero.cosmetics.skinColor;
+  ctx.fillRect(hx - 4, hy - 11, 8, 7);
+  
+  // Olhos
+  ctx.fillStyle = '#111';
+  ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
+  ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
+
+  // Cabelo ou Elmo
+  ctx.fillStyle = hero.cosmetics.hairColor;
+  const hairStyle = hero.cosmetics.hairStyle;
+
+  if (hero.equipment.helmet) {
+    ctx.fillStyle = '#8e8e8e';
+    ctx.fillRect(hx - 4.5, hy - 13, 9, 3);
+  } else if (hero.className === 'MAGE') {
+    ctx.fillStyle = '#511b85';
+    ctx.fillRect(hx - 7, hy - 12, 14, 2); 
+    ctx.beginPath(); 
+    ctx.moveTo(hx - 4, hy - 12);
+    ctx.lineTo(hx + 4, hy - 12);
+    ctx.lineTo(hx, hy - 20);
+    ctx.closePath();
+    ctx.fill();
+  } else if (hero.className === 'WARRIOR') {
+    ctx.fillStyle = '#818b96';
+    ctx.fillRect(hx - 4.5, hy - 13, 9, 3); 
+    ctx.fillStyle = '#ff3d3d'; 
+    ctx.fillRect(hx - 1, hy - 16, 3, 3);
+  } else {
+    if (hairStyle === 'short') {
+      ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+      ctx.fillRect(hx - 4.5, hy - 11, 1.5, 4);
+      ctx.fillRect(hx + 3, hy - 11, 1.5, 4);
+    } else if (hairStyle === 'long') {
+      ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+      ctx.fillRect(hx - 4.5, hy - 11, 1.5, 9);
+      ctx.fillRect(hx + 3, hy - 11, 1.5, 9);
+    } else if (hairStyle === 'spiky') {
+      ctx.fillRect(hx - 4, hy - 12.5, 8, 2);
+      ctx.fillRect(hx - 3, hy - 14.5, 1.5, 2);
+      ctx.fillRect(hx + 1.5, hy - 14.5, 1.5, 2);
+    }
+  }
+
+  // Priests halo
+  if (hero.className === 'PRIEST') {
+    ctx.strokeStyle = '#ffea3a';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(hx, hy - 14, 2.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Asas / Wings (Cosmético se equipado!)
+  if (hero.equipment.wings) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillRect(hx - 12, hy - 6, 7, 10);
+    ctx.fillRect(hx + 5, hy - 6, 7, 10);
+  }
+
+  // 4. Arma Dinâmica
+  const wx = hx - 6.5;
+  const wy = hy + 2;
+
+  let weaponColor = '#bf9b30'; 
+
+  if (hero.equipment.weapon) {
+    const tier = hero.equipment.weapon.tier;
+    if (tier === 1) weaponColor = '#818b96';
+    if (tier === 2) weaponColor = '#4e5b66';
+    if (tier === 3) weaponColor = '#ffea3a';
+  }
+
+  if (hero.equipment.weapon) {
+    if (hero.className === 'ARCHER') {
+      ctx.strokeStyle = weaponColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(wx, wy, 5, Math.PI/2, -Math.PI/2, true);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(wx, wy - 5);
+      ctx.lineTo(wx, wy + 5);
+      ctx.stroke();
+    } else if (hero.className === 'MAGE' || hero.className === 'PRIEST') {
+      ctx.fillStyle = '#6b4724';
+      ctx.fillRect(wx + 1, wy - 8, 1.5, 12);
+      ctx.fillStyle = hero.className === 'PRIEST' ? '#ffea3a' : '#c23aff';
+      ctx.fillRect(wx, wy - 11, 3.5, 3.5);
+    } else {
+      ctx.fillStyle = weaponColor;
+      ctx.fillRect(wx + 1, wy - 8, 1.5, 10);
+      ctx.fillStyle = '#4a2c11';
+      ctx.fillRect(wx - 1, wy - 1, 5.5, 1.5);
+      ctx.fillRect(wx + 1, wy + 2, 1.5, 2);
+    }
+  } else {
+    ctx.fillStyle = hero.cosmetics.skinColor;
+    ctx.fillRect(wx, wy, 2, 2.5);
+  }
+
+  ctx.restore();
+}
+
+// Renderiza a lista de heróis simplificada (clicar abre a ficha detalhada)
 function updateHeroesTab(game) {
   const listEl = document.getElementById('heroes-list-container');
   if (!listEl) return;
@@ -363,28 +796,11 @@ function updateHeroesTab(game) {
 
   game.heroes.forEach(hero => {
     const card = document.createElement('div');
-    const isSelected = lastSelectedHeroId === hero.id;
-    card.className = `hero-row-card ${isSelected ? 'selected' : ''}`;
+    card.className = `hero-row-card`;
     
     const hpPct = (hero.hp / hero.maxHp) * 100;
     const hungerPct = hero.hunger;
     const energyPct = hero.energy;
-    const moodPct = hero.mood;
-
-    const classConfig = HERO_CLASSES[hero.className];
-
-    // Formatar equipamentos
-    const weaponName = hero.equipment.weapon ? hero.equipment.weapon.name : 'Nenhuma';
-    const armorName = hero.equipment.armor ? hero.equipment.armor.name : 'Nenhuma';
-
-    // Formatar inventário
-    const invItems = [];
-    for (const key in hero.inventory) {
-      if (hero.inventory[key] > 0) {
-        invItems.push(`${ITEMS_INFO[key]?.icon || '📦'} x${hero.inventory[key]}`);
-      }
-    }
-    const invText = invItems.length > 0 ? invItems.join(' | ') : 'Vazio';
 
     card.innerHTML = `
       <div class="hero-summary-line" style="border-left: 5px solid ${hero.classConfig.color}">
@@ -413,49 +829,11 @@ function updateHeroesTab(game) {
           <span class="state-badge state-${hero.state.toLowerCase()}">${formatHeroState(hero.state)}</span>
         </div>
       </div>
-      
-      ${isSelected ? `
-        <div class="hero-details-drawer">
-          <div class="details-grid">
-            <div class="details-stats">
-              <h5>Atributos</h5>
-              <p>⚔️ Ataque: <strong>${hero.atk}</strong></p>
-              <p>🛡️ Defesa: <strong>${hero.def}</strong></p>
-              <p>⚡ Vel. Ataque: <strong>${hero.spd.toFixed(1)}/s</strong></p>
-              <p>🪙 Ouro Individual: <strong>${hero.gold}</strong></p>
-              <p>🌟 XP: <strong>${hero.xp} / ${hero.xpNeeded}</strong></p>
-            </div>
-            <div class="details-equipment">
-              <h5>Equipamentos</h5>
-              <p>🗡️ Arma: <span class="equip-item-tag ${hero.equipment.weapon ? 'tier-' + hero.equipment.weapon.tier : ''}">${weaponName}</span></p>
-              <p>🛡️ Armadura: <span class="equip-item-tag ${hero.equipment.armor ? 'tier-' + hero.equipment.armor.tier : ''}">${armorName}</span></p>
-            </div>
-            <div class="details-inventory">
-              <h5>Inventário Pessoal (Loots)</h5>
-              <p>${invText}</p>
-            </div>
-          </div>
-          <div class="details-logs">
-            <h5>Logs de Atividades</h5>
-            <ul>
-              ${hero.logs.map(log => `<li>${log}</li>`).join('')}
-            </ul>
-          </div>
-        </div>
-      ` : ''}
     `;
 
-    // Abrir/Fechar Detalhes ao Clicar
-    card.addEventListener('click', (e) => {
-      // Se clicou em algum sub-botão ou gaveta, não altera
-      if (e.target.closest('.hero-details-drawer')) return;
-      
-      if (isSelected) {
-        lastSelectedHeroId = null;
-      } else {
-        lastSelectedHeroId = hero.id;
-      }
-      updateHeroesTab(game);
+    // Clicar no card abre o modal detalhado
+    card.addEventListener('click', () => {
+      openHeroProfile(hero, game);
     });
 
     listEl.appendChild(card);

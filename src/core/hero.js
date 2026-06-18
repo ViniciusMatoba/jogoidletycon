@@ -36,7 +36,20 @@ export class Hero {
     // Status de Combate (Base + Equipamentos)
     this.equipment = {
       weapon: null, // Objeto de item de craft
-      armor: null
+      armor: null,
+      helmet: null,
+      necklace: null,
+      gloves: null,
+      ring: null,
+      belt: null,
+      boots: null,
+      pants: null,
+      accessory1: null,
+      pet: null,
+      weapon_skin: null,
+      armor_skin: null,
+      wings: null,
+      accessory2: null
     };
 
     this.recalculateStats();
@@ -83,13 +96,14 @@ export class Hero {
     this.def = Math.round(classBase.baseDef * levelMult);
     this.spd = classBase.baseSpd; // Ataques por segundo
 
-    // Somar bônus de equipamentos
-    if (this.equipment.weapon) {
-      this.atk += this.equipment.weapon.stats.atk || 0;
-    }
-    if (this.equipment.armor) {
-      this.maxHp += this.equipment.armor.stats.hp || 0;
-      this.def += this.equipment.armor.stats.def || 0;
+    // Somar bônus de todos os equipamentos equipados
+    for (const slot in this.equipment) {
+      const item = this.equipment[slot];
+      if (item && item.stats) {
+        this.atk += item.stats.atk || 0;
+        this.maxHp += item.stats.hp || 0;
+        this.def += item.stats.def || 0;
+      }
     }
   }
 
@@ -510,38 +524,25 @@ export class Hero {
   buyEquipmentFromShops(town) {
     if (!town.isBuilt('forge')) return;
 
-    // A oficina guarda itens craftados?
-    // Para simplificar o protótipo e deixar dinâmico, o herói pode "encomendar"
-    // ou "comprar" itens se a prefeitura já tiver os materiais de craft na oficina
-    // e o herói pagar em ouro.
-    // Vamos procurar receitas compatíveis com a classe do herói.
-    // Buscamos o maior Tier de equipamento disponível que o herói consegue pagar e a prefeitura tem recursos.
-    let bestWeaponRecipe = null;
-    let bestArmorRecipe = null;
-
     const forgeTier = town.buildings.forge;
+
+    // Para cada slot de equipamento, vamos encontrar a melhor receita disponível
+    const bestRecipesBySlot = {};
 
     for (const recipeKey in CRAFT_RECIPES) {
       const recipe = CRAFT_RECIPES[recipeKey];
       
       // Filtra por equipamento, classe do herói e tier permitido pela Forja
       if (recipe.stats && recipe.class.includes(this.className) && recipe.tier <= forgeTier) {
-        // Verifica se é arma
-        if (recipe.slot === 'weapon') {
-          if (!this.equipment.weapon || recipe.tier > this.equipment.weapon.tier) {
+        const slot = recipe.slot;
+        if (slot in this.equipment) {
+          const currentItem = this.equipment[slot];
+          // Se o herói não tiver o item ou a receita for de maior tier
+          if (!currentItem || recipe.tier > currentItem.tier) {
             if (this.gold >= recipe.cost.gold && this.canTownAffordRecipe(town, recipe)) {
-              if (!bestWeaponRecipe || recipe.tier > bestWeaponRecipe.tier) {
-                bestWeaponRecipe = { key: recipeKey, ...recipe };
-              }
-            }
-          }
-        }
-        // Verifica se é armadura
-        if (recipe.slot === 'armor') {
-          if (!this.equipment.armor || recipe.tier > this.equipment.armor.tier) {
-            if (this.gold >= recipe.cost.gold && this.canTownAffordRecipe(town, recipe)) {
-              if (!bestArmorRecipe || recipe.tier > bestArmorRecipe.tier) {
-                bestArmorRecipe = { key: recipeKey, ...recipe };
+              const bestForSlot = bestRecipesBySlot[slot];
+              if (!bestForSlot || recipe.tier > bestForSlot.tier) {
+                bestRecipesBySlot[slot] = { key: recipeKey, ...recipe };
               }
             }
           }
@@ -549,24 +550,23 @@ export class Hero {
       }
     }
 
-    // Comprar arma
-    if (bestWeaponRecipe) {
-      this.gold -= bestWeaponRecipe.cost.gold;
-      town.gold += bestWeaponRecipe.cost.gold;
-      this.deductTownRecipeMaterials(town, bestWeaponRecipe);
-      this.equipment.weapon = bestWeaponRecipe;
-      this.recalculateStats();
-      this.addLog(`Comprou: ${bestWeaponRecipe.name}`);
+    // Comprar os melhores itens encontrados para cada slot
+    let boughtAny = false;
+    for (const slot in bestRecipesBySlot) {
+      const bestRecipe = bestRecipesBySlot[slot];
+      // Verifica se o herói ainda tem ouro e a cidade ainda tem materiais
+      if (this.gold >= bestRecipe.cost.gold && this.canTownAffordRecipe(town, bestRecipe)) {
+        this.gold -= bestRecipe.cost.gold;
+        town.gold += bestRecipe.cost.gold;
+        this.deductTownRecipeMaterials(town, bestRecipe);
+        this.equipment[slot] = bestRecipe;
+        this.addLog(`Comprou: ${bestRecipe.name}`);
+        boughtAny = true;
+      }
     }
 
-    // Comprar armadura
-    if (bestArmorRecipe) {
-      this.gold -= bestArmorRecipe.cost.gold;
-      town.gold += bestArmorRecipe.cost.gold;
-      this.deductTownRecipeMaterials(town, bestArmorRecipe);
-      this.equipment.armor = bestArmorRecipe;
+    if (boughtAny) {
       this.recalculateStats();
-      this.addLog(`Comprou: ${bestArmorRecipe.name}`);
     }
   }
 

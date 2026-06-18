@@ -276,40 +276,75 @@ export const CRAFT_RECIPES = {
 
   // EQUIPAMENTOS ORIGINAIS E LENDÁRIOS DO FOLCLORE
   // --- GRAU 1 ---
-  sword_t1: { name: 'Espada de Ferro Curta', slot: 'weapon', class: ['WARRIOR', 'MERCENARY'], tier: 1, cost: { iron_ore: 5, wood_rough: 2, gold: 50 }, stats: { atk: 12 } },
-  bow_t1: { name: 'Arco de Bordo Simples', slot: 'weapon', class: ['ARCHER'], tier: 1, cost: { wood_rough: 6, gold: 50 }, stats: { atk: 10 } },
-  staff_t1: { name: 'Cajado Rúnico Rústico', slot: 'weapon', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 5, iron_ore: 1, gold: 50 }, stats: { atk: 9 } },
+  sword_t1: { name: 'Espada de Ferro Curta', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 1, cost: { iron_ore: 5, wood_rough: 2, gold: 50 }, stats: { atk: 12 } },
+  bow_t1: { name: 'Arco de Bordo Simples', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 1, cost: { wood_rough: 6, gold: 50 }, stats: { atk: 10 } },
+  staff_t1: { name: 'Cajado Rúnico Rústico', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 5, iron_ore: 1, gold: 50 }, stats: { atk: 9 } },
   
   // Equipamento Lendário Tier 1 do Folclore (Gorro do Saci)
-  cajado_saci_t1: { name: 'Cajado de Saci', slot: 'weapon', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 3, gorro_vermelho: 1, gold: 80 }, stats: { atk: 18 } },
+  cajado_saci_t1: { name: 'Cajado de Saci', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 3, gorro_vermelho: 1, gold: 80 }, stats: { atk: 18 } },
   
-  armor_t1_heavy: { name: 'Armadura de Placas Rústica', slot: 'armor', class: ['WARRIOR'], tier: 1, cost: { iron_ore: 8, gold: 60 }, stats: { hp: 40, def: 8 } },
-  armor_t1_medium: { name: 'Gibão de Couro Cru', slot: 'armor', class: ['ARCHER', 'MERCENARY'], tier: 1, cost: { wolf_fur: 4, gold: 60 }, stats: { hp: 25, def: 4 } },
-  armor_t1_light: { name: 'Toga de Tecido Rústica', slot: 'armor', class: ['MAGE', 'PRIEST'], tier: 1, cost: { linho: 6, gold: 60 }, stats: { hp: 15, def: 2 } },
+  armor_t1_heavy: { name: 'Armadura de Placas Rústica', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 1, cost: { iron_ore: 8, gold: 60 }, stats: { hp: 40, def: 8 } },
+  armor_t1_medium: { name: 'Gibão de Couro Cru', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 1, cost: { wolf_fur: 4, gold: 60 }, stats: { hp: 25, def: 4 } },
+  armor_t1_light: { name: 'Toga de Tecido Rústica', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 1, cost: { linho: 6, gold: 60 }, stats: { hp: 15, def: 2 } },
+
+  // Novos itens Grau 1
+  helmet_t1_heavy: { name: 'Elmo de Ferro Rústico', slot: 'helmet', icon: '🪖', class: ['WARRIOR'], tier: 1, cost: { iron_ore: 4, gold: 40 }, stats: { def: 3 } },
+  helmet_t1_medium: { name: 'Gorro de Lobo Selvagem', slot: 'helmet', icon: '👒', class: ['ARCHER', 'MERCENARY'], tier: 1, cost: { wolf_fur: 3, gold: 40 }, stats: { def: 2 } },
+  helmet_t1_light: { name: 'Tiara de Linho Rúnica', slot: 'helmet', icon: '👑', class: ['MAGE', 'PRIEST'], tier: 1, cost: { linho: 4, gold: 40 }, stats: { def: 1 } },
+  gloves_t1: { name: 'Luvas de Couro', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 2, gold: 30 }, stats: { def: 1, atk: 1 } },
+  ring_t1: { name: 'Anel de Cobre', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { iron_ore: 2, gold: 30 }, stats: { hp: 10 } },
+  necklace_t1: { name: 'Colar de Dente de Rato', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { rat_tail: 3, gold: 30 }, stats: { hp: 15 } },
+  belt_t1: { name: 'Cinto de Couro Simples', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 2, gold: 30 }, stats: { def: 1 } },
+  boots_t1: { name: 'Botas de Couro Rústicas', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 3, gold: 35 }, stats: { def: 1, hp: 10 } },
+  pants_t1: { name: 'Perneiras de Ferro Rústicas', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { iron_ore: 4, gold: 40 }, stats: { def: 2 } },
+  pet_t1: { name: 'Mascote Lobo Cinzento', slot: 'pet', icon: '🐾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 5, meat_raw: 5, gold: 120 }, stats: { atk: 5 } },
 
   // --- GRAU 2 ---
-  sword_t2: { name: 'Espada de Aço Afiada', slot: 'weapon', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 15, goblin_dagger: 1, gold: 200 }, stats: { atk: 35 } },
-  bow_t2: { name: 'Arco Composto Reforçado', slot: 'weapon', class: ['ARCHER'], tier: 2, cost: { wood_rough: 20, spider_silk: 3, gold: 200 }, stats: { atk: 30 } },
-  staff_t2: { name: 'Cajado de Salgueiro da Selva', slot: 'weapon', class: ['MAGE', 'PRIEST'], tier: 2, cost: { wood_rough: 15, poison_gland: 2, gold: 200 }, stats: { atk: 28 } },
+  sword_t2: { name: 'Espada de Aço Afiada', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 15, goblin_dagger: 1, gold: 200 }, stats: { atk: 35 } },
+  bow_t2: { name: 'Arco Composto Reforçado', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 2, cost: { wood_rough: 20, spider_silk: 3, gold: 200 }, stats: { atk: 30 } },
+  staff_t2: { name: 'Cajado de Salgueiro da Selva', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 2, cost: { wood_rough: 15, poison_gland: 2, gold: 200 }, stats: { atk: 28 } },
   
   // Equipamentos Lendários Tier 2 do Folclore (Mula e Curupira)
-  bow_mula_t2: { name: 'Arco de Fogo da Mula', slot: 'weapon', class: ['ARCHER'], tier: 2, cost: { wood_rough: 12, ferradura_fogo: 1, gold: 300 }, stats: { atk: 52 } },
-  sword_curupira_t2: { name: 'Lâmina Curupira', slot: 'weapon', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 10, cabelo_fogo: 1, gold: 320 }, stats: { atk: 60 } },
+  bow_mula_t2: { name: 'Arco de Fogo da Mula', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 2, cost: { wood_rough: 12, ferradura_fogo: 1, gold: 300 }, stats: { atk: 52 } },
+  sword_curupira_t2: { name: 'Lâmina Curupira', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 10, cabelo_fogo: 1, gold: 320 }, stats: { atk: 60 } },
 
-  armor_t2_heavy: { name: 'Armadura de Malha de Aço', slot: 'armor', class: ['WARRIOR'], tier: 2, cost: { iron_ore: 20, wood_rough: 5, gold: 250 }, stats: { hp: 120, def: 22 } },
-  armor_t2_medium: { name: 'Cota de Couro Reforçado', slot: 'armor', class: ['ARCHER', 'MERCENARY'], tier: 2, cost: { wolf_fur: 12, spider_silk: 2, gold: 250 }, stats: { hp: 80, def: 12 } },
-  armor_t2_light: { name: 'Túnica de Linho Encantada', slot: 'armor', class: ['MAGE', 'PRIEST'], tier: 2, cost: { linho: 15, spider_silk: 2, gold: 250 }, stats: { hp: 50, def: 7 } },
+  armor_t2_heavy: { name: 'Armadura de Malha de Aço', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 2, cost: { iron_ore: 20, wood_rough: 5, gold: 250 }, stats: { hp: 120, def: 22 } },
+  armor_t2_medium: { name: 'Cota de Couro Reforçado', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 2, cost: { wolf_fur: 12, spider_silk: 2, gold: 250 }, stats: { hp: 80, def: 12 } },
+  armor_t2_light: { name: 'Túnica de Linho Encantada', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 2, cost: { linho: 15, spider_silk: 2, gold: 250 }, stats: { hp: 50, def: 7 } },
+
+  // Novos itens Grau 2
+  helmet_t2_heavy: { name: 'Elmo de Aço Soldado', slot: 'helmet', icon: '🪖', class: ['WARRIOR'], tier: 2, cost: { iron_ore: 10, gold: 120 }, stats: { def: 8 } },
+  helmet_t2_medium: { name: 'Capuz do Caçador Invisível', slot: 'helmet', icon: '👒', class: ['ARCHER', 'MERCENARY'], tier: 2, cost: { wolf_fur: 8, gold: 120 }, stats: { def: 5 } },
+  helmet_t2_light: { name: 'Coroa de Linho Iluminada', slot: 'helmet', icon: '👑', class: ['MAGE', 'PRIEST'], tier: 2, cost: { linho: 10, gold: 120 }, stats: { def: 3 } },
+  gloves_t2: { name: 'Luvas de Aço Escovado', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { iron_ore: 6, gold: 100 }, stats: { def: 3, atk: 4 } },
+  ring_t2: { name: 'Anel de Prata Encantado', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { spider_silk: 2, gold: 100 }, stats: { hp: 30 } },
+  necklace_t2: { name: 'Amuleto Goblin de Proteção', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { goblin_ear: 4, gold: 100 }, stats: { hp: 40 } },
+  belt_t2: { name: 'Cinto com Fivela de Ferro', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { iron_ore: 4, gold: 80 }, stats: { def: 4 } },
+  boots_t2: { name: 'Grevas de Aço Flexíveis', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { iron_ore: 6, gold: 110 }, stats: { def: 4, hp: 30 } },
+  pants_t2: { name: 'Calças de Couro Espesso', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { wolf_fur: 8, gold: 120 }, stats: { def: 6 } },
+  wings_t1: { name: 'Asas de Morcego Sombrias', slot: 'wings', icon: '🪶', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bat_wing: 10, gold: 100 }, stats: { hp: 50 } },
 
   // --- GRAU 3 ---
-  sword_t3: { name: 'Lâmina do Flagelo Dracônico', slot: 'weapon', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { steel_ore: 20, leech_tooth: 2, hydra_scale: 1, gold: 800 }, stats: { atk: 95 } },
-  bow_t3: { name: 'Arco do Vento Sombrio', slot: 'weapon', class: ['ARCHER'], tier: 3, cost: { steel_ore: 10, spider_silk: 10, hydra_scale: 1, gold: 800 }, stats: { atk: 82 } },
-  staff_t3: { name: 'Cetro do Pântano Eterno', slot: 'weapon', class: ['MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 10, queen_venom: 1, gem_sapphire: 1, gold: 800 }, stats: { atk: 78 } },
+  sword_t3: { name: 'Lâmina do Flagelo Dracônico', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { steel_ore: 20, leech_tooth: 2, hydra_scale: 1, gold: 800 }, stats: { atk: 95 } },
+  bow_t3: { name: 'Arco do Vento Sombrio', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 3, cost: { steel_ore: 10, spider_silk: 10, hydra_scale: 1, gold: 800 }, stats: { atk: 82 } },
+  staff_t3: { name: 'Cetro do Pântano Eterno', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 10, queen_venom: 1, gold: 800 }, stats: { atk: 78 } },
   
   // Equipamento Lendário Tier 3 do Folclore (Boitatá e Mapinguari)
-  sword_boitata_t3: { name: 'Lâmina Flamejante de Boitatá', slot: 'weapon', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { steel_ore: 15, olho_boitata: 1, gold: 1200 }, stats: { atk: 140 } },
-  armor_mapinguari_t3: { name: 'Gibão de Couro de Mapinguari', slot: 'armor', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 10, garra_mapinguari: 1, gold: 900 }, stats: { hp: 280, def: 38 } },
+  sword_boitata_t3: { name: 'Lâmina Flamejante de Boitatá', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { steel_ore: 15, olho_boitata: 1, gold: 1200 }, stats: { atk: 140 } },
+  armor_mapinguari_t3: { name: 'Gibão de Couro de Mapinguari', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 10, garra_mapinguari: 1, gold: 900 }, stats: { hp: 280, def: 38 } },
 
-  armor_t3_heavy: { name: 'Muralha de Aço Escamada', slot: 'armor', class: ['WARRIOR'], tier: 3, cost: { steel_ore: 25, crocodile_scale: 8, gold: 1000 }, stats: { hp: 350, def: 55 } },
-  armor_t3_medium: { name: 'Armadura de Escamas de Hidra', slot: 'armor', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 15, crocodile_scale: 5, gold: 1000 }, stats: { hp: 220, def: 32 } },
-  armor_t3_light: { name: 'Manto do Mago Arquimago', slot: 'armor', class: ['MAGE', 'PRIEST'], tier: 3, cost: { linho: 30, slime_bubble: 12, gem_ruby: 1, gold: 1000 }, stats: { hp: 150, def: 18 } }
+  armor_t3_heavy: { name: 'Muralha de Aço Escamada', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 3, cost: { steel_ore: 25, crocodile_scale: 8, gold: 1000 }, stats: { hp: 350, def: 55 } },
+  armor_t3_medium: { name: 'Armadura de Escamas de Hidra', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 15, crocodile_scale: 5, gold: 1000 }, stats: { hp: 220, def: 32 } },
+  armor_t3_light: { name: 'Manto do Mago Arquimago', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 3, cost: { linho: 30, slime_bubble: 12, gold: 1000 }, stats: { hp: 150, def: 18 } },
+
+  // Novos itens Grau 3
+  helmet_t3_heavy: { name: 'Elmo de Hidra Gigante', slot: 'helmet', icon: '🪖', class: ['WARRIOR'], tier: 3, cost: { steel_ore: 15, crocodile_scale: 4, gold: 400 }, stats: { def: 20 } },
+  helmet_t3_medium: { name: 'Capuz das Sombras do Pântano', slot: 'helmet', icon: '👒', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 8, gold: 400 }, stats: { def: 12 } },
+  helmet_t3_light: { name: 'Diadema de Boitatá Celestial', slot: 'helmet', icon: '👑', class: ['MAGE', 'PRIEST'], tier: 3, cost: { linho: 20, slime_bubble: 6, gold: 400 }, stats: { def: 8 } },
+  gloves_t3: { name: 'Manoplas Dracônicas', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 10, gold: 350 }, stats: { def: 8, atk: 12 } },
+  ring_t3: { name: 'Anel do Olho do Boitatá', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 5, gold: 450 }, stats: { hp: 100 } },
+  necklace_t3: { name: 'Colar de Escamas de Hidra', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { crocodile_scale: 4, gold: 450 }, stats: { hp: 120 } },
+  belt_t3: { name: 'Cinto de Couro de Serpente', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 4, gold: 300 }, stats: { def: 10 } },
+  boots_t3: { name: 'Botas do Caminhante do Pântano', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 5, gold: 380 }, stats: { def: 10, hp: 80 } },
+  pants_t3: { name: 'Perneiras de Aço Reforçadas', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 12, gold: 400 }, stats: { def: 15 } }
 };
