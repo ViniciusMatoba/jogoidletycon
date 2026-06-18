@@ -27,6 +27,43 @@ export class GameRenderer {
       { x: 420, y: 450 },
       { x: 60, y: 280 }
     ];
+
+    // Dicionário de imagens dos assets
+    this.images = {};
+    this.loadImages();
+  }
+
+  // Carrega os assets de pixel art
+  loadImages() {
+    const assetsList = {
+      // Edifícios
+      'townhall': 'assets/buildings/townhall.png',
+      'hotel': 'assets/buildings/hotel.png',
+      'restaurant': 'assets/buildings/restaurant.png',
+      'hospital': 'assets/buildings/hospital.png',
+      'tavern': 'assets/buildings/tavern.png',
+      'forge': 'assets/buildings/forge.png',
+      // Heróis
+      'hero_warrior': 'assets/sprites/hero_warrior.png',
+      'hero_mage': 'assets/sprites/hero_mage.png',
+      'hero_archer': 'assets/sprites/hero_archer.png',
+      // Monstros
+      'monster_saci': 'assets/sprites/monster_saci.png',
+      'monster_curupira': 'assets/sprites/monster_curupira.png'
+    };
+
+    for (const key in assetsList) {
+      const img = new Image();
+      img.src = assetsList[key];
+      img.onload = () => {
+        img.loaded = true;
+      };
+      img.onerror = () => {
+        console.warn(`Erro ao carregar imagem para ${key}: ${assetsList[key]}`);
+        img.loaded = false;
+      };
+      this.images[key] = img;
+    }
   }
 
   // Transforma coordenadas 2D cartesianas (0..960, 0..540) para 2.5D Isométrico
@@ -302,7 +339,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- RENDER DE EDIFÍCIO TRIDIMENSIONAL SOMBREADO ---
+  // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART / FALLBACK 3D) ---
   drawBuildingIndividual(town, b) {
     const level = town.buildings[b.key];
     const isBuilt = level > 0;
@@ -315,119 +352,134 @@ export class GameRenderer {
 
     const bx = b.x;
     const by = b.y;
-    const size = 22; // Raio cartesiano da pegada no chão
 
-    // Vértices da base no chão isométrico
-    const sul = this.toIso(bx, by + size);
-    const leste = this.toIso(bx + size, by);
-    const norte = this.toIso(bx, by - size);
-    const oeste = this.toIso(bx - size, by);
-
-    // Altura do prédio
-    const H = 24;
-
-    // Vértices do topo
-    const sul_t = { x: sul.x, y: sul.y - H };
-    const leste_t = { x: leste.x, y: leste.y - H };
-    const norte_t = { x: norte.x, y: norte.y - H };
-    const oeste_t = { x: oeste.x, y: oeste.y - H };
-
-    // 1. Face Esquerda (Oeste - Sul) - Tom médio
-    this.ctx.fillStyle = isBuilt ? '#5c4530' : '#45382e';
-    this.ctx.beginPath();
-    this.ctx.moveTo(oeste.x, oeste.y);
-    this.ctx.lineTo(sul.x, sul.y);
-    this.ctx.lineTo(sul_t.x, sul_t.y);
-    this.ctx.lineTo(oeste_t.x, oeste_t.y);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // 2. Face Direita (Sul - Leste) - Tom escuro de sombra
-    this.ctx.fillStyle = isBuilt ? '#423122' : '#332922';
-    this.ctx.beginPath();
-    this.ctx.moveTo(sul.x, sul.y);
-    this.ctx.lineTo(leste.x, leste.y);
-    this.ctx.lineTo(leste_t.x, leste_t.y);
-    this.ctx.lineTo(sul_t.x, sul_t.y);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // 3. Telhado (Cabana/Pirâmide)
-    const centro_base = this.toIso(bx, by);
-    const telhado_ponta = { x: centro_base.x, y: centro_base.y - H - 16 };
-
-    // Telhado Esquerdo
-    this.ctx.fillStyle = isBuilt ? '#9c3d28' : '#575251';
-    this.ctx.beginPath();
-    this.ctx.moveTo(oeste_t.x, oeste_t.y);
-    this.ctx.lineTo(sul_t.x, sul_t.y);
-    this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // Telhado Direito (sombreado)
-    this.ctx.fillStyle = isBuilt ? '#732a1b' : '#3d3938';
-    this.ctx.beginPath();
-    this.ctx.moveTo(sul_t.x, sul_t.y);
-    this.ctx.lineTo(leste_t.x, leste_t.y);
-    this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // 4. Porta (Face esquerda)
-    if (isBuilt) {
-      const porta_esq = this.interpolate(oeste, sul, 0.4);
-      const porta_dir = this.interpolate(oeste, sul, 0.6);
+    const img = this.images[b.key];
+    if (img && img.loaded) {
+      // --- DESENHAR COM IMAGEM DE ASSET ISOMÉTRICO PIXEL ART ---
+      const pos = this.toIso(bx, by);
       
-      this.ctx.fillStyle = '#2e1c0c';
+      const wSize = b.key === 'townhall' ? 76 : 60;
+      const hSize = b.key === 'townhall' ? 76 : 60;
+      
+      this.ctx.drawImage(img, pos.x - wSize / 2, pos.y - hSize + 8, wSize, hSize);
+
+      // Emoji de Identificação
+      this.ctx.font = '14px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(b.icon, pos.x, pos.y - hSize + 4);
+
+      // Rótulo de Lvl
+      this.ctx.globalAlpha = 1.0;
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = '9px monospace';
+      this.ctx.textAlign = 'center';
+      const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
+      this.ctx.fillText(label, pos.x, pos.y + 12);
+    } else {
+      // --- FALLBACK VETORIAL 3D PROCEDURAL ---
+      const size = 22;
+
+      // Vértices da base no chão isométrico
+      const sul = this.toIso(bx, by + size);
+      const leste = this.toIso(bx + size, by);
+      const norte = this.toIso(bx, by - size);
+      const oeste = this.toIso(bx - size, by);
+
+      const H = 24;
+
+      // Vértices do topo
+      const sul_t = { x: sul.x, y: sul.y - H };
+      const leste_t = { x: leste.x, y: leste.y - H };
+      const norte_t = { x: norte.x, y: norte.y - H };
+      const oeste_t = { x: oeste.x, y: oeste.y - H };
+
+      // Face Esquerda
+      this.ctx.fillStyle = isBuilt ? '#5c4530' : '#45382e';
       this.ctx.beginPath();
-      this.ctx.moveTo(porta_esq.x, porta_esq.y);
-      this.ctx.lineTo(porta_dir.x, porta_dir.y);
-      this.ctx.lineTo(porta_dir.x, porta_dir.y - 8);
-      this.ctx.lineTo(porta_esq.x, porta_esq.y - 8);
+      this.ctx.moveTo(oeste.x, oeste.y);
+      this.ctx.lineTo(sul.x, sul.y);
+      this.ctx.lineTo(sul_t.x, sul_t.y);
+      this.ctx.lineTo(oeste_t.x, oeste_t.y);
       this.ctx.closePath();
       this.ctx.fill();
+
+      // Face Direita
+      this.ctx.fillStyle = isBuilt ? '#423122' : '#332922';
+      this.ctx.beginPath();
+      this.ctx.moveTo(sul.x, sul.y);
+      this.ctx.lineTo(leste.x, leste.y);
+      this.ctx.lineTo(leste_t.x, leste_t.y);
+      this.ctx.lineTo(sul_t.x, sul_t.y);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Telhado
+      const centro_base = this.toIso(bx, by);
+      const telhado_ponta = { x: centro_base.x, y: centro_base.y - H - 16 };
+
+      this.ctx.fillStyle = isBuilt ? '#9c3d28' : '#575251';
+      this.ctx.beginPath();
+      this.ctx.moveTo(oeste_t.x, oeste_t.y);
+      this.ctx.lineTo(sul_t.x, sul_t.y);
+      this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      this.ctx.fillStyle = isBuilt ? '#732a1b' : '#3d3938';
+      this.ctx.beginPath();
+      this.ctx.moveTo(sul_t.x, sul_t.y);
+      this.ctx.lineTo(leste_t.x, leste_t.y);
+      this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Porta
+      if (isBuilt) {
+        const porta_esq = this.interpolate(oeste, sul, 0.4);
+        const porta_dir = this.interpolate(oeste, sul, 0.6);
+        this.ctx.fillStyle = '#2e1c0c';
+        this.ctx.beginPath();
+        this.ctx.moveTo(porta_esq.x, porta_esq.y);
+        this.ctx.lineTo(porta_dir.x, porta_dir.y);
+        this.ctx.lineTo(porta_dir.x, porta_dir.y - 8);
+        this.ctx.lineTo(porta_esq.x, porta_esq.y - 8);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+
+      // Janelas
+      if (isBuilt) {
+        const isNight = this.isNightTime();
+        this.ctx.fillStyle = isNight ? (Math.random() > 0.05 ? '#ffea3a' : '#aa9e27') : '#2e1c0c';
+        const janela_dir_pos = this.interpolate(sul_t, leste_t, 0.5);
+        this.ctx.fillRect(janela_dir_pos.x - 2, janela_dir_pos.y + 4, 4, 4);
+        const janela_esq_pos = this.interpolate(oeste_t, sul_t, 0.5);
+        this.ctx.fillRect(janela_esq_pos.x - 2, janela_esq_pos.y + 4, 4, 4);
+      }
+
+      // Chaminé
+      if (isBuilt && b.key !== 'townhall' && b.key !== 'hotel') {
+        const chamine_base = this.interpolate(norte_t, leste_t, 0.5);
+        const cx = chamine_base.x;
+        const cy = chamine_base.y - 4;
+        this.ctx.fillStyle = '#3d2e20';
+        this.ctx.fillRect(cx - 3, cy - 8, 5, 8);
+        this.ctx.fillStyle = '#1c150e';
+        this.ctx.fillRect(cx - 4, cy - 9, 7, 2);
+      }
+
+      // Emoji e Rótulo
+      this.ctx.font = '14px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(b.icon, telhado_ponta.x, telhado_ponta.y - 6);
+
+      this.ctx.globalAlpha = 1.0;
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = '9px monospace';
+      this.ctx.textAlign = 'center';
+      const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
+      this.ctx.fillText(label, sul.x, sul.y + 12);
     }
-
-    // 5. Janelas acesas
-    if (isBuilt) {
-      const isNight = this.isNightTime();
-      this.ctx.fillStyle = isNight ? (Math.random() > 0.05 ? '#ffea3a' : '#aa9e27') : '#2e1c0c';
-      
-      // Janela face direita
-      const janela_dir_pos = this.interpolate(sul_t, leste_t, 0.5);
-      this.ctx.fillRect(janela_dir_pos.x - 2, janela_dir_pos.y + 4, 4, 4);
-
-      // Janela face esquerda
-      const janela_esq_pos = this.interpolate(oeste_t, sul_t, 0.5);
-      this.ctx.fillRect(janela_esq_pos.x - 2, janela_esq_pos.y + 4, 4, 4);
-    }
-
-    // 6. Chaminé (Forja, Restaurante, Hospital, Taverna)
-    if (isBuilt && b.key !== 'townhall' && b.key !== 'hotel') {
-      const chamine_base = this.interpolate(norte_t, leste_t, 0.5);
-      const cx = chamine_base.x;
-      const cy = chamine_base.y - 4;
-      
-      this.ctx.fillStyle = '#3d2e20';
-      this.ctx.fillRect(cx - 3, cy - 8, 5, 8);
-      this.ctx.fillStyle = '#1c150e';
-      this.ctx.fillRect(cx - 4, cy - 9, 7, 2);
-    }
-
-    // 7. Emoji de Identificação
-    this.ctx.font = '14px Arial';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText(b.icon, telhado_ponta.x, telhado_ponta.y - 6);
-
-    // 8. Rótulo de Lvl
-    this.ctx.globalAlpha = 1.0;
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = '9px monospace';
-    this.ctx.textAlign = 'center';
-    
-    const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
-    this.ctx.fillText(label, sul.x, sul.y + 12);
 
     this.ctx.restore();
   }
@@ -509,65 +561,111 @@ export class GameRenderer {
 
     this.ctx.save();
 
-    // Sombra isométrica
-    const shadowSize = monster.isBoss ? 16 : (monster.isMiniBoss ? 11 : 7);
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(pos.x, pos.y + 8, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Desenhar criatura
     const name = monster.name;
+    const imgKey = name.includes('Saci-Pererê') ? 'monster_saci' : 
+                   name.includes('Curupira') ? 'monster_curupira' : null;
+    const img = imgKey ? this.images[imgKey] : null;
 
-    if (name.includes('Saci-Pererê')) {
-      this.drawSaci(pos.x, pos.y, time);
-    } else if (name.includes('Curupira')) {
-      this.drawCurupira(pos.x, pos.y, time);
-    } else if (name.includes('Mula sem Cabeça')) {
-      this.drawMula(pos.x, pos.y, time);
-    } else if (name.includes('Boitatá')) {
-      this.drawBoitata(monster.x, monster.y, time); // CARTESIANO
-    } else if (name.includes('Mapinguari')) {
-      this.drawMapinguari(pos.x, pos.y, time);
-    } else if (name.includes('Corpo-Seco')) {
-      this.drawCorpoSeco(pos.x, pos.y);
-    } else if (name.includes('Pisadeira')) {
-      this.drawPisadeira(pos.x, pos.y);
-    } else if (name.includes('Chibamba')) {
-      this.drawChibamba(pos.x, pos.y, time);
-    } else if (name.includes('Capelobo')) {
-      this.drawCapelobo(pos.x, pos.y);
-    } else if (name.includes('Caipora')) {
-      this.drawCaipora(pos.x, pos.y);
-    } else if (name.includes('Quibungo')) {
-      this.drawQuibungo(pos.x, pos.y);
-    } else if (name.includes('Ipupiara')) {
-      this.drawIpupiara(pos.x, pos.y, time);
-    } else if (name.includes('Teju')) {
-      this.drawTejuJagua(pos.x, pos.y);
-    } else if (name.includes('Boto')) {
-      this.drawBoto(pos.x, pos.y);
-    } else if (name.includes('Rato Rei')) {
-      this.drawRatoRei(pos.x, pos.y);
+    if (img && img.loaded) {
+      // --- DESENHAR MONSTRO COM SPRITE DE PIXEL ART E BOUNCE ---
+      this.ctx.save();
+      
+      // Sombra
+      const shadowSize = monster.isBoss ? 14 : 7;
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      this.ctx.beginPath();
+      this.ctx.ellipse(pos.x, pos.y + 1, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Translações para animações
+      this.ctx.translate(pos.x, pos.y);
+
+      // Bounce de caminhada se monstro ativo
+      const isFighting = monster.targetHero !== null;
+      if (!isFighting) {
+        const bounce = Math.abs(Math.sin(time * 0.012)) * 2;
+        this.ctx.translate(0, -bounce);
+      }
+
+      // Desenhar sprite
+      const size = monster.isBoss ? 40 : (monster.isMiniBoss ? 32 : 24);
+      this.ctx.drawImage(img, -size / 2, -size + 2, size, size);
+
+      this.ctx.restore();
+
+      // Nome do Monstro
+      this.ctx.fillStyle = monster.isBoss ? '#ffea3a' : '#ff9f3a';
+      this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(monster.name, pos.x, pos.y - (monster.isBoss ? 32 : 22));
+
+      // Barra de HP
+      const hpPct = monster.hp / monster.maxHp;
+      const barW = monster.isBoss ? 45 : (monster.isMiniBoss ? 30 : 20);
+      const barH = 3;
+      
+      this.ctx.fillStyle = '#2c2e33';
+      this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 28 : 18), barW, barH);
+      this.ctx.fillStyle = '#ff3d3d';
+      this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 28 : 18), barW * hpPct, barH);
     } else {
-      this.drawGenericMonster(monster, pos.x, pos.y);
+      // --- FALLBACK PROCEDURAL ORIGINAL ---
+      const shadowSize = monster.isBoss ? 16 : (monster.isMiniBoss ? 11 : 7);
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      this.ctx.beginPath();
+      this.ctx.ellipse(pos.x, pos.y + 8, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      if (name.includes('Saci-Pererê')) {
+        this.drawSaci(pos.x, pos.y, time);
+      } else if (name.includes('Curupira')) {
+        this.drawCurupira(pos.x, pos.y, time);
+      } else if (name.includes('Mula sem Cabeça')) {
+        this.drawMula(pos.x, pos.y, time);
+      } else if (name.includes('Boitatá')) {
+        this.drawBoitata(monster.x, monster.y, time);
+      } else if (name.includes('Mapinguari')) {
+        this.drawMapinguari(pos.x, pos.y, time);
+      } else if (name.includes('Corpo-Seco')) {
+        this.drawCorpoSeco(pos.x, pos.y);
+      } else if (name.includes('Pisadeira')) {
+        this.drawPisadeira(pos.x, pos.y);
+      } else if (name.includes('Chibamba')) {
+        this.drawChibamba(pos.x, pos.y, time);
+      } else if (name.includes('Capelobo')) {
+        this.drawCapelobo(pos.x, pos.y);
+      } else if (name.includes('Caipora')) {
+        this.drawCaipora(pos.x, pos.y);
+      } else if (name.includes('Quibungo')) {
+        this.drawQuibungo(pos.x, pos.y);
+      } else if (name.includes('Ipupiara')) {
+        this.drawIpupiara(pos.x, pos.y, time);
+      } else if (name.includes('Teju')) {
+        this.drawTejuJagua(pos.x, pos.y);
+      } else if (name.includes('Boto')) {
+        this.drawBoto(pos.x, pos.y);
+      } else if (name.includes('Rato Rei')) {
+        this.drawRatoRei(pos.x, pos.y);
+      } else {
+        this.drawGenericMonster(monster, pos.x, pos.y);
+      }
+
+      // Nome do Monstro
+      this.ctx.fillStyle = monster.isBoss ? '#ffea3a' : '#ff9f3a';
+      this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(monster.name, pos.x, pos.y - (monster.isBoss ? 24 : 14));
+
+      // Barra de HP
+      const hpPct = monster.hp / monster.maxHp;
+      const barW = monster.isBoss ? 45 : (monster.isMiniBoss ? 30 : 20);
+      const barH = 3;
+      
+      this.ctx.fillStyle = '#2c2e33';
+      this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 20 : 10), barW, barH);
+      this.ctx.fillStyle = '#ff3d3d';
+      this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 20 : 10), barW * hpPct, barH);
     }
-
-    // Nome do Monstro
-    this.ctx.fillStyle = monster.isBoss ? '#ffea3a' : '#ff9f3a';
-    this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText(monster.name, pos.x, pos.y - (monster.isBoss ? 24 : 14));
-
-    // Barra de HP
-    const hpPct = monster.hp / monster.maxHp;
-    const barW = monster.isBoss ? 45 : (monster.isMiniBoss ? 30 : 20);
-    const barH = 3;
-    
-    this.ctx.fillStyle = '#2c2e33';
-    this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 20 : 10), barW, barH);
-    this.ctx.fillStyle = '#ff3d3d';
-    this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 20 : 10), barW * hpPct, barH);
 
     this.ctx.restore();
   }
@@ -831,128 +929,198 @@ export class GameRenderer {
     const isWalking = hero.state === 'SEARCHING_MONSTER' || hero.state === 'RETURNING_TOWN' || hero.state === 'IDLE_TOWN';
     const step = isWalking ? Math.sin(time * 0.015) * 3 : 0;
 
-    // Sombra isométrica
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(hx, hy + 11, 10, 3, 0, 0, Math.PI * 2);
-    this.ctx.fill();
+    const imgKey = (hero.className === 'WARRIOR' || hero.className === 'MERCENARY') ? 'hero_warrior' : 
+                   (hero.className === 'MAGE' || hero.className === 'PRIEST') ? 'hero_mage' : 'hero_archer';
+    const img = this.images[imgKey];
 
-    // 1. Pernas
-    this.ctx.fillStyle = hero.cosmetics.skinColor;
-    this.ctx.fillRect(hx - 3.5, hy + 5, 2, 6 + step);
-    this.ctx.fillRect(hx + 1.5, hy + 5, 2, 6 - step);
-    this.ctx.fillStyle = '#4a2c11';
-    this.ctx.fillRect(hx - 4.5, hy + 10 + step, 3, 1.5);
-    this.ctx.fillRect(hx + 0.5, hy + 10 - step, 3, 1.5);
+    if (img && img.loaded) {
+      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS ---
+      this.ctx.save();
+      
+      // Sombra
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      this.ctx.beginPath();
+      this.ctx.ellipse(hx, hy + 1, 8, 2.5, 0, 0, Math.PI * 2);
+      this.ctx.fill();
 
-    // 2. Corpo / Armadura Dinâmica
-    let bodyColor = hero.cosmetics.clothesColor;
-    let isLendaria = false;
+      // Transladar para o ponto de base dos pés no chão isométrico
+      this.ctx.translate(hx, hy);
 
-    if (hero.equipment.armor) {
-      const tier = hero.equipment.armor.tier;
-      if (tier === 1) {
-        bodyColor = hero.className === 'WARRIOR' ? '#818b96' : '#634731';
-      } else if (tier === 2) {
-        bodyColor = '#4e5a66';
-      } else if (tier === 3) {
-        bodyColor = (hero.equipment.armor.key && hero.equipment.armor.key.includes('mapinguari')) ? '#ab5522' : '#cca93d';
-        isLendaria = true;
+      // Efeito de caminhada (bounce e inclinação leve)
+      if (isWalking) {
+        const bounce = Math.abs(Math.sin(time * 0.015)) * 3;
+        this.ctx.translate(0, -bounce);
+        const angle = Math.sin(time * 0.015) * 0.04; // aprox 2.5 graus
+        this.ctx.rotate(angle);
       }
-    }
 
-    this.ctx.fillStyle = bodyColor;
-    this.ctx.fillRect(hx - 5, hy - 4, 10, 10);
+      // Efeito de ataque (squash & stretch)
+      if (hero.state === 'FIGHTING' && hero.targetMonster) {
+        const cdPct = hero.cooldownTimer * hero.spd;
+        if (cdPct > 0.6) {
+          const attackFactor = Math.sin(((cdPct - 0.6) / 0.4) * Math.PI);
+          // Achatando verticalmente e esticando horizontalmente
+          this.ctx.scale(1 + attackFactor * 0.2, 1 - attackFactor * 0.15);
+        }
+      }
 
-    if (isLendaria) {
-      this.ctx.strokeStyle = '#ffea3a';
-      this.ctx.lineWidth = 1;
-      this.ctx.strokeRect(hx - 5.5, hy - 4.5, 11, 11);
-    }
+      // Desenhar sprite centrado
+      const wSize = 28;
+      const hSize = 28;
+      this.ctx.drawImage(img, -wSize / 2, -hSize + 2, wSize, hSize);
 
-    if (hero.className === 'WARRIOR' && !isLendaria) {
-      this.ctx.fillStyle = '#656e78';
-      this.ctx.strokeStyle = '#32373c';
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
-      this.ctx.arc(hx - 4, hy + 1, 4, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-    }
+      this.ctx.restore();
 
-    this.ctx.fillStyle = '#261c11';
-    this.ctx.fillRect(hx - 5, hy + 3, 10, 1.5);
+      // Texto de Nome e Barra de Vida (não rotacionam/balançam)
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = '9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(hero.name, hx, hy - 30);
 
-    // 3. Rosto
-    this.ctx.fillStyle = hero.cosmetics.skinColor;
-    this.ctx.fillRect(hx - 4, hy - 11, 8, 7);
-    
-    this.ctx.fillStyle = '#111';
-    this.ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
-    this.ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
+      // Barra de Vida
+      const hpPct = Math.max(0, hero.hp / hero.maxHp);
+      const barW = 20;
+      const barH = 3;
+      
+      this.ctx.fillStyle = '#2c2e33';
+      this.ctx.fillRect(hx - barW / 2, hy - 26, barW, barH);
+      this.ctx.fillStyle = hpPct > 0.45 ? '#3aff7d' : '#ffea3a';
+      if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
+      this.ctx.fillRect(hx - barW / 2, hy - 26, barW * hpPct, barH);
 
-    // Cabelo e Chapéus
-    this.ctx.fillStyle = hero.cosmetics.hairColor;
-    const hairStyle = hero.cosmetics.hairStyle;
-
-    if (hero.className === 'MAGE') {
-      this.ctx.fillStyle = '#511b85';
-      this.ctx.fillRect(hx - 7, hy - 12, 14, 2);
-      this.ctx.beginPath();
-      this.ctx.moveTo(hx - 4, hy - 12);
-      this.ctx.lineTo(hx + 4, hy - 12);
-      this.ctx.lineTo(hx, hy - 20);
-      this.ctx.closePath();
-      this.ctx.fill();
-    } else if (hero.className === 'WARRIOR') {
-      this.ctx.fillStyle = '#818b96';
-      this.ctx.fillRect(hx - 4.5, hy - 13, 9, 3);
-      this.ctx.fillStyle = '#ff3d3d';
-      const plumaOffset = Math.sin(time * 0.015) * 1.5;
-      this.ctx.fillRect(hx - 1 + plumaOffset, hy - 16, 3, 3);
+      // Auréola flutuante se Sacerdote
+      if (hero.className === 'PRIEST') {
+        this.ctx.strokeStyle = '#ffea3a';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(hx, hy - 33, 2.5, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
     } else {
-      if (hairStyle === 'short') {
-        this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
-        this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 4);
-        this.ctx.fillRect(hx + 3, hy - 11, 1.5, 4);
-      } else if (hairStyle === 'long') {
-        this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
-        this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 9);
-        this.ctx.fillRect(hx + 3, hy - 11, 1.5, 9);
-      } else if (hairStyle === 'spiky') {
-        this.ctx.fillRect(hx - 4, hy - 12.5, 8, 2);
-        this.ctx.fillRect(hx - 3, hy - 14.5, 1.5, 2);
-        this.ctx.fillRect(hx + 1.5, hy - 14.5, 1.5, 2);
-      }
-    }
-
-    if (hero.className === 'PRIEST') {
-      this.ctx.strokeStyle = '#ffea3a';
-      this.ctx.lineWidth = 1;
+      // --- FALLBACK VETORIAL ORIGINAL ---
+      // Sombra
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       this.ctx.beginPath();
-      this.ctx.arc(hx, hy - 14, 2.5, 0, Math.PI * 2);
-      this.ctx.stroke();
+      this.ctx.ellipse(hx, hy + 11, 10, 3, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Pernas
+      this.ctx.fillStyle = hero.cosmetics.skinColor;
+      this.ctx.fillRect(hx - 3.5, hy + 5, 2, 6 + step);
+      this.ctx.fillRect(hx + 1.5, hy + 5, 2, 6 - step);
+      this.ctx.fillStyle = '#4a2c11';
+      this.ctx.fillRect(hx - 4.5, hy + 10 + step, 3, 1.5);
+      this.ctx.fillRect(hx + 0.5, hy + 10 - step, 3, 1.5);
+
+      // Corpo / Armadura Dinâmica
+      let bodyColor = hero.cosmetics.clothesColor;
+      let isLendaria = false;
+
+      if (hero.equipment.armor) {
+        const tier = hero.equipment.armor.tier;
+        if (tier === 1) {
+          bodyColor = hero.className === 'WARRIOR' ? '#818b96' : '#634731';
+        } else if (tier === 2) {
+          bodyColor = '#4e5a66';
+        } else if (tier === 3) {
+          bodyColor = (hero.equipment.armor.key && hero.equipment.armor.key.includes('mapinguari')) ? '#ab5522' : '#cca93d';
+          isLendaria = true;
+        }
+      }
+
+      this.ctx.fillStyle = bodyColor;
+      this.ctx.fillRect(hx - 5, hy - 4, 10, 10);
+
+      if (isLendaria) {
+        this.ctx.strokeStyle = '#ffea3a';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(hx - 5.5, hy - 4.5, 11, 11);
+      }
+
+      if (hero.className === 'WARRIOR' && !isLendaria) {
+        this.ctx.fillStyle = '#656e78';
+        this.ctx.strokeStyle = '#32373c';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(hx - 4, hy + 1, 4, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+      }
+
+      this.ctx.fillStyle = '#261c11';
+      this.ctx.fillRect(hx - 5, hy + 3, 10, 1.5);
+
+      // Rosto
+      this.ctx.fillStyle = hero.cosmetics.skinColor;
+      this.ctx.fillRect(hx - 4, hy - 11, 8, 7);
+      
+      this.ctx.fillStyle = '#111';
+      this.ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
+      this.ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
+
+      // Cabelo e Chapéus
+      this.ctx.fillStyle = hero.cosmetics.hairColor;
+      const hairStyle = hero.cosmetics.hairStyle;
+
+      if (hero.className === 'MAGE') {
+        this.ctx.fillStyle = '#511b85';
+        this.ctx.fillRect(hx - 7, hy - 12, 14, 2);
+        this.ctx.beginPath();
+        this.ctx.moveTo(hx - 4, hy - 12);
+        this.ctx.lineTo(hx + 4, hy - 12);
+        this.ctx.lineTo(hx, hy - 20);
+        this.ctx.closePath();
+        this.ctx.fill();
+      } else if (hero.className === 'WARRIOR') {
+        this.ctx.fillStyle = '#818b96';
+        this.ctx.fillRect(hx - 4.5, hy - 13, 9, 3);
+        this.ctx.fillStyle = '#ff3d3d';
+        const plumaOffset = Math.sin(time * 0.015) * 1.5;
+        this.ctx.fillRect(hx - 1 + plumaOffset, hy - 16, 3, 3);
+      } else {
+        if (hairStyle === 'short') {
+          this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+          this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 4);
+          this.ctx.fillRect(hx + 3, hy - 11, 1.5, 4);
+        } else if (hairStyle === 'long') {
+          this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+          this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 9);
+          this.ctx.fillRect(hx + 3, hy - 11, 1.5, 9);
+        } else if (hairStyle === 'spiky') {
+          this.ctx.fillRect(hx - 4, hy - 12.5, 8, 2);
+          this.ctx.fillRect(hx - 3, hy - 14.5, 1.5, 2);
+          this.ctx.fillRect(hx + 1.5, hy - 14.5, 1.5, 2);
+        }
+      }
+
+      if (hero.className === 'PRIEST') {
+        this.ctx.strokeStyle = '#ffea3a';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(hx, hy - 14, 2.5, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
+      // Arma Dinâmica
+      this.drawHeroWeapon(hx, hy, hero);
+
+      // Nome do Herói
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = '9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(hero.name, hx, hy - 21);
+
+      // Barra de Vida
+      const hpPct = Math.max(0, hero.hp / hero.maxHp);
+      const barW = 20;
+      const barH = 3;
+      
+      this.ctx.fillStyle = '#2c2e33';
+      this.ctx.fillRect(hx - barW / 2, hy - 17, barW, barH);
+      this.ctx.fillStyle = hpPct > 0.45 ? '#3aff7d' : '#ffea3a';
+      if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
+      this.ctx.fillRect(hx - barW / 2, hy - 17, barW * hpPct, barH);
     }
-
-    // 4. Arma Dinâmica
-    this.drawHeroWeapon(hx, hy, hero);
-
-    // Nome do Herói
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = '9px monospace';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText(hero.name, hx, hy - 21);
-
-    // Barra de Vida
-    const hpPct = Math.max(0, hero.hp / hero.maxHp);
-    const barW = 20;
-    const barH = 3;
-    
-    this.ctx.fillStyle = '#2c2e33';
-    this.ctx.fillRect(hx - barW / 2, hy - 17, barW, barH);
-    this.ctx.fillStyle = hpPct > 0.45 ? '#3aff7d' : '#ffea3a';
-    if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
-    this.ctx.fillRect(hx - barW / 2, hy - 17, barW * hpPct, barH);
 
     this.ctx.restore();
   }
