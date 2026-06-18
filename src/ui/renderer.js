@@ -16,6 +16,37 @@ export class GameRenderer {
 
     // Lista de partículas de fumaça das chaminés
     this.smokeParticles = [];
+
+    // Lista de árvores fixas no mapa para Y-sorting
+    this.trees = [
+      { x: 530, y: 60 },
+      { x: 880, y: 80 },
+      { x: 910, y: 440 },
+      { x: 540, y: 460 },
+      { x: 420, y: 50 },
+      { x: 420, y: 450 },
+      { x: 60, y: 280 }
+    ];
+  }
+
+  // Transforma coordenadas 2D cartesianas (0..960, 0..540) para 2.5D Isométrico
+  toIso(x, y) {
+    const scaleX = 0.64;
+    const scaleY = 0.32;
+    const offsetX = 350;
+    const offsetY = 30;
+    return {
+      x: offsetX + (x - y) * scaleX,
+      y: offsetY + (x + y) * scaleY
+    };
+  }
+
+  // Função auxiliar para interpolar linearmente entre dois pontos
+  interpolate(p1, p2, t) {
+    return {
+      x: p1.x + (p2.x - p1.x) * t,
+      y: p1.y + (p2.y - p1.y) * t
+    };
   }
 
   render(game, dt) {
@@ -28,38 +59,88 @@ export class GameRenderer {
     // Limpar tela
     this.ctx.clearRect(0, 0, width, height);
 
-    // 1. Desenhar Cenários Base
+    // 1. Desenhar Cenários Base (Terreno, Rio, Ponte, Estradas)
     this.drawTerrain(game, width, height);
 
-    // 2. Atualizar e Desenhar Partículas de Fumaça
+    // 2. Criar a lista de objetos para ordenação por profundidade (Y-sorting)
+    const renderList = [];
+
+    // Adicionar as árvores estáticas
+    this.trees.forEach(t => {
+      renderList.push({
+        y: t.y,
+        render: () => this.drawPixelTree(t.x, t.y)
+      });
+    });
+
+    // Adicionar os edifícios
+    const buildings = [
+      { key: 'townhall', x: 230, y: 100, name: 'Prefeitura', icon: '🏛️' },
+      { key: 'hotel', x: 130, y: 200, name: 'Hotel', icon: '🏨' },
+      { key: 'restaurant', x: 330, y: 200, name: 'Restaurante', icon: '🍲' },
+      { key: 'hospital', x: 130, y: 340, name: 'Hospital', icon: '🏥' },
+      { key: 'tavern', x: 330, y: 340, name: 'Taverna', icon: '🍺' },
+      { key: 'forge', x: 230, y: 450, name: 'Forja', icon: '⚒️' }
+    ];
+    buildings.forEach(b => {
+      renderList.push({
+        y: b.y,
+        render: () => this.drawBuildingIndividual(game.town, b)
+      });
+    });
+
+    // Adicionar monstros ativos
+    game.spawner.activeMonsters.forEach(m => {
+      if (m.hp > 0) {
+        renderList.push({
+          y: m.y,
+          render: () => this.drawMonsterIndividual(m)
+        });
+      }
+    });
+
+    // Adicionar heróis ativos
+    game.heroes.forEach(h => {
+      renderList.push({
+        y: h.y,
+        render: () => this.drawHeroIndividual(h)
+      });
+    });
+
+    // Ordenar por Y cartesiano (menores Ys desenhados primeiro, maiores Ys desenhados depois)
+    renderList.sort((a, b) => a.y - b.y);
+
+    // Renderizar todos os elementos ordenados por profundidade
+    renderList.forEach(obj => {
+      obj.render();
+    });
+
+    // 3. Atualizar e Desenhar Partículas de Fumaça (no ar, acima de tudo)
     this.updateAndDrawSmoke(game.town, dt);
 
-    // 3. Desenhar Edifícios
-    this.drawBuildings(game.town);
-
-    // 4. Desenhar Monstros com Visual Pixel-Art
-    this.drawMonsters(game.spawner.activeMonsters);
-
-    // 5. Desenhar Heróis (Com Customização, Equipamento Dinâmico e Dashs)
-    this.drawHeroes(game.heroes);
-
-    // 6. Desenhar Efeitos de Batalha
+    // 4. Desenhar Efeitos de Batalha (projéteis)
     this.drawCombatEffects(game.heroes);
 
-    // 7. Desenhar Filtro de Dia/Noite
+    // 5. Desenhar Filtro de Dia/Noite
     this.drawDayNightFilter(width, height);
 
-    // 8. Desenhar Textos Flutuantes
+    // 6. Desenhar Textos Flutuantes
     this.drawFloaters(game.floaters);
   }
 
+  // --- RENDERIZADORES DE TERRENO ---
   drawTerrain(game, w, h) {
     const biome = game.spawner.getBiomeConfig();
     const time = performance.now();
 
     // Cidade (Grama)
     this.ctx.fillStyle = '#395c2f';
-    this.ctx.fillRect(0, 0, 470, h);
+    this.drawIsoPolygon([
+      { x: 0, y: 0 },
+      { x: 470, y: 0 },
+      { x: 470, y: 540 },
+      { x: 0, y: 540 }
+    ]);
 
     // Floresta (Varia com o bioma)
     let forestColor = '#243b23';
@@ -68,93 +149,325 @@ export class GameRenderer {
     if (biome.id === 2) forestColor = '#1b231e'; // Igarapés
 
     this.ctx.fillStyle = forestColor;
-    this.ctx.fillRect(490, 0, w - 490, h);
+    this.drawIsoPolygon([
+      { x: 490, y: 0 },
+      { x: 960, y: 0 },
+      { x: 960, y: 540 },
+      { x: 490, y: 540 }
+    ]);
 
-    // Rio Animado (X = 470 a 490, correnteza correndo de cima para baixo)
+    // Rio Animado (X = 470 a 490)
     this.ctx.fillStyle = '#2d6ab3';
-    this.ctx.fillRect(470, 0, 20, h);
+    this.drawIsoPolygon([
+      { x: 470, y: 0 },
+      { x: 490, y: 0 },
+      { x: 490, y: 540 },
+      { x: 470, y: 540 }
+    ]);
 
     // Ondas no Rio (Correnteza animada)
-    this.ctx.fillStyle = '#5c99e6';
+    this.ctx.strokeStyle = '#5c99e6';
+    this.ctx.lineWidth = 2;
     const waveOffset = (time * 0.04) % 40;
-    for (let y = -20; y < h; y += 30) {
+    for (let y = -20; y < 540; y += 30) {
       const wy = y + waveOffset;
-      // Ondulações horizontais curtas
-      this.ctx.fillRect(473, wy, 4, 3);
-      this.ctx.fillRect(482, wy + 12, 5, 3);
+      // Ondulações horizontais curtas na perspectiva
+      const p1Start = this.toIso(475, wy);
+      const p1End = this.toIso(475, wy + 4);
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1Start.x, p1Start.y);
+      this.ctx.lineTo(p1End.x, p1End.y);
+      this.ctx.stroke();
+
+      const p2Start = this.toIso(485, wy + 12);
+      const p2End = this.toIso(485, wy + 16);
+      this.ctx.beginPath();
+      this.ctx.moveTo(p2Start.x, p2Start.y);
+      this.ctx.lineTo(p2End.x, p2End.y);
+      this.ctx.stroke();
     }
 
-    // Ponte de madeira (X = 466 a 494, Y = 250 a 290)
+    // Ponte de madeira (X = 464 a 496, Y = 250 a 290)
     this.ctx.fillStyle = '#6e4726'; // Tábuas principais
-    this.ctx.fillRect(464, 250, 32, 40);
+    this.drawIsoPolygon([
+      { x: 464, y: 250 },
+      { x: 496, y: 250 },
+      { x: 496, y: 290 },
+      { x: 464, y: 290 }
+    ]);
     
-    // Desenha tábuas individuais da ponte (Linhas de pixels pretos)
-    this.ctx.fillStyle = '#452b16';
+    // Desenha tábuas individuais da ponte
+    this.ctx.strokeStyle = '#452b16';
+    this.ctx.lineWidth = 1.5;
     for (let py = 254; py < 290; py += 6) {
-      this.ctx.fillRect(464, py, 32, 1.5);
+      const leftPoint = this.toIso(464, py);
+      const rightPoint = this.toIso(496, py);
+      this.ctx.beginPath();
+      this.ctx.moveTo(leftPoint.x, leftPoint.y);
+      this.ctx.lineTo(rightPoint.x, rightPoint.y);
+      this.ctx.stroke();
     }
 
     // Corrimões
-    this.ctx.fillStyle = '#452b16';
-    this.ctx.fillRect(464, 247, 32, 3);
-    this.ctx.fillRect(464, 290, 32, 3);
+    this.ctx.strokeStyle = '#452b16';
+    this.ctx.lineWidth = 3;
+    
+    const cnStart = this.toIso(464, 247);
+    const cnEnd = this.toIso(496, 247);
+    this.ctx.beginPath();
+    this.ctx.moveTo(cnStart.x, cnStart.y);
+    this.ctx.lineTo(cnEnd.x, cnEnd.y);
+    this.ctx.stroke();
+    
+    const csStart = this.toIso(464, 290);
+    const csEnd = this.toIso(496, 290);
+    this.ctx.beginPath();
+    this.ctx.moveTo(csStart.x, csStart.y);
+    this.ctx.lineTo(csEnd.x, csEnd.y);
+    this.ctx.stroke();
 
-    // Estradas de terra na cidade (Conectando as novas posições 960x540)
+    // Estradas de terra na cidade
     this.ctx.fillStyle = '#826442';
-    // Estrada principal norte-sul (X=220 a 240)
-    this.ctx.fillRect(220, 100, 20, 350);
-    // Ramificações para prédios
-    this.ctx.fillRect(120, 195, 220, 15);
-    this.ctx.fillRect(120, 335, 220, 15);
+    // Estrada principal norte-sul (X=220 a 240, Y=100 a 450)
+    this.drawIsoPolygon([
+      { x: 220, y: 100 },
+      { x: 240, y: 100 },
+      { x: 240, y: 450 },
+      { x: 220, y: 450 }
+    ]);
+    // Ramificação horizontal 1
+    this.drawIsoPolygon([
+      { x: 120, y: 195 },
+      { x: 340, y: 195 },
+      { x: 340, y: 210 },
+      { x: 120, y: 210 }
+    ]);
+    // Ramificação horizontal 2
+    this.drawIsoPolygon([
+      { x: 120, y: 335 },
+      { x: 340, y: 335 },
+      { x: 340, y: 350 },
+      { x: 120, y: 350 }
+    ]);
     // Estrada até a ponte
-    this.ctx.fillRect(230, 262, 240, 15);
-
-    // Árvores de Pixel Art detalhadas (Wow factor)
-    this.drawPixelTree(530, 60);
-    this.drawPixelTree(880, 80);
-    this.drawPixelTree(910, 440);
-    this.drawPixelTree(540, h - 80);
-    this.drawPixelTree(420, 50);
-    this.drawPixelTree(420, h - 90);
-    this.drawPixelTree(60, 280);
+    this.drawIsoPolygon([
+      { x: 230, y: 262 },
+      { x: 470, y: 262 },
+      { x: 470, y: 277 },
+      { x: 230, y: 277 }
+    ]);
   }
 
+  // Desenha um polígono a partir de pontos cartesianos projetados para isométrico
+  drawIsoPolygon(points) {
+    this.ctx.beginPath();
+    points.forEach((pt, idx) => {
+      const isoPt = this.toIso(pt.x, pt.y);
+      if (idx === 0) {
+        this.ctx.moveTo(isoPt.x, isoPt.y);
+      } else {
+        this.ctx.lineTo(isoPt.x, isoPt.y);
+      }
+    });
+    this.ctx.closePath();
+    this.ctx.fill();
+  }
+
+  // --- DESENHO DE ÁRVORE RETRÔ ISOMÉTRICA ---
   drawPixelTree(x, y) {
+    const pos = this.toIso(x, y);
+    const tx = pos.x;
+    const ty = pos.y;
+
     this.ctx.save();
-    // Tronco
+    // Tronco (sobe verticalmente da base projetada)
     this.ctx.fillStyle = '#4d3319';
-    this.ctx.fillRect(x - 3, y, 6, 18);
+    this.ctx.fillRect(tx - 3, ty - 18, 6, 18);
+
     // Folhas em camadas pixeladas
     this.ctx.fillStyle = '#163b13';
     this.ctx.beginPath();
-    this.ctx.arc(x, y - 6, 14, 0, Math.PI * 2);
+    this.ctx.arc(tx, ty - 24, 14, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.fillStyle = '#20541d';
     this.ctx.beginPath();
-    this.ctx.arc(x - 4, y - 10, 9, 0, Math.PI * 2);
+    this.ctx.arc(tx - 4, ty - 28, 9, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.fillStyle = '#2d7328';
     this.ctx.beginPath();
-    this.ctx.arc(x + 3, y - 8, 7, 0, Math.PI * 2);
+    this.ctx.arc(tx + 3, ty - 26, 7, 0, Math.PI * 2);
     this.ctx.fill();
     this.ctx.restore();
   }
 
-  // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
-  updateAndDrawSmoke(town, dt) {
-    const chaminers = {
-      restaurant: { x: 330 + 14, y: 200 - 16 },
-      hospital: { x: 130 + 14, y: 340 - 16 },
-      tavern: { x: 330 + 14, y: 340 - 16 },
-      forge: { x: 230 + 14, y: 450 - 16 }
-    };
+  // --- RENDER DE EDIFÍCIO TRIDIMENSIONAL SOMBREADO ---
+  drawBuildingIndividual(town, b) {
+    const level = town.buildings[b.key];
+    const isBuilt = level > 0;
 
-    // Chance de criar nova fumaça em prédios construídos
-    for (const bKey in chaminers) {
-      if (town.isBuilt(bKey) && Math.random() < 0.04) {
-        const pos = chaminers[bKey];
+    this.ctx.save();
+
+    if (!isBuilt) {
+      this.ctx.globalAlpha = 0.45;
+    }
+
+    const bx = b.x;
+    const by = b.y;
+    const size = 22; // Raio cartesiano da pegada no chão
+
+    // Vértices da base no chão isométrico
+    const sul = this.toIso(bx, by + size);
+    const leste = this.toIso(bx + size, by);
+    const norte = this.toIso(bx, by - size);
+    const oeste = this.toIso(bx - size, by);
+
+    // Altura do prédio
+    const H = 24;
+
+    // Vértices do topo
+    const sul_t = { x: sul.x, y: sul.y - H };
+    const leste_t = { x: leste.x, y: leste.y - H };
+    const norte_t = { x: norte.x, y: norte.y - H };
+    const oeste_t = { x: oeste.x, y: oeste.y - H };
+
+    // 1. Face Esquerda (Oeste - Sul) - Tom médio
+    this.ctx.fillStyle = isBuilt ? '#5c4530' : '#45382e';
+    this.ctx.beginPath();
+    this.ctx.moveTo(oeste.x, oeste.y);
+    this.ctx.lineTo(sul.x, sul.y);
+    this.ctx.lineTo(sul_t.x, sul_t.y);
+    this.ctx.lineTo(oeste_t.x, oeste_t.y);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // 2. Face Direita (Sul - Leste) - Tom escuro de sombra
+    this.ctx.fillStyle = isBuilt ? '#423122' : '#332922';
+    this.ctx.beginPath();
+    this.ctx.moveTo(sul.x, sul.y);
+    this.ctx.lineTo(leste.x, leste.y);
+    this.ctx.lineTo(leste_t.x, leste_t.y);
+    this.ctx.lineTo(sul_t.x, sul_t.y);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // 3. Telhado (Cabana/Pirâmide)
+    const centro_base = this.toIso(bx, by);
+    const telhado_ponta = { x: centro_base.x, y: centro_base.y - H - 16 };
+
+    // Telhado Esquerdo
+    this.ctx.fillStyle = isBuilt ? '#9c3d28' : '#575251';
+    this.ctx.beginPath();
+    this.ctx.moveTo(oeste_t.x, oeste_t.y);
+    this.ctx.lineTo(sul_t.x, sul_t.y);
+    this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Telhado Direito (sombreado)
+    this.ctx.fillStyle = isBuilt ? '#732a1b' : '#3d3938';
+    this.ctx.beginPath();
+    this.ctx.moveTo(sul_t.x, sul_t.y);
+    this.ctx.lineTo(leste_t.x, leste_t.y);
+    this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // 4. Porta (Face esquerda)
+    if (isBuilt) {
+      const porta_esq = this.interpolate(oeste, sul, 0.4);
+      const porta_dir = this.interpolate(oeste, sul, 0.6);
+      
+      this.ctx.fillStyle = '#2e1c0c';
+      this.ctx.beginPath();
+      this.ctx.moveTo(porta_esq.x, porta_esq.y);
+      this.ctx.lineTo(porta_dir.x, porta_dir.y);
+      this.ctx.lineTo(porta_dir.x, porta_dir.y - 8);
+      this.ctx.lineTo(porta_esq.x, porta_esq.y - 8);
+      this.ctx.closePath();
+      this.ctx.fill();
+    }
+
+    // 5. Janelas acesas
+    if (isBuilt) {
+      const isNight = this.isNightTime();
+      this.ctx.fillStyle = isNight ? (Math.random() > 0.05 ? '#ffea3a' : '#aa9e27') : '#2e1c0c';
+      
+      // Janela face direita
+      const janela_dir_pos = this.interpolate(sul_t, leste_t, 0.5);
+      this.ctx.fillRect(janela_dir_pos.x - 2, janela_dir_pos.y + 4, 4, 4);
+
+      // Janela face esquerda
+      const janela_esq_pos = this.interpolate(oeste_t, sul_t, 0.5);
+      this.ctx.fillRect(janela_esq_pos.x - 2, janela_esq_pos.y + 4, 4, 4);
+    }
+
+    // 6. Chaminé (Forja, Restaurante, Hospital, Taverna)
+    if (isBuilt && b.key !== 'townhall' && b.key !== 'hotel') {
+      const chamine_base = this.interpolate(norte_t, leste_t, 0.5);
+      const cx = chamine_base.x;
+      const cy = chamine_base.y - 4;
+      
+      this.ctx.fillStyle = '#3d2e20';
+      this.ctx.fillRect(cx - 3, cy - 8, 5, 8);
+      this.ctx.fillStyle = '#1c150e';
+      this.ctx.fillRect(cx - 4, cy - 9, 7, 2);
+    }
+
+    // 7. Emoji de Identificação
+    this.ctx.font = '14px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(b.icon, telhado_ponta.x, telhado_ponta.y - 6);
+
+    // 8. Rótulo de Lvl
+    this.ctx.globalAlpha = 1.0;
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = '9px monospace';
+    this.ctx.textAlign = 'center';
+    
+    const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
+    this.ctx.fillText(label, sul.x, sul.y + 12);
+
+    this.ctx.restore();
+  }
+
+  // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
+  getChaminePos(town, bKey) {
+    const buildings = {
+      restaurant: { x: 330, y: 200 },
+      hospital: { x: 130, y: 340 },
+      tavern: { x: 330, y: 340 },
+      forge: { x: 230, y: 450 }
+    };
+    
+    const pos = buildings[bKey];
+    if (!pos || !town.isBuilt(bKey)) return null;
+    
+    const bx = pos.x;
+    const by = pos.y;
+    const size = 22;
+    const H = 24;
+    
+    const leste = this.toIso(bx + size, by);
+    const norte = this.toIso(bx, by - size);
+    
+    const leste_t = { x: leste.x, y: leste.y - H };
+    const norte_t = { x: norte.x, y: norte.y - H };
+    
+    const chamine_base = this.interpolate(norte_t, leste_t, 0.5);
+    return {
+      x: chamine_base.x,
+      y: chamine_base.y - 13
+    };
+  }
+
+  updateAndDrawSmoke(town, dt) {
+    const chaminers = ['restaurant', 'hospital', 'tavern', 'forge'];
+
+    chaminers.forEach(bKey => {
+      const pos = this.getChaminePos(town, bKey);
+      if (pos && Math.random() < 0.04) {
         this.smokeParticles.push({
           x: pos.x + (Math.random() * 4 - 2),
           y: pos.y,
@@ -165,16 +478,15 @@ export class GameRenderer {
           life: 1.2 + Math.random() * 0.8
         });
       }
-    }
+    });
 
-    // Desenhar e atualizar fumaça
     this.ctx.save();
     for (let i = this.smokeParticles.length - 1; i >= 0; i--) {
       const p = this.smokeParticles[i];
       p.life -= dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.size += 1.5 * dt; // Fumaça dispersa/cresce
+      p.size += 1.5 * dt;
       p.alpha = Math.max(0, p.alpha - 0.5 * dt);
 
       if (p.life <= 0 || p.alpha <= 0) {
@@ -190,143 +502,74 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  drawBuildings(town) {
-    const buildings = [
-      { key: 'townhall', x: 230, y: 100, name: 'Prefeitura', icon: '🏛️' },
-      { key: 'hotel', x: 130, y: 200, name: 'Hotel', icon: '🏨' },
-      { key: 'restaurant', x: 330, y: 200, name: 'Restaurante', icon: '🍲' },
-      { key: 'hospital', x: 130, y: 340, name: 'Hospital', icon: '🏥' },
-      { key: 'tavern', x: 330, y: 340, name: 'Taverna', icon: '🍺' },
-      { key: 'forge', x: 230, y: 450, name: 'Forja', icon: '⚒️' }
-    ];
-
-    buildings.forEach(b => {
-      const level = town.buildings[b.key];
-      const isBuilt = level > 0;
-
-      this.ctx.save();
-
-      if (!isBuilt) {
-        this.ctx.globalAlpha = 0.45;
-      }
-
-      // Base da casa
-      this.ctx.fillStyle = '#5c4530';
-      this.ctx.fillRect(b.x - 22, b.y - 12, 44, 28);
-
-      // Telhado
-      this.ctx.fillStyle = isBuilt ? '#8c3523' : '#575251';
-      this.ctx.beginPath();
-      this.ctx.moveTo(b.x - 26, b.y - 12);
-      this.ctx.lineTo(b.x + 26, b.y - 12);
-      this.ctx.lineTo(b.x, b.y - 28);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Porta
-      this.ctx.fillStyle = '#2e1c0c';
-      this.ctx.fillRect(b.x - 6, b.y + 6, 12, 10);
-
-      // Chaminé (Forja, Restaurante, Hospital, Taverna)
-      if (b.key !== 'townhall' && b.key !== 'hotel') {
-        this.ctx.fillStyle = '#3d2e20';
-        this.ctx.fillRect(b.x + 11, b.y - 18, 6, 10);
-      }
-
-      // Janelas acesas
-      if (isBuilt) {
-        const isNight = this.isNightTime();
-        this.ctx.fillStyle = isNight ? (Math.random() > 0.05 ? '#ffea3a' : '#aa9e27') : '#2e1c0c';
-        this.ctx.fillRect(b.x - 14, b.y - 4, 6, 6);
-        this.ctx.fillRect(b.x + 8, b.y - 4, 6, 6);
-      }
-
-      this.ctx.font = '14px Arial';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(b.icon, b.x, b.y - 32);
-
-      this.ctx.globalAlpha = 1.0;
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = '9px monospace';
-      this.ctx.textAlign = 'center';
-      
-      const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
-      this.ctx.fillText(label, b.x, b.y + 24);
-
-      this.ctx.restore();
-    });
-  }
-
   // --- RENDER MONSTROS ---
-  drawMonsters(monsters) {
-    monsters.forEach(monster => {
-      if (monster.hp <= 0) return;
+  drawMonsterIndividual(monster) {
+    const pos = this.toIso(monster.x, monster.y);
+    const time = performance.now();
 
-      this.ctx.save();
-      const time = performance.now();
+    this.ctx.save();
 
-      // Sombra
-      const shadowSize = monster.isBoss ? 16 : (monster.isMiniBoss ? 11 : 7);
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-      this.ctx.beginPath();
-      this.ctx.ellipse(monster.x, monster.y + 8, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
-      this.ctx.fill();
+    // Sombra isométrica
+    const shadowSize = monster.isBoss ? 16 : (monster.isMiniBoss ? 11 : 7);
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(pos.x, pos.y + 8, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
+    this.ctx.fill();
 
-      // Identifica criatura
-      const name = monster.name;
+    // Desenhar criatura
+    const name = monster.name;
 
-      if (name.includes('Saci-Pererê')) {
-        this.drawSaci(monster.x, monster.y, time);
-      } else if (name.includes('Curupira')) {
-        this.drawCurupira(monster.x, monster.y, time);
-      } else if (name.includes('Mula sem Cabeça')) {
-        this.drawMula(monster.x, monster.y, time);
-      } else if (name.includes('Boitatá')) {
-        this.drawBoitata(monster.x, monster.y, time);
-      } else if (name.includes('Mapinguari')) {
-        this.drawMapinguari(monster.x, monster.y, time);
-      } else if (name.includes('Corpo-Seco')) {
-        this.drawCorpoSeco(monster.x, monster.y);
-      } else if (name.includes('Pisadeira')) {
-        this.drawPisadeira(monster.x, monster.y);
-      } else if (name.includes('Chibamba')) {
-        this.drawChibamba(monster.x, monster.y, time);
-      } else if (name.includes('Capelobo')) {
-        this.drawCapelobo(monster.x, monster.y);
-      } else if (name.includes('Caipora')) {
-        this.drawCaipora(monster.x, monster.y);
-      } else if (name.includes('Quibungo')) {
-        this.drawQuibungo(monster.x, monster.y);
-      } else if (name.includes('Ipupiara')) {
-        this.drawIpupiara(monster.x, monster.y, time);
-      } else if (name.includes('Teju')) {
-        this.drawTejuJagua(monster.x, monster.y);
-      } else if (name.includes('Boto')) {
-        this.drawBoto(monster.x, monster.y);
-      } else if (name.includes('Rato Rei')) {
-        this.drawRatoRei(monster.x, monster.y);
-      } else {
-        this.drawGenericMonster(monster);
-      }
+    if (name.includes('Saci-Pererê')) {
+      this.drawSaci(pos.x, pos.y, time);
+    } else if (name.includes('Curupira')) {
+      this.drawCurupira(pos.x, pos.y, time);
+    } else if (name.includes('Mula sem Cabeça')) {
+      this.drawMula(pos.x, pos.y, time);
+    } else if (name.includes('Boitatá')) {
+      this.drawBoitata(monster.x, monster.y, time); // CARTESIANO
+    } else if (name.includes('Mapinguari')) {
+      this.drawMapinguari(pos.x, pos.y, time);
+    } else if (name.includes('Corpo-Seco')) {
+      this.drawCorpoSeco(pos.x, pos.y);
+    } else if (name.includes('Pisadeira')) {
+      this.drawPisadeira(pos.x, pos.y);
+    } else if (name.includes('Chibamba')) {
+      this.drawChibamba(pos.x, pos.y, time);
+    } else if (name.includes('Capelobo')) {
+      this.drawCapelobo(pos.x, pos.y);
+    } else if (name.includes('Caipora')) {
+      this.drawCaipora(pos.x, pos.y);
+    } else if (name.includes('Quibungo')) {
+      this.drawQuibungo(pos.x, pos.y);
+    } else if (name.includes('Ipupiara')) {
+      this.drawIpupiara(pos.x, pos.y, time);
+    } else if (name.includes('Teju')) {
+      this.drawTejuJagua(pos.x, pos.y);
+    } else if (name.includes('Boto')) {
+      this.drawBoto(pos.x, pos.y);
+    } else if (name.includes('Rato Rei')) {
+      this.drawRatoRei(pos.x, pos.y);
+    } else {
+      this.drawGenericMonster(monster, pos.x, pos.y);
+    }
 
-      // Nome do Monstro
-      this.ctx.fillStyle = monster.isBoss ? '#ffea3a' : '#ff9f3a';
-      this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(monster.name, monster.x, monster.y - (monster.isBoss ? 24 : 14));
+    // Nome do Monstro
+    this.ctx.fillStyle = monster.isBoss ? '#ffea3a' : '#ff9f3a';
+    this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(monster.name, pos.x, pos.y - (monster.isBoss ? 24 : 14));
 
-      // Barra de HP
-      const hpPct = monster.hp / monster.maxHp;
-      const barW = monster.isBoss ? 45 : (monster.isMiniBoss ? 30 : 20);
-      const barH = 3;
-      
-      this.ctx.fillStyle = '#2c2e33';
-      this.ctx.fillRect(monster.x - barW / 2, monster.y - (monster.isBoss ? 20 : 10), barW, barH);
-      this.ctx.fillStyle = '#ff3d3d';
-      this.ctx.fillRect(monster.x - barW / 2, monster.y - (monster.isBoss ? 20 : 10), barW * hpPct, barH);
+    // Barra de HP
+    const hpPct = monster.hp / monster.maxHp;
+    const barW = monster.isBoss ? 45 : (monster.isMiniBoss ? 30 : 20);
+    const barH = 3;
+    
+    this.ctx.fillStyle = '#2c2e33';
+    this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 20 : 10), barW, barH);
+    this.ctx.fillStyle = '#ff3d3d';
+    this.ctx.fillRect(pos.x - barW / 2, pos.y - (monster.isBoss ? 20 : 10), barW * hpPct, barH);
 
-      this.ctx.restore();
-    });
+    this.ctx.restore();
   }
 
   // --- DRAW MONSTER PROCEDURAL PIXELS ---
@@ -334,7 +577,6 @@ export class GameRenderer {
     const jump = Math.abs(Math.sin(time * 0.012)) * 6;
     const py = y - jump;
 
-    // Redemoinho de poeira cinza sob a perna dele
     this.ctx.fillStyle = 'rgba(160,160,160, 0.4)';
     const offsetWave = Math.sin(time * 0.03) * 4;
     this.ctx.fillRect(x - 5 + offsetWave, y + 5, 10, 1.5);
@@ -349,10 +591,9 @@ export class GameRenderer {
     this.ctx.closePath();
     this.ctx.fill();
 
-    // Rosto marrom
+    // Rosto
     this.ctx.fillStyle = '#5c3a21';
     this.ctx.fillRect(x - 3.5, py - 9, 7, 6);
-    // Olho
     this.ctx.fillStyle = '#fff';
     this.ctx.fillRect(x + 1, py - 7, 2, 2);
     // Cachimbo
@@ -361,7 +602,7 @@ export class GameRenderer {
     this.ctx.fillStyle = '#ff9f3a';
     this.ctx.fillRect(x + 5.5, py - 5, 1, 2);
 
-    // Calção vermelho e perna
+    // Calção e perna
     this.ctx.fillStyle = '#ff0000';
     this.ctx.fillRect(x - 3.5, py - 3, 7, 6);
     this.ctx.fillStyle = '#2e1c10';
@@ -369,27 +610,22 @@ export class GameRenderer {
   }
 
   drawCurupira(x, y, time) {
-    // Cabelo de Fogo oscilando de cor (Brasas dinâmicas)
     const flameVal = Math.sin(time * 0.04) * 2;
     this.ctx.fillStyle = Math.random() > 0.4 ? '#ff5500' : '#ffaa00';
     this.ctx.fillRect(x - 6, y - 16 - flameVal, 12, 5 + flameVal);
 
-    // Rosto
     this.ctx.fillStyle = '#ffd1a9';
     this.ctx.fillRect(x - 4, y - 11, 8, 7);
-    this.ctx.fillStyle = '#3aff7d'; // Olho verde
+    this.ctx.fillStyle = '#3aff7d';
     this.ctx.fillRect(x + 1, y - 9, 1.5, 1.5);
 
-    // Túnica
     this.ctx.fillStyle = '#265922';
     this.ctx.fillRect(x - 5, y - 4, 10, 8);
 
-    // Pernas e pés invertidos
     this.ctx.fillStyle = '#ffd1a9';
     this.ctx.fillRect(x - 3, y + 4, 2, 4);
     this.ctx.fillRect(x + 1, y + 4, 2, 4);
 
-    // Pés de trás para a esquerda
     this.ctx.fillStyle = '#c99a75';
     this.ctx.fillRect(x - 6, y + 7, 4, 1.5);
     this.ctx.fillRect(x - 2, y + 7, 4, 1.5);
@@ -398,7 +634,6 @@ export class GameRenderer {
   drawMula(x, y, time) {
     const step = Math.sin(time * 0.016) * 3;
 
-    // Corpo cavalo
     this.ctx.fillStyle = '#4a2f1b';
     this.ctx.fillRect(x - 11, y - 2, 18, 8);
 
@@ -414,7 +649,6 @@ export class GameRenderer {
     this.ctx.fillStyle = '#4a2f1b';
     this.ctx.fillRect(x + 3, y - 8, 5, 7);
 
-    // Fogo Vivo na Cabeça
     const flameSize = 8 + Math.floor(Math.sin(time * 0.04) * 3);
     this.ctx.fillStyle = '#ff3c00';
     this.ctx.fillRect(x + 2, y - 8 - flameSize, 8, flameSize);
@@ -423,21 +657,22 @@ export class GameRenderer {
   }
 
   drawBoitata(x, y, time) {
-    // Serpente longa de fogo
     for (let i = 0; i < 6; i++) {
       const offset = i * 6;
       const wave = Math.sin((time * 0.012) + i * 0.8) * 5;
-      const px = x - offset;
-      const py = y + wave;
+      const cartX = x - offset;
+      const cartY = y + wave;
+      
+      const pos = this.toIso(cartX, cartY);
 
       this.ctx.fillStyle = i === 0 ? '#ffea3a' : (i % 2 === 0 ? '#ff3c00' : '#ff9f3a');
       this.ctx.beginPath();
-      this.ctx.arc(px, py, 6 - i * 0.7, 0, Math.PI * 2);
+      this.ctx.arc(pos.x, pos.y, 6 - i * 0.7, 0, Math.PI * 2);
       this.ctx.fill();
 
       if (i === 0) {
         this.ctx.fillStyle = '#ff0000';
-        this.ctx.fillRect(px + 1, py - 3, 2, 2);
+        this.ctx.fillRect(pos.x + 1, pos.y - 3, 2, 2);
       }
     }
   }
@@ -448,7 +683,6 @@ export class GameRenderer {
     this.ctx.fillStyle = '#263321';
     this.ctx.fillRect(x - 9 + sway, y - 15, 18, 20);
 
-    // Braços articulados se movendo
     const armWave = Math.sin(time * 0.015) * 3;
     this.ctx.fillStyle = '#141c11';
     this.ctx.fillRect(x - 12 + sway, y - 9 + armWave, 3, 12);
@@ -457,11 +691,9 @@ export class GameRenderer {
     this.ctx.fillRect(x - 12 + sway, y + 3 + armWave, 3, 2);
     this.ctx.fillRect(x + 9 + sway, y + 3 - armWave, 3, 2);
 
-    // Olho
     this.ctx.fillStyle = '#ff0000';
     this.ctx.fillRect(x - 2 + sway, y - 11, 4, 4);
 
-    // Boca da Barriga
     this.ctx.fillStyle = '#8a0d0d';
     this.ctx.fillRect(x - 3 + sway, y - 3, 6, 7);
     this.ctx.fillStyle = '#fff';
@@ -484,7 +716,7 @@ export class GameRenderer {
     this.ctx.fillRect(x - 3, y - 8, 6, 12);
     this.ctx.fillStyle = '#e8d5c4';
     this.ctx.fillRect(x - 2.5, y - 13, 5, 5);
-    this.ctx.fillStyle = '#fff'; // Unhas compridas
+    this.ctx.fillStyle = '#fff';
     this.ctx.fillRect(x - 5, y - 5, 2, 5);
     this.ctx.fillRect(x + 3, y - 5, 2, 5);
   }
@@ -555,183 +787,174 @@ export class GameRenderer {
     this.ctx.fillRect(x - 3.5, y - 8, 7, 3);
   }
 
-  drawGenericMonster(monster) {
+  drawGenericMonster(monster, x, y) {
     const size = monster.isBoss ? 15 : 7;
     this.ctx.fillStyle = monster.isBoss ? '#802616' : '#5e6875';
     this.ctx.beginPath();
-    this.ctx.arc(monster.x, monster.y, size, 0, Math.PI * 2);
+    this.ctx.arc(x, y, size, 0, Math.PI * 2);
     this.ctx.fill();
   }
 
-  // --- RENDER HERÓIS E DASHS ---
-  drawHeroes(heroes) {
-    heroes.forEach(hero => {
-      this.ctx.save();
-      const time = performance.now();
+  // --- RENDER HEROIS ---
+  drawHeroIndividual(hero) {
+    this.ctx.save();
+    const time = performance.now();
 
-      // Cálculo do Dash de Combate
-      let dx = 0;
-      let dy = 0;
-      if (hero.state === 'FIGHTING' && hero.targetMonster) {
-        const monster = hero.targetMonster;
-        // Avanço rápido nos primeiros 40% do ciclo de cooldown de ataque
-        const cdPct = hero.cooldownTimer * hero.spd; // entre 0 e 1
-        if (cdPct > 0.6) {
-          // Dash de avanço rápido
-          const dashPct = (cdPct - 0.6) / 0.4; // entre 0 e 1
-          const dist = 12 * Math.sin(dashPct * Math.PI); // Dash de ida e volta suave
-          const mx = monster.x - hero.x;
-          const my = monster.y - hero.y;
-          const len = Math.sqrt(mx * mx + my * my);
-          if (len > 5) {
-            dx = (mx / len) * dist;
-            dy = (my / len) * dist;
-          }
+    // Cálculo do Dash de Combate
+    let dx = 0;
+    let dy = 0;
+    if (hero.state === 'FIGHTING' && hero.targetMonster) {
+      const monster = hero.targetMonster;
+      const cdPct = hero.cooldownTimer * hero.spd;
+      if (cdPct > 0.6) {
+        const dashPct = (cdPct - 0.6) / 0.4;
+        const dist = 12 * Math.sin(dashPct * Math.PI);
+        const mx = monster.x - hero.x;
+        const my = monster.y - hero.y;
+        const len = Math.sqrt(mx * mx + my * my);
+        if (len > 5) {
+          dx = (mx / len) * dist;
+          dy = (my / len) * dist;
         }
       }
+    }
 
-      const hx = hero.x + dx;
-      const hy = hero.y + dy;
+    // Posição cartesiana do herói com o dash aplicado
+    const cartX = hero.x + dx;
+    const cartY = hero.y + dy;
 
-      const isWalking = hero.state === 'SEARCHING_MONSTER' || hero.state === 'RETURNING_TOWN' || hero.state === 'IDLE_TOWN';
-      const step = isWalking ? Math.sin(time * 0.015) * 3 : 0;
+    // Projeção isométrica
+    const pos = this.toIso(cartX, cartY);
+    const hx = pos.x;
+    const hy = pos.y;
 
-      // Sombra
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    const isWalking = hero.state === 'SEARCHING_MONSTER' || hero.state === 'RETURNING_TOWN' || hero.state === 'IDLE_TOWN';
+    const step = isWalking ? Math.sin(time * 0.015) * 3 : 0;
+
+    // Sombra isométrica
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(hx, hy + 11, 10, 3, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // 1. Pernas
+    this.ctx.fillStyle = hero.cosmetics.skinColor;
+    this.ctx.fillRect(hx - 3.5, hy + 5, 2, 6 + step);
+    this.ctx.fillRect(hx + 1.5, hy + 5, 2, 6 - step);
+    this.ctx.fillStyle = '#4a2c11';
+    this.ctx.fillRect(hx - 4.5, hy + 10 + step, 3, 1.5);
+    this.ctx.fillRect(hx + 0.5, hy + 10 - step, 3, 1.5);
+
+    // 2. Corpo / Armadura Dinâmica
+    let bodyColor = hero.cosmetics.clothesColor;
+    let isLendaria = false;
+
+    if (hero.equipment.armor) {
+      const tier = hero.equipment.armor.tier;
+      if (tier === 1) {
+        bodyColor = hero.className === 'WARRIOR' ? '#818b96' : '#634731';
+      } else if (tier === 2) {
+        bodyColor = '#4e5a66';
+      } else if (tier === 3) {
+        bodyColor = (hero.equipment.armor.key && hero.equipment.armor.key.includes('mapinguari')) ? '#ab5522' : '#cca93d';
+        isLendaria = true;
+      }
+    }
+
+    this.ctx.fillStyle = bodyColor;
+    this.ctx.fillRect(hx - 5, hy - 4, 10, 10);
+
+    if (isLendaria) {
+      this.ctx.strokeStyle = '#ffea3a';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(hx - 5.5, hy - 4.5, 11, 11);
+    }
+
+    if (hero.className === 'WARRIOR' && !isLendaria) {
+      this.ctx.fillStyle = '#656e78';
+      this.ctx.strokeStyle = '#32373c';
+      this.ctx.lineWidth = 1;
       this.ctx.beginPath();
-      this.ctx.ellipse(hx, hy + 11, 10, 3, 0, 0, Math.PI * 2);
+      this.ctx.arc(hx - 4, hy + 1, 4, 0, Math.PI * 2);
       this.ctx.fill();
+      this.ctx.stroke();
+    }
 
-      // 1. Pernas
-      this.ctx.fillStyle = hero.cosmetics.skinColor;
-      this.ctx.fillRect(hx - 3.5, hy + 5, 2, 6 + step);
-      this.ctx.fillRect(hx + 1.5, hy + 5, 2, 6 - step);
-      this.ctx.fillStyle = '#4a2c11'; // Sapatos
-      this.ctx.fillRect(hx - 4.5, hy + 10 + step, 3, 1.5);
-      this.ctx.fillRect(hx + 0.5, hy + 10 - step, 3, 1.5);
+    this.ctx.fillStyle = '#261c11';
+    this.ctx.fillRect(hx - 5, hy + 3, 10, 1.5);
 
-      // 2. Corpo / Armadura Dinâmica
-      let bodyColor = hero.cosmetics.clothesColor;
-      let isLendaria = false;
+    // 3. Rosto
+    this.ctx.fillStyle = hero.cosmetics.skinColor;
+    this.ctx.fillRect(hx - 4, hy - 11, 8, 7);
+    
+    this.ctx.fillStyle = '#111';
+    this.ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
+    this.ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
 
-      if (hero.equipment.armor) {
-        const tier = hero.equipment.armor.tier;
-        if (tier === 1) {
-          bodyColor = hero.className === 'WARRIOR' ? '#818b96' : '#634731';
-        } else if (tier === 2) {
-          bodyColor = '#4e5a66';
-        } else if (tier === 3) {
-          bodyColor = (hero.equipment.armor.key && hero.equipment.armor.key.includes('mapinguari')) ? '#ab5522' : '#cca93d';
-          isLendaria = true;
-        }
+    // Cabelo e Chapéus
+    this.ctx.fillStyle = hero.cosmetics.hairColor;
+    const hairStyle = hero.cosmetics.hairStyle;
+
+    if (hero.className === 'MAGE') {
+      this.ctx.fillStyle = '#511b85';
+      this.ctx.fillRect(hx - 7, hy - 12, 14, 2);
+      this.ctx.beginPath();
+      this.ctx.moveTo(hx - 4, hy - 12);
+      this.ctx.lineTo(hx + 4, hy - 12);
+      this.ctx.lineTo(hx, hy - 20);
+      this.ctx.closePath();
+      this.ctx.fill();
+    } else if (hero.className === 'WARRIOR') {
+      this.ctx.fillStyle = '#818b96';
+      this.ctx.fillRect(hx - 4.5, hy - 13, 9, 3);
+      this.ctx.fillStyle = '#ff3d3d';
+      const plumaOffset = Math.sin(time * 0.015) * 1.5;
+      this.ctx.fillRect(hx - 1 + plumaOffset, hy - 16, 3, 3);
+    } else {
+      if (hairStyle === 'short') {
+        this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+        this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 4);
+        this.ctx.fillRect(hx + 3, hy - 11, 1.5, 4);
+      } else if (hairStyle === 'long') {
+        this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+        this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 9);
+        this.ctx.fillRect(hx + 3, hy - 11, 1.5, 9);
+      } else if (hairStyle === 'spiky') {
+        this.ctx.fillRect(hx - 4, hy - 12.5, 8, 2);
+        this.ctx.fillRect(hx - 3, hy - 14.5, 1.5, 2);
+        this.ctx.fillRect(hx + 1.5, hy - 14.5, 1.5, 2);
       }
+    }
 
-      this.ctx.fillStyle = bodyColor;
-      this.ctx.fillRect(hx - 5, hy - 4, 10, 10); // Tronco
+    if (hero.className === 'PRIEST') {
+      this.ctx.strokeStyle = '#ffea3a';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.arc(hx, hy - 14, 2.5, 0, Math.PI * 2);
+      this.ctx.stroke();
+    }
 
-      if (isLendaria) {
-        this.ctx.strokeStyle = '#ffea3a';
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(hx - 5.5, hy - 4.5, 11, 11);
-      }
+    // 4. Arma Dinâmica
+    this.drawHeroWeapon(hx, hy, hero);
 
-      // Detalhes da classe: Guerreiro recebe escudo nas costas
-      if (hero.className === 'WARRIOR' && !isLendaria) {
-        // Escudo de ferro redondo nas costas
-        this.ctx.fillStyle = '#656e78';
-        this.ctx.strokeStyle = '#32373c';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.arc(hx - 4, hy + 1, 4, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.stroke();
-      }
+    // Nome do Herói
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = '9px monospace';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(hero.name, hx, hy - 21);
 
-      // Cinto
-      this.ctx.fillStyle = '#261c11';
-      this.ctx.fillRect(hx - 5, hy + 3, 10, 1.5);
+    // Barra de Vida
+    const hpPct = Math.max(0, hero.hp / hero.maxHp);
+    const barW = 20;
+    const barH = 3;
+    
+    this.ctx.fillStyle = '#2c2e33';
+    this.ctx.fillRect(hx - barW / 2, hy - 17, barW, barH);
+    this.ctx.fillStyle = hpPct > 0.45 ? '#3aff7d' : '#ffea3a';
+    if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
+    this.ctx.fillRect(hx - barW / 2, hy - 17, barW * hpPct, barH);
 
-      // 3. Rosto
-      this.ctx.fillStyle = hero.cosmetics.skinColor;
-      this.ctx.fillRect(hx - 4, hy - 11, 8, 7);
-      
-      // Olhos
-      this.ctx.fillStyle = '#111';
-      this.ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
-      this.ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
-
-      // Cabelo e Chapéus
-      this.ctx.fillStyle = hero.cosmetics.hairColor;
-      const hairStyle = hero.cosmetics.hairStyle;
-
-      if (hero.className === 'MAGE') {
-        // --- CHAPÉU DE BRUXO DE ABAS LARGAS ROXO (Mago) ---
-        this.ctx.fillStyle = '#511b85';
-        this.ctx.fillRect(hx - 7, hy - 12, 14, 2); // Aba
-        this.ctx.beginPath(); // Cone
-        this.ctx.moveTo(hx - 4, hy - 12);
-        this.ctx.lineTo(hx + 4, hy - 12);
-        this.ctx.lineTo(hx, hy - 20);
-        this.ctx.closePath();
-        this.ctx.fill();
-      } else if (hero.className === 'WARRIOR') {
-        // --- ELMO COM PLUMA (Guerreiro) ---
-        this.ctx.fillStyle = '#818b96';
-        this.ctx.fillRect(hx - 4.5, hy - 13, 9, 3); // Base do elmo
-        this.ctx.fillStyle = '#ff3d3d'; // Pluma vermelha balançando
-        const plumaOffset = Math.sin(time * 0.015) * 1.5;
-        this.ctx.fillRect(hx - 1 + plumaOffset, hy - 16, 3, 3);
-      } else {
-        // Cabelos normais
-        if (hairStyle === 'short') {
-          this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
-          this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 4);
-          this.ctx.fillRect(hx + 3, hy - 11, 1.5, 4);
-        } else if (hairStyle === 'long') {
-          this.ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
-          this.ctx.fillRect(hx - 4.5, hy - 11, 1.5, 9);
-          this.ctx.fillRect(hx + 3, hy - 11, 1.5, 9);
-        } else if (hairStyle === 'spiky') {
-          this.ctx.fillRect(hx - 4, hy - 12.5, 8, 2);
-          this.ctx.fillRect(hx - 3, hy - 14.5, 1.5, 2);
-          this.ctx.fillRect(hx + 1.5, hy - 14.5, 1.5, 2);
-        }
-      }
-
-      // Auréola flutuante se Sacerdote
-      if (hero.className === 'PRIEST') {
-        this.ctx.strokeStyle = '#ffea3a';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.arc(hx, hy - 14, 2.5, 0, Math.PI * 2);
-        this.ctx.stroke();
-      }
-
-      // 4. Arma Dinâmica
-      this.drawHeroWeapon(hx, hy, hero);
-
-      // Nome do Herói
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = '9px monospace';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(hero.name, hx, hy - 21);
-
-      // Barra de Vida
-      const hpPct = Math.max(0, hero.hp / hero.maxHp);
-      const barW = 20;
-      const barH = 3;
-      
-      this.ctx.fillStyle = '#2c2e33';
-      this.ctx.fillRect(hx - barW / 2, hy - 17, barW, barH);
-      this.ctx.fillStyle = hpPct > 0.45 ? '#3aff7d' : '#ffea3a';
-      if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
-      this.ctx.fillRect(hx - barW / 2, hy - 17, barW * hpPct, barH);
-
-      // Balões de status
-      this.drawHeroNeedBubble(hx, hy, 7);
-
-      this.ctx.restore();
-    });
+    this.ctx.restore();
   }
 
   drawHeroWeapon(hx, hy, hero) {
@@ -739,19 +962,18 @@ export class GameRenderer {
     const wx = isAttacking ? hx + 5 : hx - 6.5;
     const wy = isAttacking ? hy + 1 : hy + 2;
 
-    let weaponColor = '#bf9b30'; // Bronze base
+    let weaponColor = '#bf9b30';
     let isLendaria = false;
 
     if (hero.equipment.weapon) {
       const tier = hero.equipment.weapon.tier;
-      if (tier === 1) weaponColor = '#818b96'; // Ferro
-      if (tier === 2) weaponColor = '#4e5b66'; // Aço
+      if (tier === 1) weaponColor = '#818b96';
+      if (tier === 2) weaponColor = '#4e5b66';
       if (tier === 3) {
-        weaponColor = '#ffea3a'; // Lendária
+        weaponColor = '#ffea3a';
         isLendaria = true;
       }
     } else {
-      // Punho fechado
       this.ctx.fillStyle = hero.cosmetics.skinColor;
       this.ctx.fillRect(wx, wy, 2, 2.5);
       return;
@@ -760,7 +982,6 @@ export class GameRenderer {
     this.ctx.save();
 
     if (hero.className === 'ARCHER') {
-      // Arco
       this.ctx.strokeStyle = weaponColor;
       this.ctx.lineWidth = 1.5;
       this.ctx.beginPath();
@@ -771,7 +992,6 @@ export class GameRenderer {
       }
       this.ctx.stroke();
 
-      // Corda
       this.ctx.strokeStyle = 'rgba(255,255,255,0.4)';
       this.ctx.lineWidth = 0.5;
       this.ctx.beginPath();
@@ -785,13 +1005,11 @@ export class GameRenderer {
       }
       this.ctx.stroke();
     } else if (hero.className === 'MAGE' || hero.className === 'PRIEST') {
-      // Cajado
       this.ctx.fillStyle = '#6b4724';
       this.ctx.fillRect(wx + 1, wy - 8, 1.5, 12);
       this.ctx.fillStyle = hero.className === 'PRIEST' ? '#ffea3a' : '#c23aff';
       this.ctx.fillRect(wx, wy - 11, 3.5, 3.5);
     } else {
-      // Espada
       this.ctx.fillStyle = weaponColor;
       if (isAttacking) {
         this.ctx.fillRect(wx, wy - 1, 9, 2);
@@ -807,22 +1025,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  drawHeroNeedBubble(hx, hy, size) {
-    let icon = '';
-    
-    if (heroNeed(hx, hy) === 'hotel') icon = '💤';
-    else if (heroNeed(hx, hy) === 'restaurant') icon = '🍲';
-    else if (heroNeed(hx, hy) === 'hospital') icon = '🩹';
-    else if (heroNeed(hx, hy) === 'tavern') icon = '🍺';
-
-    // Para evitar poluição, só extraímos o estado da IA do herói no loop
-  }
-
-  drawHeroNeedBubble(hx, hy, size) {
-    // Sobrescrito via loops anteriores no render
-  }
-
-  // Desenha efeitos de ataques avançados
+  // --- EFEITOS DE BATALHA ---
   drawCombatEffects(heroes) {
     heroes.forEach(hero => {
       if (hero.state !== 'FIGHTING' || !hero.targetMonster) return;
@@ -833,33 +1036,49 @@ export class GameRenderer {
       // Mago
       if (hero.className === 'MAGE' && hero.cooldownTimer > 0.4) {
         const pct = (1 - hero.cooldownTimer);
-        const px = hero.x + (monster.x - hero.x) * pct;
-        const py = hero.y + (monster.y - hero.y) * pct;
-
+        const cartX = hero.x + (monster.x - hero.x) * pct;
+        const cartY = hero.y + (monster.y - hero.y) * pct;
+        
+        const pos = this.toIso(cartX, cartY);
         const color = hero.equipment.weapon?.key.includes('boitata') ? '#ff3c00' : '#c23aff';
 
         this.ctx.fillStyle = color;
         this.ctx.beginPath();
-        this.ctx.arc(px, py, 4, 0, Math.PI * 2);
+        this.ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
         this.ctx.fill();
         
+        const cartBackX = hero.x + (monster.x - hero.x) * (pct - 0.05);
+        const cartBackY = hero.y + (monster.y - hero.y) * (pct - 0.05);
+        const posBack = this.toIso(cartBackX, cartBackY);
+
         this.ctx.fillStyle = '#ffea3a';
         this.ctx.beginPath();
-        this.ctx.arc(px - (monster.x - hero.x)*0.08, py - (monster.y - hero.y)*0.08, 2, 0, Math.PI * 2);
+        this.ctx.arc(posBack.x, posBack.y, 2, 0, Math.PI * 2);
         this.ctx.fill();
       }
 
-      // Arqueiro
+      // Arqueiro (Parábola tridimensional)
       if (hero.className === 'ARCHER' && hero.cooldownTimer > 0.3) {
         const pct = (1 - hero.cooldownTimer);
-        const px = hero.x + (monster.x - hero.x) * pct;
-        const py = hero.y + (monster.y - hero.y) * pct - Math.sin(pct * Math.PI) * 20;
+        const cartX = hero.x + (monster.x - hero.x) * pct;
+        const cartY = hero.y + (monster.y - hero.y) * pct;
+        
+        const pos = this.toIso(cartX, cartY);
+        const arrowHeight = Math.sin(pct * Math.PI) * 20;
+        const py = pos.y - arrowHeight;
+
+        const cartNextX = hero.x + (monster.x - hero.x) * (pct + 0.05);
+        const cartNextY = hero.y + (monster.y - hero.y) * (pct + 0.05);
+        
+        const posNext = this.toIso(cartNextX, cartNextY);
+        const nextHeight = Math.sin((pct + 0.05) * Math.PI) * 20;
+        const nextY = posNext.y - nextHeight;
 
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 1.5;
         this.ctx.beginPath();
-        this.ctx.moveTo(px, py);
-        this.ctx.lineTo(px + 4, py + (monster.y - hero.y)*0.05);
+        this.ctx.moveTo(pos.x, py);
+        this.ctx.lineTo(posNext.x, nextY);
         this.ctx.stroke();
       }
 
@@ -867,6 +1086,7 @@ export class GameRenderer {
     });
   }
 
+  // --- FILTRO DIA/NOITE ---
   drawDayNightFilter(w, h) {
     let alpha = 0.0;
     const t = this.dayNightCycle;
@@ -910,6 +1130,7 @@ export class GameRenderer {
     return t > 48 && t <= 82;
   }
 
+  // --- TEXTOS FLUTUANTES ---
   drawFloaters(floaters) {
     floaters.forEach(f => {
       this.ctx.save();
@@ -918,13 +1139,10 @@ export class GameRenderer {
       this.ctx.fillStyle = f.color;
       this.ctx.font = 'bold 10px monospace';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(f.text, f.x, f.y);
+      
+      const pos = this.toIso(f.x, f.y);
+      this.ctx.fillText(f.text, pos.x, pos.y - 18);
       this.ctx.restore();
     });
   }
-}
-
-function heroNeed(hx, hy) {
-  // Retorna vazio para simplificação do bubble na UI do canvas
-  return '';
 }
