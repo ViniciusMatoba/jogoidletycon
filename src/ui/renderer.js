@@ -32,6 +32,7 @@ export class GameRenderer {
     this.images = {};
     // Dicionário de padrões (patterns) de repetição de solo
     this.patterns = {};
+    this.activeView = 'town';
     this.loadImages();
   }
 
@@ -109,6 +110,11 @@ export class GameRenderer {
   // Carrega os assets de pixel art
   loadImages() {
     const assetsList = {
+      // Backgrounds de tela cheia por IA
+      'bg_town': 'assets/terrain/bg_town.png',
+      'bg_cave': 'assets/terrain/bg_cave.png',
+      'bg_forest': 'assets/terrain/bg_forest.png',
+      'bg_swamp': 'assets/terrain/bg_swamp.png',
       // Solo / Texturas de Terreno (Seamless)
       'tile_grass': 'assets/terrain/tile_grass.png',
       'tile_dirt': 'assets/terrain/tile_dirt.png',
@@ -176,152 +182,196 @@ export class GameRenderer {
     // Limpar tela
     this.ctx.clearRect(0, 0, width, height);
 
-    // 1. Desenhar Cenários Base (Terreno, Rio/Fosso, Ponte, Muralha, Estradas)
-    this.drawTerrain(game, width, height);
+    // 1. Desenhar Background da Tela Ativa
+    if (this.activeView === 'town') {
+      const bg = this.images['bg_town'];
+      if (bg && bg.loaded) {
+        this.ctx.drawImage(bg, 0, 0, width, height);
+      } else {
+        this.ctx.fillStyle = '#7a6b5e';
+        this.ctx.fillRect(0, 0, width, height);
+      }
+    } else {
+      let bgKey = 'bg_forest';
+      if (biome.id === 0) bgKey = 'bg_cave';
+      else if (biome.id === 2) bgKey = 'bg_swamp';
+
+      const bg = this.images[bgKey];
+      if (bg && bg.loaded) {
+        this.ctx.drawImage(bg, 0, 0, width, height);
+      } else {
+        this.ctx.fillStyle = biome.id === 0 ? '#222326' : (biome.id === 2 ? '#1b231e' : '#102210');
+        this.ctx.fillRect(0, 0, width, height);
+      }
+
+      // Filtro de tom verde pantanoso para o pântano
+      if (biome.id === 2) {
+        this.ctx.fillStyle = 'rgba(46, 125, 50, 0.15)';
+        this.ctx.fillRect(0, 0, width, height);
+      }
+    }
 
     // 2. Criar a lista de objetos para ordenação por profundidade (Y-sorting)
     const renderList = [];
 
-    // Adicionar as árvores estáticas
-    this.trees.forEach(t => {
-      renderList.push({
-        y: t.y,
-        render: () => this.drawPixelTree(t.x, t.y)
-      });
-    });
-
-    // Adicionar os edifícios
-    const buildings = [
-      { key: 'townhall', x: 230, y: 100, name: 'Prefeitura', icon: '🏛️' },
-      { key: 'hotel', x: 130, y: 200, name: 'Hotel', icon: '🏨' },
-      { key: 'restaurant', x: 330, y: 200, name: 'Restaurante', icon: '🍲' },
-      { key: 'hospital', x: 130, y: 340, name: 'Hospital', icon: '🏥' },
-      { key: 'tavern', x: 330, y: 340, name: 'Taverna', icon: '🍺' },
-      { key: 'forge', x: 230, y: 450, name: 'Forja', icon: '⚒️' }
-    ];
-    buildings.forEach(b => {
-      renderList.push({
-        y: b.y,
-        render: () => this.drawBuildingIndividual(game.town, b)
-      });
-    });
-
-    // Adicionar monstros ativos
-    game.spawner.activeMonsters.forEach(m => {
-      if (m.hp > 0) {
+    if (this.activeView === 'town') {
+      // Edifícios da Cidade (Novas coordenadas de tela cheia)
+      const buildings = [
+        { key: 'townhall', x: 480, y: 150, name: 'Prefeitura', icon: '🏛️' },
+        { key: 'hotel', x: 260, y: 240, name: 'Hotel', icon: '🏨' },
+        { key: 'restaurant', x: 700, y: 240, name: 'Restaurante', icon: '🍲' },
+        { key: 'hospital', x: 200, y: 400, name: 'Hospital', icon: '🏥' },
+        { key: 'tavern', x: 760, y: 400, name: 'Taverna', icon: '🍺' },
+        { key: 'forge', x: 480, y: 430, name: 'Forja', icon: '⚒️' }
+      ];
+      buildings.forEach(b => {
         renderList.push({
-          y: m.y,
-          render: () => this.drawMonsterIndividual(m)
+          y: b.y,
+          render: () => this.drawBuildingIndividual(game.town, b)
         });
-      }
-    });
-
-    // Adicionar heróis ativos
-    game.heroes.forEach(h => {
-      renderList.push({
-        y: h.y,
-        render: () => this.drawHeroIndividual(h)
       });
-    });
 
-    // Adicionar Elementos Decorativos Urbanos Y-sorted
-    // Postes de Lampião
-    const lamps = [
-      { x: 210, y: 190 },
-      { x: 210, y: 330 },
-      { x: 250, y: 440 }
-    ];
-    lamps.forEach(l => {
-      renderList.push({
-        y: l.y,
-        render: () => this.drawStreetLamp(l.x, l.y)
+      // Postes de Lampião
+      const lamps = [
+        { x: 360, y: 240 },
+        { x: 600, y: 240 },
+        { x: 340, y: 400 },
+        { x: 580, y: 400 }
+      ];
+      lamps.forEach(l => {
+        renderList.push({
+          y: l.y,
+          render: () => this.drawStreetLamp(l.x, l.y)
+        });
       });
-    });
 
-    // Poço de Água
-    renderList.push({
-      y: 130,
-      render: () => this.drawWaterWell(280, 130)
-    });
+      // Poço de Água
+      renderList.push({
+        y: 130,
+        render: () => this.drawWaterWell(280, 130)
+      });
 
-    // Barril e Caixa
-    renderList.push({
-      y: 460,
-      render: () => this.drawBarrel(200, 460)
-    });
-    renderList.push({
-      y: 350,
-      render: () => this.drawBox(365, 350)
-    });
+      // Barris e Caixas
+      renderList.push({
+        y: 430,
+        render: () => this.drawBarrel(440, 430)
+      });
+      renderList.push({
+        y: 430,
+        render: () => this.drawBox(520, 430)
+      });
+      renderList.push({
+        y: 400,
+        render: () => this.drawBarrel(720, 400)
+      });
+      renderList.push({
+        y: 400,
+        render: () => this.drawBox(240, 400)
+      });
 
-    // Portal de Caça
-    renderList.push({
-      y: 120,
-      render: () => this.drawDungeonPortal(880, 120, time)
-    });
-
-    // Elementos de Caça dinâmicos de Bioma Y-sorted
-    const huntDecorations = [
-      { x: 600, y: 100 },
-      { x: 750, y: 70 },
-      { x: 850, y: 200 },
-      { x: 620, y: 250 },
-      { x: 780, y: 280 },
-      { x: 650, y: 400 },
-      { x: 820, y: 450 },
-      { x: 550, y: 320 }
-    ];
-
-    huntDecorations.forEach((pt, index) => {
-      const typeIdx = index % 3;
-      if (biome.id === 0) { // Cavernas
-        if (typeIdx === 2) {
-          // Osso é plano, desenhado direto no chão (não Y-sorted)
-          this.drawBone(pt.x, pt.y);
-        } else {
+      // Heróis ativos na cidade
+      game.heroes.forEach(h => {
+        if (h.currentMap === 'town') {
           renderList.push({
-            y: pt.y,
-            render: () => {
-              if (typeIdx === 0) this.drawCrystal(pt.x, pt.y, time, index);
-              else this.drawWeb(pt.x, pt.y);
-            }
+            y: h.y,
+            render: () => this.drawHeroIndividual(h)
           });
         }
-      } else if (biome.id === 1) { // Floresta
-        renderList.push({
-          y: pt.y,
-          render: () => {
-            if (typeIdx === 0) this.drawMushroom(pt.x, pt.y);
-            else if (typeIdx === 1) this.drawShrub(pt.x, pt.y);
-            else this.drawFlower(pt.x, pt.y);
+      });
+
+    } else {
+      // === RENDER VIEW HUNT ===
+      // Portal de Caça
+      renderList.push({
+        y: 100,
+        render: () => this.drawDungeonPortal(480, 100, time)
+      });
+
+      // Elementos de Caça dinâmicos de Bioma Y-sorted
+      const huntDecorations = [
+        { x: 150, y: 140 },
+        { x: 300, y: 120 },
+        { x: 700, y: 150 },
+        { x: 820, y: 180 },
+        { x: 200, y: 280 },
+        { x: 780, y: 320 },
+        { x: 180, y: 440 },
+        { x: 400, y: 460 },
+        { x: 600, y: 440 },
+        { x: 850, y: 420 },
+        { x: 350, y: 300 },
+        { x: 580, y: 280 }
+      ];
+
+      huntDecorations.forEach((pt, index) => {
+        const typeIdx = index % 3;
+        if (biome.id === 0) { // Cavernas
+          if (typeIdx === 2) {
+            // Osso plano desenhado direto
+            this.drawBone(pt.x, pt.y);
+          } else {
+            renderList.push({
+              y: pt.y,
+              render: () => {
+                if (typeIdx === 0) this.drawCrystal(pt.x, pt.y, time, index);
+                else this.drawWeb(pt.x, pt.y);
+              }
+            });
           }
-        });
-      } else if (biome.id === 2) { // Pântano
-        if (typeIdx === 0) {
-          // Poça de lama é plana, desenha direto no chão
-          this.drawMudPool(pt.x, pt.y);
-        } else {
+        } else if (biome.id === 1) { // Floresta
           renderList.push({
             y: pt.y,
             render: () => {
-              if (typeIdx === 1) this.drawReeds(pt.x, pt.y);
-              else this.drawPoisonFlower(pt.x, pt.y, time);
+              if (typeIdx === 0) this.drawMushroom(pt.x, pt.y);
+              else if (typeIdx === 1) this.drawShrub(pt.x, pt.y);
+              else this.drawFlower(pt.x, pt.y);
             }
           });
+        } else if (biome.id === 2) { // Pântano
+          if (typeIdx === 0) {
+            // Poça de lama plana
+            this.drawMudPool(pt.x, pt.y);
+          } else {
+            renderList.push({
+              y: pt.y,
+              render: () => {
+                if (typeIdx === 1) this.drawReeds(pt.x, pt.y);
+                else this.drawPoisonFlower(pt.x, pt.y, time);
+              }
+            });
+          }
         }
-      }
-    });
+      });
 
-    // Ordenar por Y cartesiano (menores Ys desenhados primeiro, maiores Ys desenhados depois)
+      // Monstros ativos
+      game.spawner.activeMonsters.forEach(m => {
+        if (m.hp > 0) {
+          renderList.push({
+            y: m.y,
+            render: () => this.drawMonsterIndividual(m)
+          });
+        }
+      });
+
+      // Heróis ativos na caçada
+      game.heroes.forEach(h => {
+        if (h.currentMap === 'hunt') {
+          renderList.push({
+            y: h.y,
+            render: () => this.drawHeroIndividual(h)
+          });
+        }
+      });
+    }
+
+    // Ordenar e renderizar objetos Y-sorted
     renderList.sort((a, b) => a.y - b.y);
+    renderList.forEach(obj => obj.render());
 
-    // Renderizar todos os elementos ordenados por profundidade
-    renderList.forEach(obj => {
-      obj.render();
-    });
-
-    // 3. Atualizar e Desenhar Partículas de Fumaça (no ar, acima de tudo)
-    this.updateAndDrawSmoke(game.town, dt);
+    // 3. Atualizar e Desenhar Partículas de Fumaça (Apenas em Town View)
+    if (this.activeView === 'town') {
+      this.updateAndDrawSmoke(game.town, dt);
+    }
 
     // 4. Desenhar Efeitos de Batalha (projéteis)
     this.drawCombatEffects(game.heroes);
@@ -976,10 +1026,10 @@ export class GameRenderer {
   // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
   getChaminePos(town, bKey) {
     const buildings = {
-      restaurant: { x: 330, y: 200 },
-      hospital: { x: 130, y: 340 },
-      tavern: { x: 330, y: 340 },
-      forge: { x: 230, y: 450 }
+      restaurant: { x: 700, y: 240 },
+      hospital: { x: 200, y: 400 },
+      tavern: { x: 760, y: 400 },
+      forge: { x: 480, y: 430 }
     };
     
     const pos = buildings[bKey];
@@ -1672,6 +1722,7 @@ export class GameRenderer {
 
   // --- EFEITOS DE BATALHA ---
   drawCombatEffects(heroes) {
+    if (this.activeView !== 'hunt') return;
     heroes.forEach(hero => {
       if (hero.state !== 'FIGHTING' || !hero.targetMonster) return;
 
@@ -1778,6 +1829,7 @@ export class GameRenderer {
   // --- TEXTOS FLUTUANTES ---
   drawFloaters(floaters) {
     floaters.forEach(f => {
+      if (f.map && f.map !== this.activeView) return;
       this.ctx.save();
       const alpha = Math.max(0, f.timeLeft / f.maxTime);
       this.ctx.globalAlpha = alpha;

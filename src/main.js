@@ -6,6 +6,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // 1. Inicializar as instâncias principais
   const game = new Game();
   const renderer = new GameRenderer('game-canvas');
+  window.gameRenderer = renderer;
 
   // 2. Configurar os cliques e eventos da UI
   setupUI(game);

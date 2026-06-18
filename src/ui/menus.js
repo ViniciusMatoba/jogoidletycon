@@ -11,19 +11,68 @@ export function setupUI(game) {
   menuButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
-      const modal = document.getElementById(targetId);
+      
+      // Se for Cidade ou Caça, apenas mudamos a tela do canvas (e fechamos modais abertos)
+      if (targetId === 'town-modal') {
+        if (window.gameRenderer) {
+          window.gameRenderer.activeView = 'town';
+        }
+        // Desativa status ativo de botões e modais de gerenciamento
+        menuButtons.forEach(b => {
+          const t = b.getAttribute('data-target');
+          if (t !== 'town-modal') b.classList.remove('active');
+        });
+        modalOverlays.forEach(m => {
+          if (m.id !== 'town-modal') m.classList.remove('active');
+        });
+        btn.classList.add('active');
+        return;
+      }
+      
+      if (targetId === 'dungeons-modal') {
+        if (window.gameRenderer) {
+          window.gameRenderer.activeView = 'hunt';
+        }
+        menuButtons.forEach(b => {
+          const t = b.getAttribute('data-target');
+          if (t !== 'dungeons-modal') b.classList.remove('active');
+        });
+        modalOverlays.forEach(m => {
+          if (m.id !== 'dungeons-modal') m.classList.remove('active');
+        });
+        btn.classList.add('active');
+        return;
+      }
 
+      // Outros modais (Heróis, Crafting, Prefeitura) abrem normalmente como overlays
+      const modal = document.getElementById(targetId);
       if (modal) {
-        // Se o modal clicado já está aberto, fecha ele
         if (modal.classList.contains('active')) {
           modal.classList.remove('active');
           btn.classList.remove('active');
+          // Re-ativa o botão da tela de fundo ativa
+          const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
+          menuButtons.forEach(b => {
+            const t = b.getAttribute('data-target');
+            if ((activeScreen === 'town' && t === 'town-modal') || (activeScreen === 'hunt' && t === 'dungeons-modal')) {
+              b.classList.add('active');
+            }
+          });
           return;
         }
 
-        // Se não, fecha os outros e abre este
-        menuButtons.forEach(b => b.classList.remove('active'));
-        modalOverlays.forEach(m => m.classList.remove('active'));
+        // Fecha outros overlays de gerenciamento (Heróis, Craft, Config)
+        menuButtons.forEach(b => {
+          const t = b.getAttribute('data-target');
+          if (t !== 'town-modal' && t !== 'dungeons-modal') {
+            b.classList.remove('active');
+          }
+        });
+        modalOverlays.forEach(m => {
+          if (m.id !== 'town-modal' && m.id !== 'dungeons-modal') {
+            m.classList.remove('active');
+          }
+        });
 
         btn.classList.add('active');
         modal.classList.add('active');
@@ -39,6 +88,14 @@ export function setupUI(game) {
       menuButtons.forEach(btn => {
         if (btn.getAttribute('data-target') === modal.id) {
           btn.classList.remove('active');
+        }
+      });
+      // Re-ativa o botão da tela de fundo ativa
+      const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
+      menuButtons.forEach(b => {
+        const t = b.getAttribute('data-target');
+        if ((activeScreen === 'town' && t === 'town-modal') || (activeScreen === 'hunt' && t === 'dungeons-modal')) {
+          b.classList.add('active');
         }
       });
     };
@@ -61,7 +118,6 @@ export function setupUI(game) {
       const res = game.changeBiome(parseInt(e.target.value));
       if (!res.success && res.reason) {
         alert(res.reason);
-        // Voltar seleção para o anterior
         biomeSelect.value = game.spawner.currentBiomeId;
       }
     });
@@ -95,7 +151,7 @@ export function setupUI(game) {
     });
   }
 
-  // 6. Configurar as Importações Rápidas (Cheat ou Compra Básica da Prefeitura)
+  // 6. Configurar as Importações Rápidas (Prefeitura)
   const importButtons = document.querySelectorAll('.import-btn');
   importButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -138,6 +194,114 @@ export function setupUI(game) {
           refreshHeroProfile(activeProfileHero, game);
         }
       });
+    });
+  }
+
+  // 8. Cliques no Canvas para Interação (Evil Hunter Tycoon style)
+  const canvas = document.getElementById('game-canvas');
+  if (canvas) {
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+      const activeView = window.gameRenderer ? window.gameRenderer.activeView : 'town';
+      
+      // 1. Clicar em um caçador visível
+      let clickedHero = null;
+      for (const h of game.heroes) {
+        if (h.currentMap === activeView) {
+          const dist = Math.sqrt((h.x - x) * (h.x - x) + (h.y - y) * (h.y - y));
+          if (dist < 20) {
+            clickedHero = h;
+            break;
+          }
+        }
+      }
+
+      if (clickedHero) {
+        openHeroProfile(clickedHero, game);
+        return;
+      }
+
+      // 2. Clicar em construções (Apenas em Town View)
+      if (activeView === 'town') {
+        const buildings = [
+          { key: 'townhall', x: 480, y: 150 },
+          { key: 'hotel', x: 260, y: 240 },
+          { key: 'restaurant', x: 700, y: 240 },
+          { key: 'hospital', x: 200, y: 400 },
+          { key: 'tavern', x: 760, y: 400 },
+          { key: 'forge', x: 480, y: 430 }
+        ];
+
+        let clickedBuilding = null;
+        for (const b of buildings) {
+          const wSize = b.key === 'townhall' ? 76 : 60;
+          const hSize = b.key === 'townhall' ? 76 : 60;
+          const rx = b.x - wSize / 2;
+          const ry = b.y - hSize + 8;
+          if (x >= rx && x <= rx + wSize && y >= ry && y <= ry + hSize) {
+            clickedBuilding = b;
+            break;
+          }
+        }
+
+        if (clickedBuilding) {
+          if (clickedBuilding.key === 'townhall') {
+            const modal = document.getElementById('town-modal');
+            if (modal) {
+              modal.classList.add('active');
+              menuButtons.forEach(b => {
+                if (b.getAttribute('data-target') === 'town-modal') b.classList.add('active');
+                else b.classList.remove('active');
+              });
+            }
+          } else if (clickedBuilding.key === 'forge') {
+            const modal = document.getElementById('craft-modal');
+            if (modal) {
+              modal.classList.add('active');
+              menuButtons.forEach(b => {
+                if (b.getAttribute('data-target') === 'craft-modal') b.classList.add('active');
+                else b.classList.remove('active');
+              });
+            }
+          } else {
+            const modal = document.getElementById('town-modal');
+            if (modal) {
+              modal.classList.add('active');
+              menuButtons.forEach(b => {
+                if (b.getAttribute('data-target') === 'town-modal') b.classList.add('active');
+                else b.classList.remove('active');
+              });
+              setTimeout(() => {
+                const card = document.querySelector(`[data-building="${clickedBuilding.key}"]`)?.closest('.building-card');
+                if (card) {
+                  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+              }, 100);
+            }
+          }
+          return;
+        }
+      }
+
+      // 3. Clicar no Portal da Masmorra (Apenas em Hunt View)
+      if (activeView === 'hunt') {
+        const portalX = 480; // Nova coordenada do portal no centro-topo da caçada
+        const portalY = 100;
+        const dist = Math.sqrt((x - portalX) * (x - portalX) + (y - (portalY - 20)) * (y - (portalY - 20)));
+        if (dist < 40) {
+          const modal = document.getElementById('dungeons-modal');
+          if (modal) {
+            modal.classList.add('active');
+            menuButtons.forEach(b => {
+              if (b.getAttribute('data-target') === 'dungeons-modal') b.classList.add('active');
+              else b.classList.remove('active');
+            });
+          }
+        }
+      }
     });
   }
 }

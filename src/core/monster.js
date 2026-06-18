@@ -13,9 +13,9 @@ export class Monster {
     this.isMiniBoss = isMiniBoss;
     this.isBoss = isBoss;
 
-    // Posição no canvas (Área da floresta no canto superior/médio direito)
-    this.x = 520 + Math.random() * 200;
-    this.y = 80 + Math.random() * 160;
+    // Posição no canvas (Tela cheia para campo de caça)
+    this.x = 80 + Math.random() * 800;
+    this.y = 100 + Math.random() * 340;
     this.targetX = this.x;
     this.targetY = this.y;
     this.speed = 30; // Monstros andam devagar
@@ -45,7 +45,8 @@ export class Monster {
             y: this.y - 30,
             text: `+1 ${itemInfo.icon}`,
             color: '#ffea3a',
-            time: 1.2
+            time: 1.2,
+            map: 'hunt'
           });
         }
       }
@@ -67,8 +68,8 @@ export class Monster {
     // Vagueia devagar se não estiver lutando
     this.wanderTimer -= dt;
     if (this.wanderTimer <= 0) {
-      this.targetX = 520 + Math.random() * 200;
-      this.targetY = 80 + Math.random() * 160;
+      this.targetX = 80 + Math.random() * 800;
+      this.targetY = 100 + Math.random() * 340;
       this.wanderTimer = 3 + Math.random() * 4;
     }
 
@@ -191,11 +192,11 @@ export class MonsterSpawner {
     // Escolhe aleatoriamente da lista de bosses
     const config = biome.bosses[Math.floor(Math.random() * biome.bosses.length)];
     const monster = new Monster(config, false, true);
-    // Colocar o Boss no centro da arena de batalha
-    monster.x = 640;
-    monster.y = 150;
-    monster.targetX = 640;
-    monster.targetY = 150;
+    // Colocar o Boss no centro da arena de batalha (tela cheia)
+    monster.x = 480;
+    monster.y = 240;
+    monster.targetX = 480;
+    monster.targetY = 240;
     
     this.activeMonsters.push(monster);
     this.bossSpawned = true;
