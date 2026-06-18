@@ -1491,10 +1491,22 @@ export class GameRenderer {
         }
       }
 
-      // Desenhar sprite centrado
+      // 1. DESENHAR ASAS (Atrás do corpo)
+      this.drawHeroWingsStacked(hero, time);
+
+      // 2. DESENHAR SPRITE CENTRADO (Corpo Base)
       const wSize = 28;
       const hSize = 28;
       this.ctx.drawImage(img, -wSize / 2, -hSize + 2, wSize, hSize);
+
+      // 3. DESENHAR ARMADURA (Por cima do corpo)
+      this.drawHeroArmorStacked(hero);
+
+      // 4. DESENHAR CAPACETE (Por cima da cabeça)
+      this.drawHeroHelmetStacked(hero);
+
+      // 5. DESENHAR ARMA (Por cima de tudo)
+      this.drawHeroWeaponStacked(hero);
 
       this.ctx.restore();
 
@@ -1717,6 +1729,169 @@ export class GameRenderer {
       }
     }
 
+    this.ctx.restore();
+  }
+
+  // --- RENDERING MODULAR DE EQUIPAMENTOS SOBREPOSTOS NO SPRITE PIXEL ART ---
+  drawHeroWingsStacked(hero, time) {
+    if (!hero.equipment.wings) return;
+    
+    this.ctx.save();
+    const flap = Math.sin(time * 0.012) * 4;
+    
+    this.ctx.fillStyle = '#424242';
+    this.ctx.strokeStyle = '#212121';
+    this.ctx.lineWidth = 1;
+    
+    // Asa Esquerda
+    this.ctx.beginPath();
+    this.ctx.moveTo(-3, -12);
+    this.ctx.lineTo(-15 - flap, -18);
+    this.ctx.lineTo(-12 - flap, -6);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.stroke();
+    
+    // Asa Direita
+    this.ctx.beginPath();
+    this.ctx.moveTo(3, -12);
+    this.ctx.lineTo(15 + flap, -18);
+    this.ctx.lineTo(12 + flap, -6);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.stroke();
+    
+    this.ctx.restore();
+  }
+
+  drawHeroArmorStacked(hero) {
+    if (!hero.equipment.armor) return;
+    
+    const tier = hero.equipment.armor.tier;
+    this.ctx.save();
+    
+    if (hero.className === 'WARRIOR' || hero.className === 'MERCENARY') {
+      this.ctx.fillStyle = tier === 3 ? '#cca93d' : (tier === 2 ? '#4e5a66' : '#818b96');
+      this.ctx.fillRect(-6, -15, 3, 3);
+      this.ctx.fillRect(3, -15, 3, 3);
+      this.ctx.fillRect(-4, -14, 8, 6);
+      
+      if (tier === 3) {
+        this.ctx.fillStyle = '#ffea3a';
+        this.ctx.fillRect(-2, -12, 4, 2);
+      }
+    } else if (hero.className === 'ARCHER') {
+      this.ctx.fillStyle = tier === 3 ? '#bf360c' : (tier === 2 ? '#8d6e63' : '#a1887f');
+      this.ctx.fillRect(-4, -14, 8, 5);
+      this.ctx.fillStyle = '#3e2723';
+      this.ctx.fillRect(-3, -14, 1, 5);
+      this.ctx.fillRect(2, -11, 1, 2);
+    } else {
+      this.ctx.fillStyle = tier === 3 ? '#4a148c' : (tier === 2 ? '#0288d1' : '#b0bec5');
+      this.ctx.fillRect(-4, -14, 8, 7);
+      this.ctx.fillStyle = '#ffea3a';
+      this.ctx.fillRect(-4, -8, 8, 1);
+    }
+    
+    this.ctx.restore();
+  }
+
+  drawHeroHelmetStacked(hero) {
+    if (!hero.equipment.helmet) return;
+    
+    const tier = hero.equipment.helmet.tier;
+    this.ctx.save();
+    
+    if (hero.className === 'WARRIOR' || hero.className === 'MERCENARY') {
+      this.ctx.fillStyle = tier === 3 ? '#cca93d' : (tier === 2 ? '#4e5a66' : '#818b96');
+      this.ctx.fillRect(-5, -27, 10, 4);
+      this.ctx.fillRect(-6, -23, 12, 2);
+      this.ctx.fillRect(-1, -21, 2, 3);
+      
+      this.ctx.fillStyle = tier === 3 ? '#2979ff' : '#ff1744';
+      this.ctx.fillRect(-1, -29, 2, 2);
+    } else if (hero.className === 'ARCHER') {
+      this.ctx.fillStyle = tier === 3 ? '#d84315' : (tier === 2 ? '#2e7d32' : '#5d4037');
+      this.ctx.fillRect(-5, -26, 10, 3);
+      this.ctx.fillRect(-6, -23, 3, 4);
+      this.ctx.fillRect(3, -23, 3, 4);
+    } else {
+      if (hero.className === 'MAGE') {
+        this.ctx.fillStyle = tier === 3 ? '#4a148c' : (tier === 2 ? '#0288d1' : '#511b85');
+        this.ctx.fillRect(-6, -24, 12, 2);
+        this.ctx.beginPath();
+        this.ctx.moveTo(-4, -24);
+        this.ctx.lineTo(4, -24);
+        this.ctx.lineTo(0, -31);
+        this.ctx.closePath();
+        this.ctx.fill();
+      } else {
+        this.ctx.fillStyle = tier === 3 ? '#ffea3a' : (tier === 2 ? '#80deea' : '#b0bec5');
+        this.ctx.fillRect(-5, -24, 10, 2);
+        this.ctx.fillStyle = tier === 3 ? '#d500f9' : '#00e5ff';
+        this.ctx.fillRect(-1, -25, 2, 2);
+      }
+    }
+    
+    this.ctx.restore();
+  }
+
+  drawHeroWeaponStacked(hero) {
+    if (!hero.equipment.weapon) return;
+    
+    const tier = hero.equipment.weapon.tier;
+    const isAttacking = hero.state === 'FIGHTING' && hero.cooldownTimer > 0;
+    const wx = isAttacking ? 6 : -6;
+    const wy = isAttacking ? -8 : -10;
+    
+    let weaponColor = '#bf9b30';
+    if (tier === 1) weaponColor = '#818b96';
+    if (tier === 2) weaponColor = '#4e5b66';
+    if (tier === 3) weaponColor = '#ffea3a';
+    
+    this.ctx.save();
+    
+    if (hero.className === 'ARCHER') {
+      this.ctx.strokeStyle = weaponColor;
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      if (isAttacking) {
+        this.ctx.arc(wx + 2, wy, 5, -Math.PI/2, Math.PI/2);
+      } else {
+        this.ctx.arc(wx, wy, 5, Math.PI/2, -Math.PI/2, true);
+      }
+      this.ctx.stroke();
+      
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      this.ctx.lineWidth = 0.5;
+      this.ctx.beginPath();
+      if (isAttacking) {
+        this.ctx.moveTo(wx + 2, wy - 5);
+        this.ctx.lineTo(wx, wy);
+        this.ctx.lineTo(wx + 2, wy + 5);
+      } else {
+        this.ctx.moveTo(wx, wy - 5);
+        this.ctx.lineTo(wx, wy + 5);
+      }
+      this.ctx.stroke();
+    } else if (hero.className === 'MAGE' || hero.className === 'PRIEST') {
+      this.ctx.fillStyle = '#6b4724';
+      this.ctx.fillRect(wx + 1, wy - 8, 1.5, 12);
+      this.ctx.fillStyle = hero.className === 'PRIEST' ? '#ffea3a' : '#c23aff';
+      this.ctx.fillRect(wx, wy - 11, 3.5, 3.5);
+    } else {
+      this.ctx.fillStyle = weaponColor;
+      if (isAttacking) {
+        this.ctx.fillRect(wx, wy - 1, 9, 2);
+        this.ctx.fillStyle = '#4a2c11';
+        this.ctx.fillRect(wx - 1, wy - 3, 1.5, 6);
+      } else {
+        this.ctx.fillRect(wx, wy - 7, 2, 8);
+        this.ctx.fillStyle = '#4a2c11';
+        this.ctx.fillRect(wx - 2, wy - 1, 6, 1.5);
+      }
+    }
+    
     this.ctx.restore();
   }
 
