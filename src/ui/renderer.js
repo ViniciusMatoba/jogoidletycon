@@ -109,7 +109,7 @@ export class GameRenderer {
   // Carrega os assets de pixel art
   loadImages() {
     const assetsList = {
-      // Solo / Texturas de Terreno
+      // Solo / Texturas de Terreno (Seamless)
       'tile_grass': 'assets/terrain/tile_grass.png',
       'tile_dirt': 'assets/terrain/tile_dirt.png',
       'tile_water': 'assets/terrain/tile_water.png',
@@ -134,7 +134,6 @@ export class GameRenderer {
       const img = new Image();
       img.src = assetsList[key];
       img.onload = () => {
-        // Aplica recorte de fundos transparentes em tempo real
         const cleanCanvas = this.makeImageTransparent(img);
         cleanCanvas.loaded = true;
         this.images[key] = cleanCanvas;
@@ -152,16 +151,9 @@ export class GameRenderer {
     }
   }
 
-  // Transforma coordenadas 2D cartesianas (0..960, 0..540) para 2.5D Isométrico
+  // Câmera Top-Down Clássica (2D Ortogonal vista de cima): Mapeia as coordenadas 1:1 diretamente
   toIso(x, y) {
-    const scaleX = 0.64;
-    const scaleY = 0.32;
-    const offsetX = 350;
-    const offsetY = 30;
-    return {
-      x: offsetX + (x - y) * scaleX,
-      y: offsetY + (x + y) * scaleY
-    };
+    return { x: x, y: y };
   }
 
   // Função auxiliar para interpolar linearmente entre dois pontos
@@ -251,157 +243,109 @@ export class GameRenderer {
     this.drawFloaters(game.floaters);
   }
 
-  // --- RENDERIZADORES DE TERRENO ---
+  // --- RENDERIZADORES DE TERRENO TOP-DOWN ---
   drawTerrain(game, w, h) {
     const biome = game.spawner.getBiomeConfig();
     const time = performance.now();
 
-    // -------------------------------------------------------------
-    // DESENHAR SOLO DEITADO (Transformação isométrica de contexto)
-    // Isso garante que os padrões de textura fiquem inclinados e deitados no chão
-    // -------------------------------------------------------------
-    this.ctx.save();
-    
-    // Aplica a matriz de projeção isométrica do terreno (escalaX, escalaY, etc.)
-    this.ctx.transform(0.64, 0.32, -0.64, 0.32, 350, 30);
-
-    // Cidade (Grama)
+    // 1. Cidade (Grama) - Lado Esquerdo Reta
     this.ctx.fillStyle = this.patterns['tile_grass'] || '#395c2f';
-    this.ctx.fillRect(0, 0, 470, 540);
+    this.ctx.fillRect(0, 0, 470, h);
 
-    // Floresta (Terra)
+    // 2. Floresta (Terra) - Lado Direito Reta
     let forestColor = '#243b23';
     if (biome.id === 0) forestColor = '#222326'; // Cavernas
     if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
     if (biome.id === 2) forestColor = '#1b231e'; // Igarapés
 
     this.ctx.fillStyle = this.patterns['tile_dirt'] || forestColor;
-    this.ctx.fillRect(490, 0, 470, 540);
+    this.ctx.fillRect(490, 0, w - 490, h);
 
-    // Rio Animado (X = 470 a 490)
+    // 3. Rio Animado (X = 470 a 490) - Faixa Reta Vertical
     this.ctx.fillStyle = this.patterns['tile_water'] || '#2d6ab3';
-    this.ctx.fillRect(470, 0, 20, 540);
+    this.ctx.fillRect(470, 0, 20, h);
 
-    // Estradas de terra na cidade e até a ponte
+    // Ondas no Rio (Correnteza animada descendo verticalmente)
+    this.ctx.strokeStyle = '#5c99e6';
+    this.ctx.lineWidth = 2;
+    const waveOffset = (time * 0.04) % 40;
+    for (let y = -20; y < h; y += 30) {
+      const wy = y + waveOffset;
+      this.ctx.beginPath();
+      this.ctx.moveTo(475, wy);
+      this.ctx.lineTo(475, wy + 4);
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(485, wy + 12);
+      this.ctx.lineTo(485, wy + 16);
+      this.ctx.stroke();
+    }
+
+    // 4. Estradas de terra na cidade (Retângulos ortogonais retos)
     this.ctx.fillStyle = this.patterns['tile_road'] || '#826442';
-    // Estrada principal norte-sul (X=220 a 240, Y=100 a 450)
+    // Estrada principal norte-sul
     this.ctx.fillRect(220, 100, 20, 350);
-    // Ramificação horizontal 1
+    // Ramificações para prédios
     this.ctx.fillRect(120, 195, 220, 15);
-    // Ramificação horizontal 2
     this.ctx.fillRect(120, 335, 220, 15);
     // Estrada até a ponte
     this.ctx.fillRect(230, 262, 240, 15);
 
-    this.ctx.restore(); // Restaura contexto para sprites em pé
-    // -------------------------------------------------------------
-
-    // Desenha Ponte de madeira (Ponte fica em pé, mas alinhada às margens)
+    // 5. Ponte de madeira (X = 464 a 496, Y = 250 a 290) - Reta e Horizontal
     this.ctx.fillStyle = '#6e4726'; // Tábuas principais
-    this.drawIsoPolygon([
-      { x: 464, y: 250 },
-      { x: 496, y: 250 },
-      { x: 496, y: 290 },
-      { x: 464, y: 290 }
-    ]);
+    this.ctx.fillRect(464, 250, 32, 40);
     
-    // Desenha tábuas individuais da ponte
+    // Desenha tábuas individuais da ponte (Linhas horizontais)
     this.ctx.strokeStyle = '#452b16';
     this.ctx.lineWidth = 1.5;
     for (let py = 254; py < 290; py += 6) {
-      const leftPoint = this.toIso(464, py);
-      const rightPoint = this.toIso(496, py);
       this.ctx.beginPath();
-      this.ctx.moveTo(leftPoint.x, leftPoint.y);
-      this.ctx.lineTo(rightPoint.x, rightPoint.y);
+      this.ctx.moveTo(464, py);
+      this.ctx.lineTo(496, py);
       this.ctx.stroke();
     }
 
     // Corrimões
     this.ctx.strokeStyle = '#452b16';
     this.ctx.lineWidth = 3;
-    
-    const cnStart = this.toIso(464, 247);
-    const cnEnd = this.toIso(496, 247);
     this.ctx.beginPath();
-    this.ctx.moveTo(cnStart.x, cnStart.y);
-    this.ctx.lineTo(cnEnd.x, cnEnd.y);
+    this.ctx.moveTo(464, 247);
+    this.ctx.lineTo(496, 247);
     this.ctx.stroke();
     
-    const csStart = this.toIso(464, 290);
-    const csEnd = this.toIso(496, 290);
     this.ctx.beginPath();
-    this.ctx.moveTo(csStart.x, csStart.y);
-    this.ctx.lineTo(csEnd.x, csEnd.y);
+    this.ctx.moveTo(464, 290);
+    this.ctx.lineTo(496, 290);
     this.ctx.stroke();
-
-    // Ondas no Rio (Correnteza animada)
-    this.ctx.strokeStyle = '#5c99e6';
-    this.ctx.lineWidth = 2;
-    const waveOffset = (time * 0.04) % 40;
-    for (let y = -20; y < 540; y += 30) {
-      const wy = y + waveOffset;
-      const p1Start = this.toIso(475, wy);
-      const p1End = this.toIso(475, wy + 4);
-      this.ctx.beginPath();
-      this.ctx.moveTo(p1Start.x, p1Start.y);
-      this.ctx.lineTo(p1End.x, p1End.y);
-      this.ctx.stroke();
-
-      const p2Start = this.toIso(485, wy + 12);
-      const p2End = this.toIso(485, wy + 16);
-      this.ctx.beginPath();
-      this.ctx.moveTo(p2Start.x, p2Start.y);
-      this.ctx.lineTo(p2End.x, p2End.y);
-      this.ctx.stroke();
-    }
   }
 
-  // Desenha um polígono a partir de pontos cartesianos projetados para isométrico
-  drawIsoPolygon(points) {
-    this.ctx.beginPath();
-    points.forEach((pt, idx) => {
-      const isoPt = this.toIso(pt.x, pt.y);
-      if (idx === 0) {
-        this.ctx.moveTo(isoPt.x, isoPt.y);
-      } else {
-        this.ctx.lineTo(isoPt.x, isoPt.y);
-      }
-    });
-    this.ctx.closePath();
-    this.ctx.fill();
-  }
-
-  // --- DESENHO DE ÁRVORE RETRÔ ISOMÉTRICA ---
+  // --- DESENHO DE ÁRVORE RETRÔ TOP-DOWN ---
   drawPixelTree(x, y) {
-    const pos = this.toIso(x, y);
-    const tx = pos.x;
-    const ty = pos.y;
-
     this.ctx.save();
-    // Tronco (sobe verticalmente da base projetada)
+    // Tronco
     this.ctx.fillStyle = '#4d3319';
-    this.ctx.fillRect(tx - 3, ty - 18, 6, 18);
+    this.ctx.fillRect(x - 3, y, 6, 18);
 
     // Folhas em camadas pixeladas
     this.ctx.fillStyle = '#163b13';
     this.ctx.beginPath();
-    this.ctx.arc(tx, ty - 24, 14, 0, Math.PI * 2);
+    this.ctx.arc(x, y - 6, 14, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.fillStyle = '#20541d';
     this.ctx.beginPath();
-    this.ctx.arc(tx - 4, ty - 28, 9, 0, Math.PI * 2);
+    this.ctx.arc(x - 4, y - 10, 9, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.fillStyle = '#2d7328';
     this.ctx.beginPath();
-    this.ctx.arc(tx + 3, ty - 26, 7, 0, Math.PI * 2);
+    this.ctx.arc(x + 3, y - 8, 7, 0, Math.PI * 2);
     this.ctx.fill();
     this.ctx.restore();
   }
 
-  // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART / FALLBACK 3D) ---
+  // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART / FALLBACK 2D PLANO) ---
   drawBuildingIndividual(town, b) {
     const level = town.buildings[b.key];
     const isBuilt = level > 0;
@@ -417,18 +361,17 @@ export class GameRenderer {
 
     const img = this.images[b.key];
     if (img && img.loaded) {
-      // --- DESENHAR COM IMAGEM DE ASSET ISOMÉTRICO PIXEL ART (Transparência corrigida) ---
-      const pos = this.toIso(bx, by);
-      
+      // --- DESENHAR COM IMAGEM DE ASSET EM PERSPECTIVA (Transparência corrigida) ---
       const wSize = b.key === 'townhall' ? 76 : 60;
       const hSize = b.key === 'townhall' ? 76 : 60;
       
-      this.ctx.drawImage(img, pos.x - wSize / 2, pos.y - hSize + 8, wSize, hSize);
+      // Desenha centrado na coordenada cartesiana
+      this.ctx.drawImage(img, bx - wSize / 2, by - hSize + 8, wSize, hSize);
 
       // Emoji de Identificação
       this.ctx.font = '14px Arial';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(b.icon, pos.x, pos.y - hSize + 4);
+      this.ctx.fillText(b.icon, bx, by - hSize + 4);
 
       // Rótulo de Lvl
       this.ctx.globalAlpha = 1.0;
@@ -436,111 +379,51 @@ export class GameRenderer {
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
       const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
-      this.ctx.fillText(label, pos.x, pos.y + 12);
+      this.ctx.fillText(label, bx, by + 12);
     } else {
-      // --- FALLBACK VETORIAL 3D PROCEDURAL ---
-      const size = 22;
-
-      // Vértices da base no chão isométrico
-      const sul = this.toIso(bx, by + size);
-      const leste = this.toIso(bx + size, by);
-      const norte = this.toIso(bx, by - size);
-      const oeste = this.toIso(bx - size, by);
-
-      const H = 24;
-
-      // Vértices do topo
-      const sul_t = { x: sul.x, y: sul.y - H };
-      const leste_t = { x: leste.x, y: leste.y - H };
-      const norte_t = { x: norte.x, y: norte.y - H };
-      const oeste_t = { x: oeste.x, y: oeste.y - H };
-
-      // Face Esquerda
-      this.ctx.fillStyle = isBuilt ? '#5c4530' : '#45382e';
-      this.ctx.beginPath();
-      this.ctx.moveTo(oeste.x, oeste.y);
-      this.ctx.lineTo(sul.x, sul.y);
-      this.ctx.lineTo(sul_t.x, sul_t.y);
-      this.ctx.lineTo(oeste_t.x, oeste_t.y);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Face Direita
-      this.ctx.fillStyle = isBuilt ? '#423122' : '#332922';
-      this.ctx.beginPath();
-      this.ctx.moveTo(sul.x, sul.y);
-      this.ctx.lineTo(leste.x, leste.y);
-      this.ctx.lineTo(leste_t.x, leste_t.y);
-      this.ctx.lineTo(sul_t.x, sul_t.y);
-      this.ctx.closePath();
-      this.ctx.fill();
+      // --- FALLBACK VETORIAL 2D PLANO ORIGINAL ---
+      // Base da casa
+      this.ctx.fillStyle = '#5c4530';
+      this.ctx.fillRect(bx - 22, by - 12, 44, 28);
 
       // Telhado
-      const centro_base = this.toIso(bx, by);
-      const telhado_ponta = { x: centro_base.x, y: centro_base.y - H - 16 };
-
-      this.ctx.fillStyle = isBuilt ? '#9c3d28' : '#575251';
+      this.ctx.fillStyle = isBuilt ? '#8c3523' : '#575251';
       this.ctx.beginPath();
-      this.ctx.moveTo(oeste_t.x, oeste_t.y);
-      this.ctx.lineTo(sul_t.x, sul_t.y);
-      this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.fillStyle = isBuilt ? '#732a1b' : '#3d3938';
-      this.ctx.beginPath();
-      this.ctx.moveTo(sul_t.x, sul_t.y);
-      this.ctx.lineTo(leste_t.x, leste_t.y);
-      this.ctx.lineTo(telhado_ponta.x, telhado_ponta.y);
+      this.ctx.moveTo(bx - 26, by - 12);
+      this.ctx.lineTo(bx + 26, by - 12);
+      this.ctx.lineTo(bx, by - 28);
       this.ctx.closePath();
       this.ctx.fill();
 
       // Porta
-      if (isBuilt) {
-        const porta_esq = this.interpolate(oeste, sul, 0.4);
-        const porta_dir = this.interpolate(oeste, sul, 0.6);
-        this.ctx.fillStyle = '#2e1c0c';
-        this.ctx.beginPath();
-        this.ctx.moveTo(porta_esq.x, porta_esq.y);
-        this.ctx.lineTo(porta_dir.x, porta_dir.y);
-        this.ctx.lineTo(porta_dir.x, porta_dir.y - 8);
-        this.ctx.lineTo(porta_esq.x, porta_esq.y - 8);
-        this.ctx.closePath();
-        this.ctx.fill();
+      this.ctx.fillStyle = '#2e1c0c';
+      this.ctx.fillRect(bx - 6, by + 6, 12, 10);
+
+      // Chaminé (Forja, Restaurante, Hospital, Taverna)
+      if (b.key !== 'townhall' && b.key !== 'hotel') {
+        this.ctx.fillStyle = '#3d2e20';
+        this.ctx.fillRect(bx + 11, by - 18, 6, 10);
       }
 
-      // Janelas
+      // Janelas acesas
       if (isBuilt) {
         const isNight = this.isNightTime();
         this.ctx.fillStyle = isNight ? (Math.random() > 0.05 ? '#ffea3a' : '#aa9e27') : '#2e1c0c';
-        const janela_dir_pos = this.interpolate(sul_t, leste_t, 0.5);
-        this.ctx.fillRect(janela_dir_pos.x - 2, janela_dir_pos.y + 4, 4, 4);
-        const janela_esq_pos = this.interpolate(oeste_t, sul_t, 0.5);
-        this.ctx.fillRect(janela_esq_pos.x - 2, janela_esq_pos.y + 4, 4, 4);
-      }
-
-      // Chaminé
-      if (isBuilt && b.key !== 'townhall' && b.key !== 'hotel') {
-        const chamine_base = this.interpolate(norte_t, leste_t, 0.5);
-        const cx = chamine_base.x;
-        const cy = chamine_base.y - 4;
-        this.ctx.fillStyle = '#3d2e20';
-        this.ctx.fillRect(cx - 3, cy - 8, 5, 8);
-        this.ctx.fillStyle = '#1c150e';
-        this.ctx.fillRect(cx - 4, cy - 9, 7, 2);
+        this.ctx.fillRect(bx - 14, by - 4, 6, 6);
+        this.ctx.fillRect(bx + 8, by - 4, 6, 6);
       }
 
       // Emoji e Rótulo
       this.ctx.font = '14px Arial';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(b.icon, telhado_ponta.x, telhado_ponta.y - 6);
+      this.ctx.fillText(b.icon, bx, by - 32);
 
       this.ctx.globalAlpha = 1.0;
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
       const label = isBuilt ? `Lvl ${level}` : '🔒 Trancado';
-      this.ctx.fillText(label, sul.x, sul.y + 12);
+      this.ctx.fillText(label, bx, by + 24);
     }
 
     this.ctx.restore();
@@ -558,21 +441,10 @@ export class GameRenderer {
     const pos = buildings[bKey];
     if (!pos || !town.isBuilt(bKey)) return null;
     
-    const bx = pos.x;
-    const by = pos.y;
-    const size = 22;
-    const H = 24;
-    
-    const leste = this.toIso(bx + size, by);
-    const norte = this.toIso(bx, by - size);
-    
-    const leste_t = { x: leste.x, y: leste.y - H };
-    const norte_t = { x: norte.x, y: norte.y - H };
-    
-    const chamine_base = this.interpolate(norte_t, leste_t, 0.5);
+    // A chaminé cartesiana fica na parte superior direita do prédio
     return {
-      x: chamine_base.x,
-      y: chamine_base.y - 13
+      x: pos.x + 14,
+      y: pos.y - 16
     };
   }
 
@@ -616,7 +488,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- RENDER MONSTROS ---
+  // --- RENDER MONSTROS TOP-DOWN ---
   drawMonsterIndividual(monster) {
     const pos = this.toIso(monster.x, monster.y);
     const time = performance.now();
@@ -629,14 +501,14 @@ export class GameRenderer {
     const img = imgKey ? this.images[imgKey] : null;
 
     if (img && img.loaded) {
-      // --- DESENHAR MONSTRO COM SPRITE DE PIXEL ART E BOUNCE (Transparência corrigida) ---
+      // --- DESENHAR MONSTRO COM SPRITE DE PIXEL ART E BOUNCE ---
       this.ctx.save();
       
-      // Sombra
+      // Sombra sob os pés
       const shadowSize = monster.isBoss ? 14 : 7;
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       this.ctx.beginPath();
-      this.ctx.ellipse(pos.x, pos.y + 1, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(pos.x, pos.y + 4, shadowSize * 1.0, shadowSize * 0.35, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
       // Translações para animações
@@ -983,7 +855,7 @@ export class GameRenderer {
     const cartX = hero.x + dx;
     const cartY = hero.y + dy;
 
-    // Projeção isométrica
+    // Projeção isométrica (Top-Down é 1:1)
     const pos = this.toIso(cartX, cartY);
     const hx = pos.x;
     const hy = pos.y;
@@ -996,16 +868,16 @@ export class GameRenderer {
     const img = this.images[imgKey];
 
     if (img && img.loaded) {
-      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS (Transparência corrigida) ---
+      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS ---
       this.ctx.save();
       
       // Sombra
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       this.ctx.beginPath();
-      this.ctx.ellipse(hx, hy + 1, 8, 2.5, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(hx, hy + 4, 8, 2.5, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Transladar para o ponto de base dos pés no chão isométrico
+      // Transladar para o ponto de base dos pés no chão
       this.ctx.translate(hx, hy);
 
       // Efeito de caminhada (bounce e inclinação leve)
@@ -1286,7 +1158,7 @@ export class GameRenderer {
         this.ctx.fill();
       }
 
-      // Arqueiro (Parábola tridimensional)
+      // Arqueiro (Parábola 2D clássica)
       if (hero.className === 'ARCHER' && hero.cooldownTimer > 0.3) {
         const pct = (1 - hero.cooldownTimer);
         const cartX = hero.x + (monster.x - hero.x) * pct;
