@@ -20,8 +20,16 @@ export class Monster {
     this.y = point.y;
     this.targetX = this.x;
     this.targetY = this.y;
-    this.speed = 30; // Monstros andam devagar
+
+    // Velocidade de perseguição: boss é mais lento mas poderoso, mini-boss médio, normal mais rápido
+    this.speed = isBoss ? 40 : (isMiniBoss ? 55 : 65);
     this.wanderTimer = Math.random() * 3;
+
+    // Cooldown de ataque independente do monstro
+    this.attackCooldown = 0;
+    this.attackSpeed = isBoss ? 0.6 : (isMiniBoss ? 0.9 : 1.2); // Ataques por segundo
+    this.targetHero = null; // Herói alvo atual
+    this.aggroRange = isBoss ? 350 : (isMiniBoss ? 280 : 200); // Raio de detecção de herói
   }
 
   takeDamage(amount, attacker, addFloater, town) {
@@ -103,20 +111,65 @@ export class Monster {
     }
   }
 
-  update(dt, heroes = [], viewport = {}) {
+  update(dt, heroes = [], viewport = {}, addFloater) {
     if (this.hp <= 0) return;
 
-    // Scan if any hero is attacking this monster
-    const attacker = (heroes && Array.isArray(heroes)) ? heroes.find(h => h.currentMap === 'hunt' && h.targetMonster === this) : null;
+    this.attackCooldown = Math.max(0, this.attackCooldown - dt);
 
-    if (attacker) {
-      // If being attacked, do NOT wander!
-      // Move directly towards the attacking hero so we stay in combat!
-      this.targetX = attacker.x;
-      this.targetY = attacker.y;
-      this.wanderTimer = 1.0; // Reset wander timer
+    // --- Buscar o herói mais próximo no mapa de caça ---
+    let nearestHero = null;
+    let nearestDist = Infinity;
+    if (heroes && Array.isArray(heroes)) {
+      for (const h of heroes) {
+        if (h.currentMap !== 'hunt' || h.hp <= 0) continue;
+        const ddx = h.x - this.x;
+        const ddy = h.y - this.y;
+        const d = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (d < nearestDist) {
+          nearestDist = d;
+          nearestHero = h;
+        }
+      }
+    }
+
+    if (nearestHero && nearestDist <= this.aggroRange) {
+      // Perseguir herói mais próximo
+      this.targetHero = nearestHero;
+      this.targetX = nearestHero.x;
+      this.targetY = nearestHero.y;
+      this.wanderTimer = 2.0; // Resetar timer de vaguear
+
+      // --- ATAQUE INDEPENDENTE DO MONSTRO ---
+      const attackReach = this.isBoss ? 55 : (this.isMiniBoss ? 45 : 35);
+      if (nearestDist <= attackReach && this.attackCooldown <= 0) {
+        this.attackCooldown = 1 / this.attackSpeed;
+        const monsterDmg = Math.max(1, Math.round(this.atk * 0.5) - (nearestHero.def || 0));
+        nearestHero.hp = Math.max(0, nearestHero.hp - monsterDmg);
+
+        if (addFloater) {
+          addFloater({
+            x: nearestHero.x,
+            y: nearestHero.y - 15,
+            text: `-${monsterDmg}`,
+            color: '#ff3d3d',
+            time: 0.8,
+            map: 'hunt'
+          });
+        }
+
+        // Se herói for derrubado pelo monstro
+        if (nearestHero.hp <= 0) {
+          nearestHero.hp = 1;
+          nearestHero.addLog(`Derrubado por ${this.name}! Fugindo...`);
+          if (nearestHero.currentMap === 'hunt') {
+            nearestHero.tempTargetBuilding = 'hospital';
+            nearestHero.state = 'RETURNING_TOWN';
+          }
+        }
+      }
     } else {
-      // Vagueia devagar se não estiver lutando
+      // Monstro sem alvo próximo: vaguear lentamente
+      this.targetHero = null;
       this.wanderTimer -= dt;
       if (this.wanderTimer <= 0) {
         const point = getRandomHuntPoint(viewport.width, viewport.height);
@@ -126,12 +179,14 @@ export class Monster {
       }
     }
 
-    // Movimentação simples
+    // Movimentação
     const dx = this.targetX - this.x;
     const dy = this.targetY - this.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist > 5) {
+    // Parar se já está no alcance de ataque do alvo (para não ficar sobreposto ao herói)
+    const stopDist = this.targetHero ? (this.isBoss ? 50 : (this.isMiniBoss ? 40 : 30)) : 5;
+    if (dist > stopDist) {
       this.x += (dx / dist) * this.speed * dt;
       this.y += (dy / dist) * this.speed * dt;
     }
@@ -167,7 +222,7 @@ export class MonsterSpawner {
     this.logs.unshift(`Bioma alterado para: ${BIOMES[biomeId].name}`);
   }
 
-  update(dt, town, heroes = [], viewport = {}) {
+  update(dt, town, heroes = [], viewport = {}, addFloater) {
     // Se heroes vier como viewport (compatibilidade se chamada antiga passar 3 args)
     let actualViewport = viewport;
     let actualHeroes = heroes;
@@ -176,11 +231,11 @@ export class MonsterSpawner {
       actualHeroes = [];
     }
 
-    // 1. Limpar monstros mortos e acumular mortes
+    // 1. Atualizar e limpar monstros mortos
     for (let i = this.activeMonsters.length - 1; i >= 0; i--) {
       const monster = this.activeMonsters[i];
       if (!monster) continue;
-      monster.update(dt, actualHeroes, actualViewport);
+      monster.update(dt, actualHeroes, actualViewport, addFloater);
       
       if (monster.hp <= 0) {
         // Monstro morreu
@@ -195,9 +250,8 @@ export class MonsterSpawner {
           this.bossKillsCount++;
           this.logs.unshift(`CHEFE DERROTADO! ${monster.name} caiu!`);
           
-          // Desbloquear melhorias de bioma se for o caso
-          // Cada chefe derrotado aumenta o progresso da cidade
-          town.addResource('gold', 100); // Recompensa global para a cidade
+          // Cada chefe derrotado recompensa a cidade
+          town.addResource('gold', 100);
         } else if (monster.isMiniBoss) {
           this.miniBossSpawned = false;
           this.logs.unshift(`Mini-Boss derrotado!`);

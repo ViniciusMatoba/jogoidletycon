@@ -12,6 +12,8 @@ function bootGame() {
   const renderer = new GameRenderer('game-canvas');
   window.game = game;
   window.gameRenderer = renderer;
+  // Injeta callback de floaters no renderer (para projéteis ranged)
+  renderer._addFloater = game.addFloater.bind(game);
 
   function resizeCanvasToContainer() {
     const canvas = renderer.canvas;

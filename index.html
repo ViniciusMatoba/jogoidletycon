@@ -52,9 +52,13 @@
           <button id="speed-2x" class="speed-btn">2x</button>
           <button id="speed-3x" class="speed-btn">4x</button>
         </div>
-        <div class="active-biome-indicator">
-          <span>Bioma Atual:</span>
-          <strong id="current-biome-name">Cavernas Rasas</strong>
+        <div class="active-biome-indicator" id="biome-quick-btn" title="Clique para selecionar bioma de caça">
+          <span class="biome-quick-icon">🗺️</span>
+          <div class="biome-quick-info">
+            <span class="biome-quick-label">Zona Ativa</span>
+            <strong id="current-biome-name">Cavernas Rasas</strong>
+          </div>
+          <span class="biome-quick-arrow">▶</span>
         </div>
       </div>
     </main>
@@ -118,28 +122,30 @@
 
   <!-- 3. Modal Caça / Biomas -->
   <div id="dungeons-modal" class="modal-overlay">
-    <div class="retro-modal">
+    <div class="retro-modal large-modal">
       <div class="modal-header">
-        <h3>ZONAS DE CAÇA & NÍVEIS</h3>
+        <h3>🗺️ ZONAS DE CAÇA &amp; BIOMAS</h3>
         <button class="close-modal-btn">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="biome-selector-box">
-          <label for="biome-select">Alterar Bioma Ativo:</label>
-          <select id="biome-select" class="retro-select">
-            <option value="0">Cavernas Rasas (Nív. 1-15)</option>
-            <option value="1">Floresta Escura (Nív. 15-30) - Requer Prefeitura Lvl 3</option>
-            <option value="2">Pântano Sombrio (Nív. 30-50) - Requer Prefeitura Lvl 4</option>
-          </select>
+
+        <!-- Seletor de Biomas em Cards -->
+        <h4 class="section-title" style="margin-bottom: 8px;">Selecione a Zona de Caça</h4>
+        <p class="tab-subtitle" style="margin-bottom: 14px;">Cada zona tem monstros e dificuldade diferentes. Zonas bloqueadas requerem progresso para serem desbloqueadas.</p>
+        <div id="biome-cards-container" class="biome-cards-grid">
+          <!-- Injetado dinamicamente -->
         </div>
 
+        <hr class="retro-divider" style="margin: 16px 0;" />
+
+        <!-- Progresso e Logs -->
         <div class="dungeon-progress-panel">
           <div class="progress-box-mini">
-            <span>Progresso de Abates (Bioma):</span>
+            <span>Abates no Bioma Ativo:</span>
             <strong id="kills-count">0 / 30</strong>
           </div>
           <div class="progress-box-mini">
-            <span>Bosses Derrotados (Geral):</span>
+            <span>Bosses Derrotados (Total):</span>
             <strong id="boss-kills-count">0</strong>
           </div>
         </div>

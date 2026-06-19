@@ -10,6 +10,11 @@ export const HERO_CLASSES = {
     baseSpd: 1.0, // ataques por segundo
     magical: false,
     color: '#3a7dff', // Azul para tanque
+    attackType: 'melee',
+    attackRange: 38,
+    keepAwayRange: 0,
+    projectileColor: '#7ab8ff',
+    impactColor: '#aad4ff',
     skills: [
       { name: 'Provocar', cd: 8, effect: 'taunt', duration: 4, desc: 'Atrai a atenção de todos os inimigos próximos.' },
       { name: 'Escudo Divino', cd: 15, effect: 'shield', amount: 50, desc: 'Cria uma barreira que absorve dano.' }
@@ -24,6 +29,11 @@ export const HERO_CLASSES = {
     baseSpd: 1.2,
     magical: false,
     color: '#ff3d3d', // Vermelho para dano bruto
+    attackType: 'slash',
+    attackRange: 30,
+    keepAwayRange: 0,
+    projectileColor: '#ff6060',
+    impactColor: '#ff9090',
     skills: [
       { name: 'Golpe Brutal', cd: 6, effect: 'dmg_mult', mult: 2.0, desc: 'Causa 200% de dano físico instantâneo.' },
       { name: 'Fúria da Batalha', cd: 20, effect: 'atk_spd_buff', mult: 1.5, duration: 6, desc: 'Aumenta velocidade de ataque em 50%.' }
@@ -38,6 +48,11 @@ export const HERO_CLASSES = {
     baseSpd: 1.4,
     magical: false,
     color: '#3aff7d', // Verde para agilidade
+    attackType: 'arrow',
+    attackRange: 220,
+    keepAwayRange: 120,
+    projectileColor: '#c8a040',
+    impactColor: '#f0d060',
     skills: [
       { name: 'Tiro Duplo', cd: 5, effect: 'double_shot', desc: 'Atira duas flechas rapidamente.' },
       { name: 'Disparo de Precisão', cd: 12, effect: 'crit_buff', duration: 5, desc: 'Aumenta a chance de acerto crítico em 30%.' }
@@ -52,6 +67,11 @@ export const HERO_CLASSES = {
     baseSpd: 0.9,
     magical: true,
     color: '#c23aff', // Roxo para magia
+    attackType: 'fireball',
+    attackRange: 200,
+    keepAwayRange: 110,
+    projectileColor: '#ff6020',
+    impactColor: '#ffaa40',
     skills: [
       { name: 'Bola de Fogo', cd: 7, effect: 'aoe_dmg', dmg: 40, desc: 'Causa dano mágico em área.' },
       { name: 'Congelamento', cd: 14, effect: 'stun', duration: 2.5, desc: 'Congela e paralisa o inimigo.' }
@@ -66,6 +86,11 @@ export const HERO_CLASSES = {
     baseSpd: 0.9,
     magical: true,
     color: '#ffea3a', // Amarelo/Dourado para suporte/luz
+    attackType: 'holy',
+    attackRange: 180,
+    keepAwayRange: 100,
+    projectileColor: '#ffea3a',
+    impactColor: '#fff8a0',
     skills: [
       { name: 'Luz Curativa', cd: 6, effect: 'heal', amount: 30, desc: 'Cura o herói aliado com menor vida.' },
       { name: 'Bênção da Força', cd: 18, effect: 'buff_atk', mult: 1.25, duration: 8, desc: 'Aumenta o ataque de todos os aliados em 25%.' }

@@ -21,20 +21,20 @@ export class GameRenderer {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     if (!this.canvas) {
-      throw new Error(`Canvas com ID ${canvasId} nÃ£o encontrado!`);
+      throw new Error(`Canvas com ID ${canvasId} não encontrado!`);
     }
     this.ctx = this.canvas.getContext('2d');
 
-    // Desabilitar suavizaÃ§Ã£o para garantir visual de pixels nÃ­tido
+    // Desabilitar suavização para garantir visual de pixels nítido
     this.ctx.imageSmoothingEnabled = false;
 
     // Ciclo de dia e noite
     this.dayNightCycle = 0;
 
-    // Lista de partÃ­culas de fumaÃ§a das chaminÃ©s
+    // Lista de partículas de fumaça das chaminés
     this.smokeParticles = [];
 
-    // Lista de Ã¡rvores fixas no mapa para Y-sorting
+    // Lista de árvores fixas no mapa para Y-sorting
     this.trees = [
       { x: 530, y: 60 },
       { x: 880, y: 80 },
@@ -61,7 +61,13 @@ export class GameRenderer {
     this.startCamX = 0;
     this.startCamY = 0;
     this.loadImages();
+
+    // Sistema de projéteis animados (flechas, bolas de fogo, raios sagrados)
+    this.projectiles = [];
+    // Referência ao addFloater do game (injetada depois)
+    this._addFloater = null;
   }
+
 
   // Remove fundos falsos (brancos, pretos ou quadriculados) em tempo real via Canvas
   makeImageTransparent(img) {
@@ -208,7 +214,7 @@ export class GameRenderer {
       'restaurant': 'assets/buildings/restaurant.png',
       'hospital': 'assets/buildings/hospital.png',
       'tavern': 'assets/buildings/tavern.png',
-      'forge': 'assets/buildings/forge.png',      // HerÃ³is
+      'forge': 'assets/buildings/forge.png',      // Heróis
       'hero_warrior_walk': 'assets/sprites/guerreiro_walk.png',
       'hero_warrior_slash': 'assets/sprites/guerreiro_slash.png',
       'hero_warrior_thrust': 'assets/sprites/guerreiro_thrust.png',
@@ -266,7 +272,7 @@ export class GameRenderer {
         cleanCanvas.loaded = true;
         this.images[key] = cleanCanvas;
         
-        // Se for um tile de solo, cria o padrÃ£o de repetiÃ§Ã£o do Canvas
+        // Se for um tile de solo, cria o padrão de repetição do Canvas
         if (key.startsWith('tile_')) {
           this.patterns[key] = this.ctx.createPattern(cleanCanvas, 'repeat');
         }
@@ -279,12 +285,12 @@ export class GameRenderer {
     }
   }
 
-  // CÃ¢mera Top-Down ClÃ¡ssica (2D Ortogonal vista de cima): Mapeia as coordenadas 1:1 diretamente
+  // Câmera Top-Down Clássica (2D Ortogonal vista de cima): Mapeia as coordenadas 1:1 diretamente
   toIso(x, y) {
     return { x: x, y: y };
   }
 
-  // FunÃ§Ã£o auxiliar para interpolar linearmente entre dois pontos
+  // Função auxiliar para interpolar linearmente entre dois pontos
   interpolate(p1, p2, t) {
     return {
       x: p1.x + (p2.x - p1.x) * t,
@@ -570,8 +576,8 @@ export class GameRenderer {
       this.updateAndDrawSmoke(game.town, dt);
     }
 
-    // 4. Desenhar Efeitos de Batalha (projéteis)
-    this.drawCombatEffects(game.heroes);
+    // 4. Desenhar Efeitos de Batalha (projéteis por classe)
+    this.drawCombatEffects(game.heroes, dt, this._addFloater);
 
     // 6. Desenhar Textos Flutuantes
     this.drawFloaters(game.floaters);
@@ -611,12 +617,12 @@ export class GameRenderer {
     let forestColor = '#243b23';
     if (biome.id === 0) forestColor = '#222326'; // Cavernas
     if (biome.id === 1) forestColor = '#102210'; // Mata Fechada
-    if (biome.id === 2) forestColor = '#1b231e'; // PÃ¢ntano/IgarapÃ©s
+    if (biome.id === 2) forestColor = '#1b231e'; // Pântano/Igarapés
 
     this.ctx.fillStyle = this.patterns['tile_dirt'] || forestColor;
     this.ctx.fillRect(480, 0, w - 480, h);
 
-    // 4. Fosso de Ãgua da Cidade (Moat) - X = 450 a 480
+    // 4. Fosso de Água da Cidade (Moat) - X = 450 a 480
     this.ctx.fillStyle = this.patterns['tile_water'] || '#2d6ab3';
     this.ctx.fillRect(450, 0, 30, h);
 
@@ -640,12 +646,12 @@ export class GameRenderer {
     // 5. Desenhar as Muralhas de Pedra da Cidade
     this.drawStoneWall(this.ctx, h);
 
-    // 6. Caminhos de cobblestone na cidade (ligando prÃ©dios e saindo no portÃ£o)
+    // 6. Caminhos de cobblestone na cidade (ligando prédios e saindo no portão)
     this.ctx.fillStyle = '#546e7a';
     this.ctx.fillRect(222, 100, 16, 350); // Estrada principal norte-sul
     this.ctx.fillRect(120, 192, 220, 16); // Estrada horizontal superior
     this.ctx.fillRect(120, 332, 220, 16); // Estrada horizontal inferior
-    this.ctx.fillRect(230, 262, 210, 16); // Caminho atÃ© o portÃ£o
+    this.ctx.fillRect(230, 262, 210, 16); // Caminho até o portão
 
     // Detalhe de tijolos na estrada
     this.ctx.fillStyle = '#37474f';
@@ -673,7 +679,7 @@ export class GameRenderer {
       this.ctx.stroke();
     }
     
-    // CorrimÃ£o da ponte
+    // Corrimão da ponte
     this.ctx.fillStyle = '#3e2723';
     this.ctx.fillRect(446, 247, 38, 3);
     this.ctx.fillRect(446, 290, 38, 3);
@@ -694,7 +700,7 @@ export class GameRenderer {
     ctx.fillRect(0, 35, 440, 10);
     ctx.fillRect(0, h - 25, 440, 10);
     
-    // Muralha Direita (com portÃ£o de 250 a 290)
+    // Muralha Direita (com portão de 250 a 290)
     ctx.fillRect(440, 40, 10, 210);
     ctx.fillRect(440, 290, 10, h - 310);
     
@@ -726,7 +732,7 @@ export class GameRenderer {
       ctx.fillRect(wx, h - 28, 10, 3);
     }
 
-    // Pilares do PortÃ£o
+    // Pilares do Portão
     ctx.fillStyle = '#37474f';
     ctx.fillRect(438, 245, 14, 5);
     ctx.fillRect(438, 290, 14, 5);
@@ -757,7 +763,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- DESENHO DE ÃRVORE RETRÃ” TOP-DOWN ---
+  // --- DESENHO DE ÁRVORE RETRÔ TOP-DOWN ---
   drawPixelTree(x, y) {
     this.ctx.save();
     // Tronco
@@ -782,7 +788,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- RENDER DE EDIFÃCIO (COM IMAGEM PIXEL ART E LOTES FISICOS) ---
+  // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART E LOTES FISICOS) ---
   drawBuildingIndividual(town, b) {
     const level = town.buildings[b.key];
     const isBuilt = level > 0;
@@ -800,7 +806,7 @@ export class GameRenderer {
     if (isBuilt) {
       this.drawBuildingByStage(b, level, wSize, hSize);
 
-      // NÃ­vel do PrÃ©dio
+      // Nível do Prédio
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
@@ -837,7 +843,7 @@ export class GameRenderer {
       this.ctx.moveTo(rx + rw - 8, ry + 16); this.ctx.lineTo(bx, ry + rh - 12);
       this.ctx.stroke();
 
-      // Viga do telhado (triÃ¢ngulo)
+      // Viga do telhado (triângulo)
       this.ctx.strokeStyle = beamColor;
       this.ctx.lineWidth = 2.5;
       this.ctx.beginPath();
@@ -861,7 +867,7 @@ export class GameRenderer {
       this.ctx.font = '14px Arial';
       this.ctx.fillText('ðŸ”¨', bx, by + 4);
       
-      // RÃ³tulo: ðŸ”’ Trancado
+      // Rótulo: ðŸ”’ Trancado
       this.ctx.fillStyle = '#b0bec5';
       this.ctx.font = '9px monospace';
       this.ctx.fillText('ðŸ”’ Trancado', bx, by + 16);
@@ -1129,7 +1135,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- ELEMENTOS DE DECORAÃ‡ÃƒO DE BACKGROUND (MURAIS, LAMPIÃ•ES, PORTAIS) ---
+  // --- ELEMENTOS DE DECORAÇÃO DE BACKGROUND (MURAIS, LAMPIÃ•ES, PORTAIS) ---
   drawStreetLamp(x, y) {
     this.ctx.save();
     
@@ -1145,7 +1151,7 @@ export class GameRenderer {
     this.ctx.fillStyle = '#455a64';
     this.ctx.fillRect(x - 2, y - 32, 10, 2);
     
-    // LampiÃ£o
+    // Lampião
     this.ctx.fillStyle = '#37474f';
     this.ctx.fillRect(x + 5, y - 30, 4, 6);
     
@@ -1183,7 +1189,7 @@ export class GameRenderer {
     this.ctx.fillRect(x - 10, y - 6, 4, 3);
     this.ctx.fillRect(x + 6, y - 5, 5, 2);
     
-    // Ãgua
+    // Água
     this.ctx.fillStyle = '#1565c0';
     this.ctx.fillRect(x - 11, y - 8, 22, 1);
     
@@ -1270,7 +1276,7 @@ export class GameRenderer {
     this.ctx.fillStyle = '#ea80fc';
     this.ctx.font = 'bold 9px monospace';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText('PORTAL DA CAÃ‡A', x, y - 52);
+    this.ctx.fillText('PORTAL DA CAÇA', x, y - 52);
     
     this.ctx.restore();
   }
@@ -1312,7 +1318,7 @@ export class GameRenderer {
     this.ctx.restore();
   }
 
-  // --- DETALHES DE BIOMAS DE CAÃ‡A ---
+  // --- DETALHES DE BIOMAS DE CAÇA ---
   drawCrystal(x, y, time, index) {
     const bounce = Math.sin((time * 0.003) + index) * 2;
     const cy = y - 6 + bounce;
@@ -1435,7 +1441,7 @@ export class GameRenderer {
     this.ctx.fillRect(x - 1.5, y - 4.5, 3, 3);
   }
 
-  // --- PARTÃCULAS DE FUMAÃ‡A DAS CHAMINÃ‰S ---
+  // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
   getChaminePos(town, bKey) {
     const buildings = {
       restaurant: { x: 700, y: 240 },
@@ -1447,7 +1453,7 @@ export class GameRenderer {
     const pos = buildings[bKey];
     if (!pos || !town.isBuilt(bKey)) return null;
     
-    // A chaminÃ© cartesiana fica na parte superior direita do prÃ©dio
+    // A chaminé cartesiana fica na parte superior direita do prédio
     return {
       x: pos.x + 14,
       y: pos.y - 16
@@ -1622,6 +1628,17 @@ export class GameRenderer {
       this.ctx.fillRect(pos.x - barW / 2, pos.y - barOffset, barW, barH);
       this.ctx.fillStyle = '#ff3d3d';
       this.ctx.fillRect(pos.x - barW / 2, pos.y - barOffset, barW * hpPct, barH);
+
+      // Indicador de AGGRO: brilho vermelho pulsante quando perseguindo her\u00f3i
+      if (monster.targetHero) {
+        const pulse = 0.5 + 0.5 * Math.sin(time * 0.02);
+        this.ctx.save();
+        this.ctx.fillStyle = `rgba(255, 30, 30, ${0.5 + pulse * 0.4})`;
+        this.ctx.font = 'bold 10px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('!', pos.x, pos.y - nameOffset - 9);
+        this.ctx.restore();
+      }
     } else {
       // --- FALLBACK PROCEDURAL ORIGINAL ---
       const shadowSize = monster.isBoss ? 16 : (monster.isMiniBoss ? 11 : 7);
@@ -1630,13 +1647,13 @@ export class GameRenderer {
       this.ctx.ellipse(pos.x, pos.y + 8, shadowSize * 1.2, shadowSize * 0.35, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
-      if (name.includes('Saci-PererÃª')) {
+      if (name.includes('Saci-Pererê')) {
         this.drawSaci(pos.x, pos.y, time);
       } else if (name.includes('Curupira')) {
         this.drawCurupira(pos.x, pos.y, time);
-      } else if (name.includes('Mula sem CabeÃ§a')) {
+      } else if (name.includes('Mula sem Cabeça')) {
         this.drawMula(pos.x, pos.y, time);
-      } else if (name.includes('BoitatÃ¡')) {
+      } else if (name.includes('Boitatá')) {
         this.drawBoitata(monster.x, monster.y, time);
       } else if (name.includes('Mapinguari')) {
         this.drawMapinguari(pos.x, pos.y, time);
@@ -1714,7 +1731,7 @@ export class GameRenderer {
     this.ctx.fillStyle = '#ff9f3a';
     this.ctx.fillRect(x + 5.5, py - 5, 1, 2);
 
-    // CalÃ§Ã£o e perna
+    // Calção e perna
     this.ctx.fillStyle = '#ff0000';
     this.ctx.fillRect(x - 3.5, py - 3, 7, 6);
     this.ctx.fillStyle = '#2e1c10';
@@ -1912,7 +1929,7 @@ export class GameRenderer {
     this.ctx.save();
     const time = performance.now();
 
-    // CÃ¡lculo do Dash de Combate
+    // Cálculo do Dash de Combate
     let dx = 0;
     let dy = 0;
     if (hero.state === 'FIGHTING' && hero.targetMonster) {
@@ -1931,11 +1948,11 @@ export class GameRenderer {
       }
     }
 
-    // PosiÃ§Ã£o cartesiana do herÃ³i com o dash aplicado
+    // Posição cartesiana do herói com o dash aplicado
     const cartX = hero.x + dx;
     const cartY = hero.y + dy;
 
-    // ProjeÃ§Ã£o isomÃ©trica (Top-Down Ã© 1:1)
+    // Projeção isométrica (Top-Down é 1:1)
     const pos = this.toIso(cartX, cartY);
     const hx = pos.x;
     const hy = pos.y;
@@ -1952,7 +1969,13 @@ export class GameRenderer {
 
     let img = this.images[imgKey];
     let isSplit = false;
-    const action = (hero.state === 'FIGHTING') ? 'slash' : 'walk';
+    const isFighting = hero.state === 'FIGHTING';
+    let action = 'walk';
+    if (isFighting) {
+      if (hero.className === 'ARCHER') action = 'shoot';
+      else if (hero.className === 'MAGE' || hero.className === 'PRIEST') action = 'cast';
+      else action = 'slash';
+    }
 
     if (!img || !img.loaded) {
       const splitKey = `${imgKey}_${action}`;
@@ -2152,7 +2175,7 @@ export class GameRenderer {
       this.ctx.fillRect(hx - 4.5, hy + 10 + step, 3, 1.5);
       this.ctx.fillRect(hx + 0.5, hy + 10 - step, 3, 1.5);
 
-      // Corpo / Armadura DinÃ¢mica
+      // Corpo / Armadura Dinâmica
       let bodyColor = hero.cosmetics.clothesColor;
       let isLendaria = false;
 
@@ -2198,7 +2221,7 @@ export class GameRenderer {
       this.ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
       this.ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
 
-      // Cabelo e ChapÃ©us
+      // Cabelo e Chapéus
       this.ctx.fillStyle = hero.cosmetics.hairColor;
       const hairStyle = hero.cosmetics.hairStyle;
 
@@ -2241,10 +2264,10 @@ export class GameRenderer {
         this.ctx.stroke();
       }
 
-      // Arma DinÃ¢mica
+      // Arma Dinâmica
       this.drawHeroWeapon(hx, hy, hero);
 
-      // Nome do HerÃ³i
+      // Nome do Herói
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
@@ -2492,67 +2515,103 @@ export class GameRenderer {
         this.ctx.fillRect(wx - 2, wy - 1, 6, 1.5);
       }
     }
-    
+
     this.ctx.restore();
   }
 
-  // --- EFEITOS DE BATALHA ---
-  drawCombatEffects(heroes) {
+  // --- EFEITOS DE BATALHA (Sistema de Projéteis por Classe) ---
+
+  // Chamado pelo loop principal: lê pendingAttack dos heróis e cria projéteis
+  drawCombatEffects(heroes, dt = 0.016, addFloater = null) {
     if (this.activeView !== 'hunt') return;
+
+    // 1. Colher novos ataques dos heróis
+    heroes.forEach(hero => {
+      if (!hero.pendingAttack || hero.pendingAttack.consumed) return;
+      const atk = hero.pendingAttack;
+      atk.consumed = true;
+
+      const type = atk.type;
+
+      if (type === 'melee' || type === 'slash') {
+        // Melee: efeito imediato no local do monstro
+        this._spawnMeleeEffect(atk, hero.className);
+      } else {
+        // Ranged: criar projétil que voa até o alvo
+        const speed = type === 'arrow' ? 320 : (type === 'holy' ? 200 : 260);
+        const dx = atk.toX - atk.fromX;
+        const dy = atk.toY - atk.fromY;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        this.projectiles.push({
+          type,
+          x: atk.fromX,
+          y: atk.fromY,
+          vx: (dx / dist) * speed,
+          vy: (dy / dist) * speed,
+          toX: atk.toX,
+          toY: atk.toY,
+          color: atk.color,
+          impactColor: atk.impactColor,
+          damage: atk.damage,
+          dist,
+          traveled: 0,
+          time: 0,
+          addFloater: addFloater || this._addFloater,
+          // Rastro de partículas
+          trail: [],
+          life: 1.0
+        });
+      }
+    });
+
+    // 2. Atualizar projéteis existentes
+    this.projectiles = this.projectiles.filter(p => p.life > 0);
+
+    this.projectiles.forEach(p => {
+      p.time += dt;
+      const step = Math.sqrt(p.vx * p.vx + p.vy * p.vy) * dt;
+      p.traveled += step;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      // Guardar rastro
+      p.trail.push({ x: p.x, y: p.y, age: 0 });
+      if (p.trail.length > 12) p.trail.shift();
+      p.trail.forEach(t => t.age += dt);
+
+      // Verificar colisão com o alvo
+      const rx = p.toX - p.x;
+      const ry = p.toY - p.y;
+      const rem = Math.sqrt(rx * rx + ry * ry);
+
+      if (rem < 10 || p.traveled >= p.dist) {
+        // Impacto!
+        this._spawnImpact(p);
+        if (p.addFloater) {
+          p.addFloater({
+            x: p.toX,
+            y: p.toY - 15,
+            text: `${p.damage}`,
+            color: p.color,
+            time: 0.9,
+            map: 'hunt'
+          });
+        }
+        p.life = 0;
+      }
+    });
+
+    // 3. Atualizar efeitos de impacto armazenados
+    if (!this._impacts) this._impacts = [];
+    this._impacts = this._impacts.filter(imp => imp.life > 0);
+    this._impacts.forEach(imp => {
+      imp.time += dt;
+      imp.life -= dt * 2.5;
+    });
+
+    // 4. Efeitos de postura (ranged: anel de carga)
     heroes.forEach(hero => {
       if (hero.state !== 'FIGHTING' || !hero.targetMonster) return;
-
-      const monster = hero.targetMonster;
-      this.ctx.save();
-
-      // Mago
-      if (hero.className === 'MAGE' && hero.cooldownTimer > 0.4) {
-        const pct = (1 - hero.cooldownTimer);
-        const cartX = hero.x + (monster.x - hero.x) * pct;
-        const cartY = hero.y + (monster.y - hero.y) * pct;
-        
-        const pos = this.toIso(cartX, cartY);
-        const color = hero.equipment.weapon?.key.includes('boitata') ? '#ff3c00' : '#c23aff';
-
-        this.ctx.fillStyle = color;
-        this.ctx.beginPath();
-        this.ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        const cartBackX = hero.x + (monster.x - hero.x) * (pct - 0.05);
-        const cartBackY = hero.y + (monster.y - hero.y) * (pct - 0.05);
-        const posBack = this.toIso(cartBackX, cartBackY);
-
-        this.ctx.fillStyle = '#ffea3a';
-        this.ctx.beginPath();
-        this.ctx.arc(posBack.x, posBack.y, 2, 0, Math.PI * 2);
-        this.ctx.fill();
-      }
-
-      // Arqueiro (ParÃ¡bola 2D clÃ¡ssica)
-      if (hero.className === 'ARCHER' && hero.cooldownTimer > 0.3) {
-        const pct = (1 - hero.cooldownTimer);
-        const cartX = hero.x + (monster.x - hero.x) * pct;
-        const cartY = hero.y + (monster.y - hero.y) * pct;
-        
-        const pos = this.toIso(cartX, cartY);
-        const arrowHeight = Math.sin(pct * Math.PI) * 20;
-        const py = pos.y - arrowHeight;
-
-        const cartNextX = hero.x + (monster.x - hero.x) * (pct + 0.05);
-        const cartNextY = hero.y + (monster.y - hero.y) * (pct + 0.05);
-        
-        const posNext = this.toIso(cartNextX, cartNextY);
-        const nextHeight = Math.sin((pct + 0.05) * Math.PI) * 20;
-        const nextY = posNext.y - nextHeight;
-
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.moveTo(pos.x, py);
-        this.ctx.lineTo(posNext.x, nextY);
-        this.ctx.stroke();
-      }
 
       this.ctx.restore();
     });
@@ -2582,7 +2641,7 @@ export class GameRenderer {
         this.ctx.fillStyle = '#ffea3a';
         this.ctx.font = '9px monospace';
         this.ctx.textAlign = 'left';
-        this.ctx.fillText('ðŸŒ™ Noite', 14, 19);
+        this.ctx.fillText('🌙 Noite', 14, 19);
       }
       this.ctx.restore();
     } else {

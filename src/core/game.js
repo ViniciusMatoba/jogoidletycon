@@ -72,10 +72,10 @@ export class Game {
     if (this.isPaused) return;
 
     const actualDt = dt * this.speed;
-    this.spawner.update(actualDt, this.town, this.heroes, viewport);
+    this.spawner.update(actualDt, this.town, this.heroes, viewport, this.addFloater.bind(this));
 
     this.heroes.forEach(hero => {
-      hero.update(actualDt, this.town, this.spawner.activeMonsters, this.addFloater.bind(this), viewport);
+      hero.update(actualDt, this.town, this.spawner.activeMonsters, this.addFloater.bind(this), viewport, this.heroes);
     });
 
     this.town.updateCrafting(actualDt);
@@ -109,6 +109,7 @@ export class Game {
       }
     });
 
+    this.saveGame();
     return { success: true };
   }
 

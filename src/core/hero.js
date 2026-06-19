@@ -32,7 +32,7 @@ export class Hero {
     this.className = className;
     this.classConfig = HERO_CLASSES[className];
 
-    // CaracterÃ­sticas CosmÃ©ticas FÃ­sicas AleatÃ³rias (Wow factor e individualidade)
+    // Características Cosméticas Físicas Aleatórias (Wow factor e individualidade)
     const hairColors = ['#f5d061', '#e65c40', '#7d4d33', '#2b2b2b', '#e0e0e0'];
     const skinColors = ['#ffd1a9', '#e0a97a', '#8c5835'];
     const hairStyles = ['short', 'long', 'spiky', 'bald'];
@@ -45,11 +45,11 @@ export class Hero {
       clothesColor: clothesColors[Math.floor(Math.random() * clothesColors.length)]
     };
 
-    // Status de ProgressÃ£o
+    // Status de Progressão
     this.level = 1;
     this.xp = 0;
     this.xpNeeded = 100;
-    this.gold = 50; // ComeÃ§am com algum ouro para gastar na cidade
+    this.gold = 50; // Começam com algum ouro para gastar na cidade
 
     // Status de Combate (Base + Equipamentos)
     this.equipment = {
@@ -72,7 +72,7 @@ export class Hero {
 
     this.recalculateStats();
 
-    // Vida atual comeÃ§a cheia
+    // Vida atual começa cheia
     this.hp = this.maxHp;
 
     // Necessidades (0 a 100)
@@ -80,13 +80,17 @@ export class Hero {
     this.energy = 80 + Math.random() * 20; // Energia
     this.mood = 80 + Math.random() * 20;   // Humor
 
-    // InventÃ¡rio de Loot Coletado
+    // Inventário de Loot Coletado
     this.inventory = {};
 
-    // PosiÃ§Ã£o no canvas
+    // Posição no canvas
     this.currentMap = 'town';
     this.tempTargetBuilding = null;
     this.destinationBuilding = null;
+    this.x = 200 + Math.random() * 500;
+    this.y = 150 + Math.random() * 250;
+    this.targetX = this.x;
+    this.targetY = this.y;
     this.x = 200 + Math.random() * 500;
     this.y = 150 + Math.random() * 250;
     this.targetX = this.x;
@@ -98,17 +102,25 @@ export class Hero {
     this.state = 'IDLE_TOWN';
     this.targetMonster = null;
     this.cooldownTimer = 0;
-    this.stateTimer = 0; // Para contar tempo em aÃ§Ãµes fixas
+    this.stateTimer = 0; // Para contar tempo em ações fixas
+
+    // Configuração de combate baseada na classe
+    this.attackType = this.classConfig.attackType || 'melee';
+    this.attackRange = this.classConfig.attackRange || 35;
+    this.keepAwayRange = this.classConfig.keepAwayRange || 0;
+
+    // Comunicação herói → renderer (para spawnar projéteis)
+    this.pendingAttack = null;
     
-    // HistÃ³rico de logs de atividades do herÃ³i
-    this.logs = [`Chegou Ã  cidade.`];
+    // Histórico de logs de atividades do herói
+    this.logs = [`Chegou à cidade.`];
   }
 
   // Recalcula os status somando a classe e equipamentos
   recalculateStats() {
     const classBase = HERO_CLASSES[this.className];
     
-    // Crescimento de status por nÃ­vel (ex: +10% por nÃ­vel)
+    // Crescimento de status por nível (ex: +10% por nível)
     const levelMult = 1 + (this.level - 1) * 0.12;
 
     this.maxHp = Math.round(classBase.baseHp * levelMult);
@@ -116,7 +128,7 @@ export class Hero {
     this.def = Math.round(classBase.baseDef * levelMult);
     this.spd = classBase.baseSpd; // Ataques por segundo
 
-    // Somar bÃ´nus de todos os equipamentos equipados
+    // Somar bônus de todos os equipamentos equipados
     for (const slot in this.equipment) {
       const item = this.equipment[slot];
       if (item && item.stats) {
@@ -128,11 +140,11 @@ export class Hero {
   }
 
   addLog(msg) {
-    this.logs.unshift(msg); // Adiciona no inÃ­cio
-    if (this.logs.length > 5) this.logs.pop(); // MantÃ©m os 5 mais recentes
+    this.logs.unshift(msg); // Adiciona no início
+    if (this.logs.length > 5) this.logs.pop(); // Mantém os 5 mais recentes
   }
 
-  // Verifica se o inventÃ¡rio tem itens para vender
+  // Verifica se o inventário tem itens para vender
   hasLootToSell() {
     let count = 0;
     for (const key in this.inventory) {
@@ -150,17 +162,17 @@ export class Hero {
       this.level++;
       this.xpNeeded = Math.round(this.level * 120);
       this.recalculateStats();
-      this.hp = this.maxHp; // Cura ao subir de nÃ­vel
-      this.addLog(`Subiu para o NÃ­vel ${this.level}!`);
+      this.hp = this.maxHp; // Cura ao subir de nível
+      this.addLog(`Subiu para o Nível ${this.level}!`);
     }
   }
 
-  // DÃ¡ um item para o inventÃ¡rio do herÃ³i
+  // Dá um item para o inventário do herói
   lootItem(itemKey, qty = 1) {
     this.inventory[itemKey] = (this.inventory[itemKey] || 0) + qty;
   }
 
-  // MovimentaÃ§Ã£o simples em direÃ§Ã£o ao alvo
+  // Movimentação simples em direção ao alvo
   moveTowardsTarget(dt) {
     const dx = this.targetX - this.x;
     const dy = this.targetY - this.y;
@@ -177,7 +189,7 @@ export class Hero {
     return false; // Ainda andando
   }
 
-  // Escolhe novas coordenadas de alvo dentro do mapa de caÃ§a (tela cheia)
+  // Escolhe novas coordenadas de alvo dentro do mapa de caça (tela cheia)
   wanderForest(viewport = {}) {
     const point = getRandomHuntPoint(viewport.width, viewport.height);
     this.targetX = point.x;
@@ -192,20 +204,42 @@ export class Hero {
     this.targetY = point.y;
   }
 
-  // Define um prÃ©dio como alvo fÃ­sico
+  // Define um prédio como alvo físico
   targetBuilding(buildingType, town, viewport = {}) {
     if (!town) return;
     this.destinationBuilding = buildingType;
     const pos = getBuildingTownPoint(town, buildingType, viewport.width, viewport.height) ||
       getRandomTownPoint(town, viewport.width, viewport.height);
-    // Pequena variaÃ§Ã£o para herÃ³is nÃ£o ficarem sobrepostos
+    // Pequena variação para heróis não ficarem sobrepostos
     this.targetX = pos.x + (Math.random() * 12 - 6);
     this.targetY = pos.y + (Math.random() * 8 - 4);
   }
 
-  // Ciclo principal de atualizaÃ§Ã£o da IA do HerÃ³i
-  update(dt, town, monsters, addFloater, viewport = {}) {
+
+  // Ciclo principal de atualização da IA do Herói
+  update(dt, town, monsters, addFloater, viewport = {}, allHeroes = []) {
     this.cooldownTimer = Math.max(0, this.cooldownTimer - dt);
+
+    // Repulsion Separation from other heroes
+    let sepX = 0;
+    let sepY = 0;
+    let count = 0;
+    for (const other of allHeroes) {
+      if (other !== this && other.currentMap === this.currentMap) {
+        const dx = this.x - other.x;
+        const dy = this.y - other.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 40 && dist > 0) {
+          sepX += dx / dist;
+          sepY += dy / dist;
+          count++;
+        }
+      }
+    }
+    if (count > 0) {
+      this.x += (sepX / count) * 20 * dt;
+      this.y += (sepY / count) * 20 * dt;
+    }
 
     if (this.currentMap === 'town' && town && !isPointInsideTown(town, this.x, this.y, viewport.width, viewport.height)) {
       const point = getRandomTownPoint(town, viewport.width, viewport.height);
@@ -266,7 +300,7 @@ export class Hero {
           return;
         }
 
-        // Achar o monstro mais prÃ³ximo
+        // Achar o monstro mais próximo
         let closest = null;
         let minDist = Infinity;
         for (const monster of monsters) {
@@ -307,12 +341,49 @@ export class Hero {
           return;
         }
 
-        if (this.cooldownTimer <= 0) {
-          this.attackMonster(this.targetMonster, addFloater, town);
-          this.cooldownTimer = 1 / this.spd;
+        {
+          const mdx = this.targetMonster.x - this.x;
+          const mdy = this.targetMonster.y - this.y;
+          const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+
+          if (this.keepAwayRange > 0) {
+            // === ATAQUE A DISTÂNCIA ===
+            // Mantém distancia mínima (foge se monstro se aproximar)
+            if (mdist < this.keepAwayRange) {
+              // Recuar: mover para longe do monstro
+              const nx = mdx / mdist;
+              const ny = mdy / mdist;
+              this.targetX = this.x - nx * (this.keepAwayRange + 30);
+              this.targetY = this.y - ny * (this.keepAwayRange + 30);
+              this.moveTowardsTarget(dt);
+            } else if (mdist <= this.attackRange) {
+              // Dentro do alcance: parar e atacar
+              this.targetX = this.x;
+              this.targetY = this.y;
+              if (this.cooldownTimer <= 0) {
+                this.attackMonster(this.targetMonster, addFloater, town);
+                this.cooldownTimer = 1 / this.spd;
+              }
+            } else {
+              // Fora do alcance: avançar até o alcance máximo
+              this.targetX = this.targetMonster.x;
+              this.targetY = this.targetMonster.y;
+              this.moveTowardsTarget(dt);
+            }
+          } else {
+            // === ATAQUE CORPO-A-CORPO ===
+            if (mdist > this.attackRange) {
+              this.targetX = this.targetMonster.x;
+              this.targetY = this.targetMonster.y;
+              this.moveTowardsTarget(dt);
+            } else if (this.cooldownTimer <= 0) {
+              this.attackMonster(this.targetMonster, addFloater, town);
+              this.cooldownTimer = 1 / this.spd;
+            }
+          }
         }
 
-        // Se o herÃ³i morrer, ele foge
+        // Se o herói morrer, ele foge
         if (this.hp <= 0) {
           this.hp = 1;
           this.addLog(`Ficou inconsciente! Fugindo...`);
@@ -320,7 +391,7 @@ export class Hero {
             this.tempTargetBuilding = 'hospital';
             const huntExit = getHuntExitPoint(viewport.width, viewport.height);
             this.targetX = huntExit.x;
-            this.targetY = huntExit.y; // Ir para a saÃ­da
+            this.targetY = huntExit.y; // Ir para a saída
             this.state = 'RETURNING_TOWN';
           } else {
             this.state = 'RETURNING_TOWN';
@@ -332,7 +403,7 @@ export class Hero {
       case 'RETURNING_TOWN':
         if (this.moveTowardsTarget(dt)) {
           if (this.currentMap === 'hunt') {
-            // Chegou no portÃ£o de saÃ­da do campo de caÃ§a. Teleporta para o portÃ£o de entrada da cidade!
+            // Chegou no portão de saída do campo de caça. Teleporta para o portão de entrada da cidade!
             const townEntry = getTownExitPoint(town, viewport.width, viewport.height);
             this.x = townEntry.x;
             this.y = townEntry.y;
@@ -341,7 +412,7 @@ export class Hero {
             this.tempTargetBuilding = null;
             this.addLog(`Voltou para a cidade.`);
           } else {
-            // Chegou no prÃ©dio em town
+            // Chegou no prédio em town
             this.enterBuilding(town, viewport);
           }
         }
@@ -550,7 +621,7 @@ export class Hero {
     return false;
   }
 
-  // Entra no edifÃ­cio correspondente quando chega perto
+  // Entra no edifício correspondente quando chega perto
   enterBuilding(town, viewport = {}) {
     let closestBuilding = this.destinationBuilding;
     let minDist = closestBuilding && town.isBuilt(closestBuilding) ? 0 : Infinity;
@@ -597,37 +668,38 @@ export class Hero {
     }
   }
 
-  // Executa o ataque ao monstro
+  // Executa o ataque ao monstro (dano do herói ao monstro)
   attackMonster(monster, addFloater, town) {
-    // Calcular dano com base na defesa do monstro
-    const netDamage = Math.max(1, this.atk - monster.def);
+    const netDamage = Math.max(1, this.atk - (monster.def || 0));
     monster.takeDamage(netDamage, this, addFloater, town);
-    
-    // Mostrar flutuante de dano no Canvas
-    addFloater({
-      x: monster.x,
-      y: monster.y - 15,
-      text: `${netDamage}`,
-      color: this.classConfig.magical ? '#c23aff' : '#ffffff',
-      time: 0.8,
-      map: 'hunt'
-    });
 
-    // Se o monstro revidar (Simulado para simplificar e dar dano ao herói)
-    // O monstro revida com 45% do dano base dele
-    if (monster.hp > 0) {
-      const monsterDmg = Math.max(1, Math.round(monster.atk * 0.45) - this.def);
-      this.hp = Math.max(0, this.hp - monsterDmg);
-      
+    // Registrar ataque pendente para o renderer criar o efeito visual
+    this.pendingAttack = {
+      type: this.attackType,
+      fromX: this.x,
+      fromY: this.y,
+      toX: monster.x,
+      toY: monster.y,
+      color: this.classConfig.projectileColor || '#ffffff',
+      impactColor: this.classConfig.impactColor || '#ffffff',
+      damage: netDamage,
+      consumed: false
+    };
+
+    // Floater de dano simples (posicionado no monstro)
+    const isRanged = this.keepAwayRange > 0;
+    if (!isRanged) {
+      // Melee: floater imediato
       addFloater({
-        x: this.x,
-        y: this.y - 15,
-        text: `-${monsterDmg}`,
-        color: '#ff3d3d',
+        x: monster.x,
+        y: monster.y - 15,
+        text: `${netDamage}`,
+        color: this.classConfig.projectileColor || '#ffffff',
         time: 0.8,
         map: 'hunt'
       });
     }
+    // Ranged: o renderer adiciona o floater quando o projétil chega
   }
 
   // Tenta comprar equipamentos melhores na oficina da cidade

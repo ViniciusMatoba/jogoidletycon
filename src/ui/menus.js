@@ -64,6 +64,9 @@ export function setupUI(game) {
           if (m.id !== 'dungeons-modal') m.classList.remove('active');
         });
         btn.classList.add('active');
+        renderBiomeCards(game);
+        const dModal = document.getElementById('dungeons-modal');
+        if (dModal) dModal.classList.add('active');
         return;
       }
 
@@ -145,15 +148,21 @@ export function setupUI(game) {
     });
   });
 
-  // 2. Vinculação do Bioma
-  const biomeSelect = document.getElementById('biome-select');
-  if (biomeSelect) {
-    biomeSelect.addEventListener('change', (e) => {
-      const res = game.changeBiome(parseInt(e.target.value));
-      if (!res.success && res.reason) {
-        alert(res.reason);
-        biomeSelect.value = game.spawner.currentBiomeId;
-      }
+  // 2. Botão rápido de bioma no canvas (indicador clicavel)
+  const biomeQuickBtn = document.getElementById('biome-quick-btn');
+  if (biomeQuickBtn) {
+    biomeQuickBtn.addEventListener('click', () => {
+      if (window.gameRenderer) window.gameRenderer.activeView = 'hunt';
+      menuButtons.forEach(b => {
+        const t = b.getAttribute('data-target');
+        b.classList.toggle('active', t === 'dungeons-modal');
+      });
+      modalOverlays.forEach(m => {
+        if (m.id !== 'dungeons-modal') m.classList.remove('active');
+      });
+      renderBiomeCards(game);
+      const dModal = document.getElementById('dungeons-modal');
+      if (dModal) dModal.classList.add('active');
     });
   }
 
@@ -468,11 +477,153 @@ export function setupUI(game) {
               if (b.getAttribute('data-target') === 'dungeons-modal') b.classList.add('active');
               else b.classList.remove('active');
             });
+            renderBiomeCards(game);
           }
         }
       }
     });
   }
+}
+
+
+// =====================================================================
+// BIOME CARD SELECTOR
+// =====================================================================
+
+// Configurações visuais de cada bioma (tema, ícones, descrição)
+const BIOME_VISUAL = [
+  {
+    emoji: '⛰️',
+    theme: 'biome-cave',
+    gradient: 'linear-gradient(135deg, #2a2c35 0%, #3d3058 100%)',
+    border: '#5e4f7d',
+    levelRange: 'Nív. 1 — 15',
+    diffStars: 1,
+    diffLabel: 'Iniciante',
+    description: 'Tocas subterrâneas repletas de criaturas do folclore urbano e extraterrestres. Ideal para heróis iniciantes.',
+    unlockReq: null,
+    monsterIcons: { normal: '🐀🧿💀🐷👽', miniboss: '👽🤡', boss: '🎒👻' }
+  },
+  {
+    emoji: '🌲',
+    theme: 'biome-forest',
+    gradient: 'linear-gradient(135deg, #0d2218 0%, #1a3d20 100%)',
+    border: '#2e6b35',
+    levelRange: 'Nív. 15 — 30',
+    diffStars: 2,
+    diffLabel: 'Intermediário',
+    description: 'Floresta densa e assombrada habitada por criaturas do folclore brasileiro clássico. Perigo elevado.',
+    unlockReq: 'Prefeitura Nív. 3',
+    monsterIcons: { normal: '🐺🧛🦎🐾🌿', miniboss: '🐰🐴', boss: '🐂🔥' }
+  },
+  {
+    emoji: '🌿',
+    theme: 'biome-swamp',
+    gradient: 'linear-gradient(135deg, #0d1e16 0%, #1b3328 100%)',
+    border: '#2e5544',
+    levelRange: 'Nív. 30 — 50',
+    diffStars: 3,
+    diffLabel: 'Elite',
+    description: 'Pântano sombrio e pestilento com os monstros mais temidos do folclore. Apenas heróis experientes sobrevivem.',
+    unlockReq: 'Prefeitura Nív. 4',
+    monsterIcons: { normal: '🦎🐺🧛🧜🐊', miniboss: '👁️🐾', boss: '🔥👁️' }
+  }
+];
+
+function renderBiomeCards(game) {
+  const container = document.getElementById('biome-cards-container');
+  if (!container) return;
+
+  const currentBiomeId = game.spawner.currentBiomeId;
+  const townhallLevel = game.town.buildings.townhall || 0;
+
+  container.innerHTML = BIOMES.map((biome, idx) => {
+    const visual = BIOME_VISUAL[idx];
+    const isActive = idx === currentBiomeId;
+
+    // Verificar se está desbloqueado
+    let isLocked = false;
+    if (idx === 1 && townhallLevel < 3) isLocked = true;
+    if (idx === 2 && townhallLevel < 4) isLocked = true;
+
+    // Estrelas de dificuldade
+    const stars = '⭐'.repeat(visual.diffStars) + '☆'.repeat(3 - visual.diffStars);
+
+    // Monstros normais únicos (sem duplicatas)
+    const uniqueNormal = [...new Map(biome.monsters.map(m => [m.name, m])).values()];
+    const normalList = uniqueNormal.slice(0, 5).map(m =>
+      `<span class="biome-monster-tag">${m.name}</span>`
+    ).join('');
+
+    const minibossList = biome.miniBosses.slice(0, 2).map(m =>
+      `<span class="biome-monster-tag mini">${m.name}</span>`
+    ).join('');
+
+    const bossList = biome.bosses.slice(0, 2).map(m =>
+      `<span class="biome-monster-tag boss">${m.name}</span>`
+    ).join('');
+
+    const activeClass = isActive ? 'biome-card--active' : '';
+    const lockedClass = isLocked ? 'biome-card--locked' : '';
+
+    return `
+      <div class="biome-card ${activeClass} ${lockedClass}" data-biome-id="${idx}" style="background: ${visual.gradient}; border-color: ${isActive ? '#ffea3a' : visual.border};">
+        <div class="biome-card-header">
+          <span class="biome-card-emoji">${visual.emoji}</span>
+          <div class="biome-card-title-col">
+            <strong class="biome-card-name">${biome.name}</strong>
+            <span class="biome-card-level">${visual.levelRange}</span>
+          </div>
+          ${isActive ? '<span class="biome-active-badge">✅ ATIVO</span>' : ''}
+          ${isLocked ? '<span class="biome-locked-badge">🔒</span>' : ''}
+        </div>
+
+        <div class="biome-card-diff">
+          <span class="biome-stars">${stars}</span>
+          <span class="biome-diff-label">${visual.diffLabel}</span>
+        </div>
+
+        <p class="biome-card-desc">${visual.description}</p>
+
+        <div class="biome-monster-section">
+          <div class="biome-monster-row">
+            <span class="biome-row-label">👾 Normais:</span>
+            <div class="biome-monster-tags">${normalList}</div>
+          </div>
+          <div class="biome-monster-row">
+            <span class="biome-row-label">⚠️ Mini-Boss:</span>
+            <div class="biome-monster-tags">${minibossList}</div>
+          </div>
+          <div class="biome-monster-row">
+            <span class="biome-row-label">💀 Boss:</span>
+            <div class="biome-monster-tags">${bossList}</div>
+          </div>
+        </div>
+
+        ${isLocked
+          ? `<div class="biome-card-lock-info">🔒 Requer: <strong>${visual.unlockReq}</strong></div>`
+          : isActive
+            ? `<button class="biome-select-btn biome-btn--active" disabled>✅ Zona Selecionada</button>`
+            : `<button class="biome-select-btn" data-biome-id="${idx}">⚔️ Selecionar esta Zona</button>`
+        }
+      </div>
+    `;
+  }).join('');
+
+  // Vincular cliques nos botões de seleção
+  container.querySelectorAll('.biome-select-btn[data-biome-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-biome-id'));
+      const res = game.changeBiome(id);
+      if (res && res.success === false && res.reason) {
+        alert(res.reason);
+      } else {
+        renderBiomeCards(game); // Re-render para atualizar o estado ativo
+        const dModal = document.getElementById('dungeons-modal');
+        if (dModal) dModal.classList.remove('active');
+      }
+    });
+  });
 }
 
 function openBuildingActions(buildingKey) {
@@ -598,7 +749,7 @@ function openBuildingFunctions(buildingKey, game, menuButtons) {
   activeBuildingKey = null;
 }
 
-// Configura botÃµes de upgrade de edifÃ­cios
+// Configura botões de upgrade de edifícios
 function setupBuildingUpgrades(game) {
   const upgradeContainer = document.getElementById('buildings-list');
   if (!upgradeContainer) return;
@@ -979,7 +1130,7 @@ function updateTownInventory(game) {
   }
 }
 
-// Abre a ficha detalhada do caÃ§ador
+// Abre a ficha detalhada do caçador
 export function openHeroProfile(hero, game) {
   const modal = document.getElementById('hero-profile-modal');
   if (!modal) return;
@@ -997,11 +1148,11 @@ export function openHeroProfile(hero, game) {
     }
   });
 
-  // Nome do HerÃ³i
+  // Nome do Herói
   const nameEl = document.getElementById('profile-hero-name');
   if (nameEl) nameEl.innerText = hero.name;
 
-  // BotÃ£o de Trava de Perfil (Apenas cosmÃ©tico)
+  // Botão de Trava de Perfil (Apenas cosmético)
   const lockBtn = modal.querySelector('.lock-profile-btn');
   if (lockBtn) {
     let isLocked = false;
@@ -1014,11 +1165,11 @@ export function openHeroProfile(hero, game) {
   // Abrir o modal
   modal.classList.add('active');
 
-  // AtualizaÃ§Ã£o inicial imediata
+  // Atualização inicial imediata
   refreshHeroProfile(hero, game);
 }
 
-// Atualiza o modal de perfil com dados dinÃ¢micos do caÃ§ador
+// Atualiza o modal de perfil com dados dinâmicos do caçador
 function refreshHeroProfile(hero, game) {
   // Ouro Individual
   const goldEl = document.getElementById('profile-hero-gold');
@@ -1033,7 +1184,7 @@ function refreshHeroProfile(hero, game) {
     expText.innerText = `EXP ${Math.round(hero.xp)} / ${hero.xpNeeded}`;
   }
 
-  // RenderizaÃ§Ã£o dos 15 slots de equipamento
+  // Renderização dos 15 slots de equipamento
   const slots = [
     'helmet', 'necklace', 'armor', 'weapon', 'gloves',
     'ring', 'belt', 'boots', 'pants',
@@ -1047,10 +1198,10 @@ function refreshHeroProfile(hero, game) {
       if (item) {
         slotEl.classList.add('equipped');
         const starsCount = Math.min(5, item.tier + 2);
-        const starsHtml = '<span>âœ¦</span>'.repeat(starsCount);
+        const starsHtml = '<span>✦</span>'.repeat(starsCount);
 
         slotEl.innerHTML = `
-          <span class="slot-placeholder">${item.icon || 'âš”ï¸'}</span>
+          <span class="slot-placeholder">${item.icon || '⚔️'}</span>
           <div class="slot-stars">${starsHtml}</div>
         `;
         slotEl.title = `${item.name} (Grau ${item.tier})`;
@@ -1058,9 +1209,9 @@ function refreshHeroProfile(hero, game) {
         slotEl.classList.remove('equipped');
         
         const placeholders = {
-          helmet: 'ðŸª–', necklace: 'ðŸ“¿', armor: 'ðŸ§¥', weapon: 'âš”ï¸', gloves: 'ðŸ§¤',
-          ring: 'ðŸ’', belt: 'ðŸ¥‹', boots: 'ðŸ¥¾', pants: 'ðŸ‘–',
-          accessory1: 'G', pet: 'ðŸ¾', weapon_skin: 'âš”ï¸', armor_skin: 'ðŸ§¥', wings: 'ðŸª¶', accessory2: 'â¬¡'
+          helmet: '🪖', necklace: '📿', armor: '🥋', weapon: '⚔️', gloves: '🧤',
+          ring: 'ðŸ’', belt: '🥋', boots: '🥾', pants: '👖',
+          accessory1: 'G', pet: 'ðŸ¾', weapon_skin: '⚔️', armor_skin: '🥋', wings: '🪶', accessory2: '◊'
         };
         slotEl.innerHTML = `<span class="slot-placeholder">${placeholders[slot]}</span>`;
         slotEl.title = `Slot Vazio: ${slot.toUpperCase()}`;
@@ -1068,7 +1219,7 @@ function refreshHeroProfile(hero, game) {
     }
   });
 
-  // Atualizar painel de conteÃºdo da aba selecionada
+  // Atualizar painel de conteúdo da aba selecionada
   const panel = document.querySelector('.profile-stats-panel');
   if (panel) {
     if (activeProfileTab === 'stats') {
@@ -1093,7 +1244,7 @@ function refreshHeroProfile(hero, game) {
         </div>
         <div class="profile-combat-col">
           <div class="combat-stat-line">
-            <span class="label">âš”ï¸ ATK</span>
+            <span class="label">⚔️ ATK</span>
             <span class="value">${hero.atk}</span>
           </div>
           <div class="combat-stat-line">
@@ -1105,7 +1256,7 @@ function refreshHeroProfile(hero, game) {
             <span class="value">${hero.className === 'ARCHER' ? '30%' : '8%'}</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">âš¡ ATK SPD</span>
+            <span class="label">⚡ ATK SPD</span>
             <span class="value">${hero.spd.toFixed(2)}/s</span>
           </div>
           <div class="combat-stat-line">
@@ -1132,7 +1283,7 @@ function refreshHeroProfile(hero, game) {
           <div><span style="color: #a08c80;">Classe:</span> <strong style="color: ${hero.classConfig.color};">${hero.classConfig.name}</strong></div>
           <div><span style="color: #a08c80;">Pele:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.skinColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.skinColor}</div>
           <div><span style="color: #a08c80;">Cabelo:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.hairColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.hairColor} (${hero.cosmetics.hairStyle})</div>
-          <div><span style="color: #a08c80;">TÃºnica:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.clothesColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.clothesColor}</div>
+          <div><span style="color: #a08c80;">Túnica:</span> <span style="display: inline-block; width: 10px; height: 10px; background-color: ${hero.cosmetics.clothesColor}; border: 1px solid #000; vertical-align: middle;"></span> ${hero.cosmetics.clothesColor}</div>
           <div><span style="color: #a08c80;">Status:</span> <span style="color: #3aff7d;">${formatHeroState(hero.state)}</span></div>
         </div>
       `;
@@ -1145,7 +1296,7 @@ function refreshHeroProfile(hero, game) {
               <span style="font-size: 28px;">${petItem.icon}</span>
               <div>
                 <strong style="color: #ff33aa; font-size: 14px;">${petItem.name}</strong>
-                <p style="color: #a08c80; font-size: 11px;">Mascote de CaÃ§a</p>
+                <p style="color: #a08c80; font-size: 11px;">Mascote de Caça</p>
               </div>
             </div>
             <div style="margin-top: 8px; font-size: 12px; color: #3aff7d;">
@@ -1173,7 +1324,7 @@ function refreshHeroProfile(hero, game) {
       panel.innerHTML = `
         <div style="width: 100%; display: flex; flex-direction: column; text-align: left; font-family: var(--font-retro); font-size: 12px; gap: 6px; overflow-y: auto; max-height: 120px; padding: 4px;">
           <div>
-            <strong style="color: #ff9f3a;">InventÃ¡rio do HerÃ³i:</strong>
+            <strong style="color: #ff9f3a;">Inventário do Herói:</strong>
             <div style="margin-top: 3px;">${invHtml}</div>
           </div>
           <div style="border-top: 1px solid #3d2b1f; padding-top: 4px;">
@@ -1189,7 +1340,7 @@ function refreshHeroProfile(hero, game) {
   drawHeroOnProfileCanvas(hero);
 }
 
-// Desenha o sprite ampliado e nÃ­tido do herÃ³i no canvas da ficha de perfil
+// Desenha o sprite ampliado e nítido do herói no canvas da ficha de perfil
 function drawHeroOnProfileCanvas(hero) {
   const canvas = document.getElementById('hero-profile-canvas');
   if (!canvas) return;
@@ -1320,14 +1471,14 @@ function drawHeroOnProfileCanvas(hero) {
     ctx.stroke();
   }
 
-  // Asas / Wings (CosmÃ©tico se equipado!)
+  // Asas / Wings (Cosmético se equipado!)
   if (hero.equipment.wings) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.fillRect(hx - 12, hy - 6, 7, 10);
     ctx.fillRect(hx + 5, hy - 6, 7, 10);
   }
 
-  // 4. Arma DinÃ¢mica
+  // 4. Arma Dinâmica
   const wx = hx - 6.5;
   const wy = hy + 2;
 
@@ -1374,7 +1525,7 @@ function drawHeroOnProfileCanvas(hero) {
   ctx.restore();
 }
 
-// Renderiza a lista de herÃ³is simplificada (clicar abre a ficha detalhada)
+// Renderiza a lista de heróis simplificada (clicar abre a ficha detalhada)
 function updateHeroesTab(game) {
   const listEl = document.getElementById('heroes-list-container');
   if (!listEl) return;
@@ -1402,12 +1553,12 @@ function updateHeroesTab(game) {
             <span class="val">${Math.round(hero.hp)}/${hero.maxHp}</span>
           </div>
           <div class="need-bar-mini" title="Fome">
-            <span class="need-icon">ðŸ²</span>
+            <span class="need-icon">🍲</span>
             <div class="bar"><div class="fill hunger" style="width: ${hungerPct}%"></div></div>
             <span class="val">${Math.round(hero.hunger)}/100</span>
           </div>
           <div class="need-bar-mini" title="Energia">
-            <span class="need-icon">âš¡</span>
+            <span class="need-icon">⚡</span>
             <div class="bar"><div class="fill energy" style="width: ${energyPct}%"></div></div>
             <span class="val">${Math.round(hero.energy)}/100</span>
           </div>
@@ -1431,13 +1582,13 @@ function formatHeroState(state) {
   const states = {
     'IDLE_TOWN': 'Vagando na Cidade',
     'SEARCHING_MONSTER': 'Buscando Monstros',
-    'FIGHTING': 'âš”ï¸ Em Combate',
+    'FIGHTING': '⚔️ Em Combate',
     'RETURNING_TOWN': 'Voltando para Cidade',
-    'RESTING_HOTEL': 'ðŸ’¤ Dormindo (Hotel)',
-    'EATING_REST': 'ðŸ² Comendo (Restaurante)',
-    'HEALING_HOSP': 'ðŸ©¹ Em Tratamento (Hospital)',
-    'DRINKING_TAVERN': 'ðŸº Bebendo (Taverna)',
-    'SELLING_LOOT': 'ðŸª™ Vendendo Coletas'
+    'RESTING_HOTEL': '💤 Dormindo (Hotel)',
+    'EATING_REST': '🍲 Comendo (Restaurante)',
+    'HEALING_HOSP': '🩹 Em Tratamento (Hospital)',
+    'DRINKING_TAVERN': '🍺 Bebendo (Taverna)',
+    'SELLING_LOOT': '💰 Vendendo Coletas'
   };
   return states[state] || state;
 }
