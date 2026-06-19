@@ -67,6 +67,8 @@ export class GameRenderer {
 
     // Sistema de projéteis animados (flechas, bolas de fogo, raios sagrados)
     this.projectiles = [];
+    this._impacts = [];
+    this._meleeEffects = [];
     // Referência ao addFloater do game (injetada depois)
     this._addFloater = null;
   }
@@ -2898,7 +2900,6 @@ export class GameRenderer {
     });
 
     // 3. Atualizar efeitos de impacto armazenados
-    if (!this._impacts) this._impacts = [];
     this._impacts = this._impacts.filter(imp => imp.life > 0);
     this._impacts.forEach(imp => {
       imp.time += dt;
@@ -2924,7 +2925,6 @@ export class GameRenderer {
     this._impacts.forEach(imp => this._drawImpact(imp));
 
     // 7. Efeitos melee salvos
-    if (!this._meleeEffects) this._meleeEffects = [];
     this._meleeEffects = this._meleeEffects.filter(e => e.life > 0);
     this._meleeEffects.forEach(e => {
       e.time += dt;
@@ -2934,7 +2934,6 @@ export class GameRenderer {
   }
 
   _spawnMeleeEffect(atk, className) {
-    if (!this._meleeEffects) this._meleeEffects = [];
     this._meleeEffects.push({
       type: atk.type,
       x: atk.toX,
