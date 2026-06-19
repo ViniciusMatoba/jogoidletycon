@@ -66,13 +66,15 @@ export class GameRenderer {
   // Remove fundos falsos (brancos, pretos ou quadriculados) em tempo real via Canvas
   makeImageTransparent(img) {
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = img.naturalWidth || img.width;
-    tempCanvas.height = img.naturalHeight || img.height;
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+    tempCanvas.width = width;
+    tempCanvas.height = height;
     const tempCtx = tempCanvas.getContext('2d');
     tempCtx.drawImage(img, 0, 0);
 
     try {
-      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      const imageData = tempCtx.getImageData(0, 0, width, height);
       const data = imageData.data;
 
       // Cor de fundo padrão (pixel superior esquerdo)
@@ -86,47 +88,95 @@ export class GameRenderer {
         return tempCanvas;
       }
 
-      // TolerÃ¢ncia para variaÃ§Ã£o de cores
-      const tolerance = 45;
+      // Usando Flood-Fill a partir das bordas para remover o fundo quadriculado/sólido
+      const visited = new Uint8Array(width * height);
+      const queue = [];
 
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        // 1. Remover se for idÃªntico/prÃ³ximo Ã  cor do canto superior esquerdo
+      // Função para verificar se a cor do pixel é considerada fundo (branco, cinza quadriculado ou igual à cor do canto)
+      const isBackground = (r, g, b, a) => {
+        if (a < 50) return true; // Já transparente
+        
+        // Canto / Fundo original
         const distFromBg = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
-        if (distFromBg < tolerance) {
-          data[i + 3] = 0;
-          continue;
-        }
-
-        // 2. Remover fundo branco dominante tÃ­pico de falsos PNGs de IA
-        if (bgR > 180 && bgG > 180 && bgB > 180) {
-          if (r > 200 && g > 200 && b > 200) {
-            data[i + 3] = 0;
-            continue;
+        if (distFromBg < 35) return true;
+        
+        // Branco (fake png)
+        if (r > 230 && g > 230 && b > 230) return true;
+        
+        // Cinza quadriculado (fake png)
+        if (r > 175 && r < 215 && g > 175 && g < 215 && b > 175 && b < 215) {
+          // Garante que é cinza neutro
+          if (Math.abs(r - g) < 8 && Math.abs(g - b) < 8 && Math.abs(r - b) < 8) {
+            return true;
           }
         }
+        
+        return false;
+      };
 
-        // 3. Remover fundo preto dominante
-        if (bgR < 60 && bgG < 60 && bgB < 60) {
-          if (r < 40 && g < 40 && b < 40) {
-            data[i + 3] = 0;
-            continue;
-          }
+      // Adicionar bordas na fila como sementes
+      // Linha superior e inferior
+      for (let x = 0; x < width; x++) {
+        const idxTop = x;
+        const idxBot = (height - 1) * width + x;
+        
+        if (isBackground(data[idxTop * 4], data[idxTop * 4 + 1], data[idxTop * 4 + 2], data[idxTop * 4 + 3])) {
+          queue.push(x, 0);
+          visited[idxTop] = 1;
         }
+        if (isBackground(data[idxBot * 4], data[idxBot * 4 + 1], data[idxBot * 4 + 2], data[idxBot * 4 + 3])) {
+          queue.push(x, height - 1);
+          visited[idxBot] = 1;
+        }
+      }
 
-        // 4. Remover quadriculado falso cinza/branco
-        const isWhite = r > 240 && g > 240 && b > 240;
-        const isGray = r > 180 && r < 210 && g > 180 && g < 210 && b > 180 && b < 210;
-        if ((isWhite || isGray) && (bgR > 180 && bgG > 180 && bgB > 180)) {
-          const x = (i / 4) % tempCanvas.width;
-          const y = Math.floor((i / 4) / tempCanvas.width);
-          // Se for perto das bordas externas, removemos
-          if (x < 15 || x > tempCanvas.width - 15 || y < 15 || y > tempCanvas.height - 15) {
-            data[i + 3] = 0;
+      // Coluna esquerda e direita
+      for (let y = 0; y < height; y++) {
+        const idxLeft = y * width;
+        const idxRight = y * width + (width - 1);
+        
+        if (!visited[idxLeft] && isBackground(data[idxLeft * 4], data[idxLeft * 4 + 1], data[idxLeft * 4 + 2], data[idxLeft * 4 + 3])) {
+          queue.push(0, y);
+          visited[idxLeft] = 1;
+        }
+        if (!visited[idxRight] && isBackground(data[idxRight * 4], data[idxRight * 4 + 1], data[idxRight * 4 + 2], data[idxRight * 4 + 3])) {
+          queue.push(width - 1, y);
+          visited[idxRight] = 1;
+        }
+      }
+
+      // Loop do Flood Fill
+      let head = 0;
+      while (head < queue.length) {
+        const cx = queue[head++];
+        const cy = queue[head++];
+        const idx = cy * width + cx;
+        
+        // Zera a opacidade (torna transparente)
+        data[idx * 4 + 3] = 0;
+
+        // Vizinhos (4-direções)
+        const dirs = [
+          [cx + 1, cy],
+          [cx - 1, cy],
+          [cx, cy + 1],
+          [cx, cy - 1]
+        ];
+
+        for (const [nx, ny] of dirs) {
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const nidx = ny * width + nx;
+            if (!visited[nidx]) {
+              const nr = data[nidx * 4];
+              const ng = data[nidx * 4 + 1];
+              const nb = data[nidx * 4 + 2];
+              const na = data[nidx * 4 + 3];
+              
+              if (isBackground(nr, ng, nb, na)) {
+                visited[nidx] = 1;
+                queue.push(nx, ny);
+              }
+            }
           }
         }
       }
