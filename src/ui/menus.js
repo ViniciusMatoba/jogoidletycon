@@ -319,7 +319,7 @@ export function setupUI(game) {
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
-      if (isMouseDown) {
+      if (isMouseDown && window.gameRenderer.activeView === 'town') {
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
@@ -368,7 +368,7 @@ export function setupUI(game) {
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
-      if (isMouseDown) {
+      if (isMouseDown && window.gameRenderer.activeView === 'town') {
         const dx = e.touches[0].clientX - startX;
         const dy = e.touches[0].clientY - startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {

@@ -406,6 +406,11 @@ export class GameRenderer {
   }
 
   render(game, dt) {
+    if (this.activeView === 'hunt') {
+      this.cameraX = 0;
+      this.cameraY = 0;
+    }
+
     // Atualiza ciclo dia/noite
     this.dayNightCycle = (this.dayNightCycle + dt) % 90;
 
