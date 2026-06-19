@@ -38,7 +38,8 @@ export const BUILDING_POSITIONS = {
   restaurant: { x: 700, y: 240 },
   hospital: { x: 200, y: 400 },
   tavern: { x: 760, y: 400 },
-  forge: { x: 480, y: 430 }
+  forge: { x: 480, y: 430 },
+  market: { x: 350, y: 340 }
 };
 
 export class Hero {
@@ -642,10 +643,10 @@ export class Hero {
       target = 'tavern';
       logMsg = `Mau humor. Indo à Taverna beber.`;
     }
-    // 5. Prefeitura (Vender Loot)
-    else if (town.autoBuyHeroLoot && this.hasLootToSell() && town.isBuilt('townhall')) {
-      target = 'townhall';
-      logMsg = `Inventário cheio. Indo vender loot.`;
+    // 5. Mercado (Vender Loot)
+    else if (town.autoBuyHeroLoot && this.hasLootToSell() && town.isBuilt('market')) {
+      target = 'market';
+      logMsg = `Inventário cheio. Indo vender loot no mercado.`;
     }
 
     if (target) {
@@ -688,7 +689,7 @@ export class Hero {
 
     if (minDist < 40) {
       this.destinationBuilding = null;
-      if (closestBuilding === 'townhall') {
+      if (closestBuilding === 'market') {
         this.state = 'SELLING_LOOT';
         this.stateTimer = 0;
       } else if (closestBuilding === 'hotel') {
@@ -707,7 +708,7 @@ export class Hero {
         this.state = 'IDLE_TOWN';
         this.wanderTown(town, viewport);
       }
-} else {
+    } else {
       this.state = 'IDLE_TOWN';
       this.wanderTown(town, viewport);
     }

@@ -54,7 +54,8 @@ export class Town {
       restaurant: 0,
       hospital: 0,
       tavern: 0,
-      forge: 0
+      forge: 0,
+      market: 0
     };
 
     this.autoBuyHeroLoot = false;
@@ -65,7 +66,8 @@ export class Town {
       restaurant: { w: 2, h: 2 },
       hospital: { w: 2, h: 2 },
       tavern: { w: 2, h: 2 },
-      forge: { w: 2, h: 2 }
+      forge: { w: 2, h: 2 },
+      market: { w: 2, h: 2 }
     };
     this.buildingPlacements = {};
     this.craftQueue = [];
@@ -207,9 +209,17 @@ export class Town {
   }
 
   buyLootFromHero(hero) {
+    if (!this.isBuilt('market')) {
+      return { transactionCount: 0, goldPaid: 0 };
+    }
+
     let transactionCount = 0;
     let goldPaid = 0;
     const itemsToSell = [];
+
+    const marketLevel = this.buildings.market || 1;
+    const marketConfig = BUILDINGS_CONFIG.market?.upgrades[Math.max(marketLevel - 1, 0)];
+    const tax = marketConfig ? (marketConfig.sellTax ?? 0) : 0.1;
 
     for (const itemKey in hero.inventory) {
       const qty = hero.inventory[itemKey];
@@ -222,7 +232,10 @@ export class Town {
     }
 
     for (const transaction of itemsToSell) {
-      const totalPrice = transaction.qty * transaction.price;
+      const basePrice = transaction.qty * transaction.price;
+      const taxAmount = Math.floor(basePrice * tax);
+      const totalPrice = basePrice - taxAmount;
+
       if (this.gold >= totalPrice) {
         this.gold -= totalPrice;
         hero.gold += totalPrice;
@@ -233,7 +246,10 @@ export class Town {
       } else {
         const maxAffordable = Math.floor(this.gold / transaction.price);
         if (maxAffordable > 0) {
-          const partialPrice = maxAffordable * transaction.price;
+          const partialBasePrice = maxAffordable * transaction.price;
+          const partialTax = Math.floor(partialBasePrice * tax);
+          const partialPrice = partialBasePrice - partialTax;
+
           this.gold -= partialPrice;
           hero.gold += partialPrice;
           hero.inventory[transaction.key] -= maxAffordable;

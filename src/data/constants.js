@@ -308,6 +308,16 @@ export const BUILDINGS_CONFIG = {
       { level: 2, cost: { gold: 800, wood_rough: 40, iron_ore: 25, gorro_vermelho: 1 }, tierUnlocked: 2, desc: 'Permite craftar Equipamentos de Grau 2.' },
       { level: 3, cost: { gold: 2500, wood_rough: 100, steel_ore: 50, cabelo_fogo: 1 }, tierUnlocked: 3, desc: 'Permite craftar Equipamentos de Grau 3.' }
     ]
+  },
+  market: {
+    name: 'Mercado da Vila',
+    icon: '⚖️',
+    description: 'O centro do comércio local. Onde os heróis vendem o loot obtido na caça por ouro.',
+    upgrades: [
+      { level: 1, cost: { gold: 200, wood_rough: 15, iron_ore: 5 }, sellTax: 0.1, desc: 'Permite que heróis vendam loot. Taxa alfandegária municipal: 10%.' },
+      { level: 2, cost: { gold: 600, wood_rough: 45, iron_ore: 20 }, sellTax: 0.05, desc: 'Melhora a eficiência comercial. Taxa reduzida para 5%.' },
+      { level: 3, cost: { gold: 1800, wood_rough: 90, steel_ore: 30, gorro_vermelho: 1 }, sellTax: 0, desc: 'Isenção fiscal municipal total (0% de taxa).' }
+    ]
   }
 };
 

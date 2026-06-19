@@ -19,7 +19,8 @@ const BUILDING_ACTION_LABELS = {
   restaurant: { name: 'Restaurante', icon: '🍲', modalId: 'craft-modal' },
   hospital: { name: 'Hospital', icon: '🏥', modalId: 'craft-modal' },
   tavern: { name: 'Taverna', icon: '🍺', modalId: 'craft-modal' },
-  forge: { name: 'Forja', icon: '⚒️', modalId: 'craft-modal' }
+  forge: { name: 'Forja', icon: '⚒️', modalId: 'craft-modal' },
+  market: { name: 'Mercado da Vila', icon: '⚖️', modalId: 'market-modal' }
 };
 
 export function setupUI(game) {
@@ -219,6 +220,16 @@ export function setupUI(game) {
       }
     });
   });
+
+  // 6.5 Configurar o toggle de compra automática (Mercado)
+  const autobuyToggle = document.getElementById('market-autobuy-toggle');
+  if (autobuyToggle) {
+    autobuyToggle.checked = game.town.autoBuyHeroLoot;
+    autobuyToggle.addEventListener('change', (e) => {
+      game.town.autoBuyHeroLoot = e.target.checked;
+      game.saveGame();
+    });
+  }
 
   // 7. Modal de Perfil Detalhado do Caçador
   const profileModal = document.getElementById('hero-profile-modal');
@@ -721,6 +732,34 @@ function openBuildingActions(buildingKey) {
   modal.classList.add('active');
 }
 
+function refreshMarketUI(game) {
+  const levelDisplay = document.getElementById('market-level-display');
+  const taxDisplay = document.getElementById('market-tax-display');
+  const taxDesc = document.getElementById('market-tax-description');
+  const autobuyToggle = document.getElementById('market-autobuy-toggle');
+
+  if (autobuyToggle) {
+    autobuyToggle.checked = game.town.autoBuyHeroLoot;
+  }
+
+  if (levelDisplay && taxDisplay && taxDesc) {
+    const level = game.town.buildings.market || 0;
+    levelDisplay.innerText = `Nível ${level}`;
+
+    const config = BUILDINGS_CONFIG.market?.upgrades[Math.max(level - 1, 0)];
+    if (config) {
+      const taxPercent = Math.round((config.sellTax ?? 0) * 100);
+      taxDisplay.innerText = `${taxPercent}%`;
+
+      if (taxPercent > 0) {
+        taxDesc.innerHTML = `O mercado retém <strong style="color:#ffb74d">${taxPercent}%</strong> do valor dos itens vendidos pelos caçadores como taxa municipal. Melhore o mercado para reduzir a taxa!`;
+      } else {
+        taxDesc.innerHTML = `<strong style="color:#81c784">Isenção Fiscal Ativa!</strong> Os caçadores recebem 100% do ouro nas vendas de loots.`;
+      }
+    }
+  }
+}
+
 function openBuildingFunctions(buildingKey, game, menuButtons) {
   const meta = BUILDING_ACTION_LABELS[buildingKey] || { modalId: 'town-modal' };
   const modalId = meta.modalId;
@@ -729,6 +768,10 @@ function openBuildingFunctions(buildingKey, game, menuButtons) {
 
   const actionsModal = document.getElementById('building-actions-modal');
   if (actionsModal) actionsModal.classList.remove('active');
+
+  if (buildingKey === 'market') {
+    refreshMarketUI(game);
+  }
 
   // Filter crafting if opening craft-modal
   if (modalId === 'craft-modal') {

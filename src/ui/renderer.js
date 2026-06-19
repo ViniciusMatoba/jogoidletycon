@@ -804,6 +804,11 @@ export class GameRenderer {
     const wSize = b.key === 'townhall' ? 76 : 60;
     const hSize = b.key === 'townhall' ? 76 : 60;
 
+    const rx = bx - wSize / 2;
+    const ry = by - hSize + 10;
+    const rw = wSize;
+    const rh = hSize - 10;
+
     this.ctx.save();
 
     this.drawBuildingLot(bx, by, wSize, hSize, isBuilt ? level : 1);
@@ -1023,7 +1028,8 @@ export class GameRenderer {
       restaurant: { bodyW: 40, bodyH: 29 },
       hospital: { bodyW: 42, bodyH: 31 },
       tavern: { bodyW: 42, bodyH: 30 },
-      forge: { bodyW: 40, bodyH: 28 }
+      forge: { bodyW: 40, bodyH: 28 },
+      market: { bodyW: 42, bodyH: 30 }
     };
     return shapes[key] || { bodyW: 38, bodyH: 27 };
   }
@@ -1112,6 +1118,29 @@ export class GameRenderer {
       this.ctx.fillStyle = '#394246';
       this.ctx.fillRect(bodyX + bodyW - 22, by - 8, 15, 4);
       this.ctx.fillRect(bodyX + bodyW - 18, by - 12, 5, 4);
+    }
+
+    if (key === 'market') {
+      this.drawHangingSign(bx, bodyY - 5, '#8d6e63', '⚖️');
+      
+      // Desenhar bancada de madeira
+      this.ctx.fillStyle = '#b0bec5';
+      this.ctx.fillRect(bodyX + 4, by - 12, bodyW - 8, 3);
+      
+      // Toldo listrado (Vermelho e Branco) sobre a bancada
+      this.ctx.fillStyle = '#d32f2f';
+      this.ctx.fillRect(bodyX + 6, bodyY + 12, 6, 4);
+      this.ctx.fillRect(bodyX + 18, bodyY + 12, 6, 4);
+      this.ctx.fillRect(bodyX + 30, bodyY + 12, 6, 4);
+      
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(bodyX + 12, bodyY + 12, 6, 4);
+      this.ctx.fillRect(bodyX + 24, bodyY + 12, 6, 4);
+      
+      // Suportes do toldo
+      this.ctx.fillStyle = '#5d4037';
+      this.ctx.fillRect(bodyX + 4, bodyY + 16, 2, bodyH - 14);
+      this.ctx.fillRect(bodyX + bodyW - 6, bodyY + 16, 2, bodyH - 14);
     }
 
     this.ctx.restore();

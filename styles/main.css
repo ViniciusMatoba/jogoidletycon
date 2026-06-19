@@ -1705,3 +1705,49 @@ body {
   color: #7adf4a !important;
   cursor: default !important;
 }
+
+/* Retro Switch (Checkbox) */
+.retro-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 22px;
+}
+.retro-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.retro-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #37474f;
+  border: 2px solid #546e7a;
+  transition: .2s;
+  image-rendering: pixelated;
+}
+.retro-slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #cfd8dc;
+  border: 1px solid #78909c;
+  transition: .2s;
+}
+input:checked + .retro-slider {
+  background-color: #2e7d32;
+  border-color: #4caf50;
+}
+input:checked + .retro-slider:before {
+  transform: translateX(24px);
+  background-color: #a5d6a7;
+  border-color: #81c784;
+}
+
