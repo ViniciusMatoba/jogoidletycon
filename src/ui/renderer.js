@@ -2333,26 +2333,87 @@ export class GameRenderer {
       }
     }
 
-    // --- DESENHAR BRILHO DE RARIDADE (Aura sob os pés) ---
+    // --- DESENHAR RASTRO DE RARIDADE (Deixado para trás no movimento) ---
+    if (hero.rarityGlow && hero.rarityGlow.enabled && hero.trail && hero.trail.length > 0) {
+      this.ctx.save();
+      const now = Date.now();
+      const colorHex = hero.rarityGlow.color;
+      
+      hero.trail.forEach((pt, idx) => {
+        if (pt.map !== hero.currentMap) return;
+        
+        const age = now - pt.time;
+        const life = 500; // ms
+        if (age >= life) return;
+        
+        const alpha = (1 - age / life) * 0.35 * hero.rarityGlow.intensity;
+        const ptPos = this.toIso(pt.x, pt.y);
+        
+        this.ctx.save();
+        this.ctx.translate(ptPos.x, ptPos.y);
+        
+        const sizeFactor = 0.35 + (idx / hero.trail.length) * 0.65;
+        const rx = 7 * sizeFactor * hero.rarityGlow.intensity;
+        const ry = 13 * sizeFactor * hero.rarityGlow.intensity;
+        
+        const grad = this.ctx.createRadialGradient(0, -14, 1, 0, -14, ry);
+        grad.addColorStop(0, colorHex + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
+        grad.addColorStop(0.5, colorHex + Math.floor(alpha * 0.4 * 255).toString(16).padStart(2, '0'));
+        grad.addColorStop(1, colorHex + '00');
+        
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, -14, rx, ry, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+      });
+      this.ctx.restore();
+    }
+
+    // --- DESENHAR BRILHO DE RARIDADE (Aura ao redor do herói + Chão) ---
     if (hero.rarityGlow && hero.rarityGlow.enabled) {
       this.ctx.save();
-      const pulse = 1 + Math.sin(time * 0.005 * hero.rarityGlow.pulseSpeed) * 0.15 * hero.rarityGlow.intensity;
-      const radius = 22 * pulse;
-      
-      const grad = this.ctx.createRadialGradient(hx, hy + 2, 2, hx, hy + 2, radius);
+      const pulse = 1 + Math.sin(time * 0.005 * hero.rarityGlow.pulseSpeed) * 0.12 * hero.rarityGlow.intensity;
       const colorHex = hero.rarityGlow.color;
-      grad.addColorStop(0, colorHex + 'b0');
-      grad.addColorStop(0.5, colorHex + '40');
-      grad.addColorStop(1, colorHex + '00');
+
+      // 1. Aura no chão (mais suave e integrada)
+      const radius = 20 * pulse;
+      const groundGrad = this.ctx.createRadialGradient(hx, hy + 2, 2, hx, hy + 2, radius);
+      groundGrad.addColorStop(0, colorHex + '70');
+      groundGrad.addColorStop(0.5, colorHex + '25');
+      groundGrad.addColorStop(1, colorHex + '00');
       
-      this.ctx.fillStyle = grad;
+      this.ctx.fillStyle = groundGrad;
       this.ctx.beginPath();
       this.ctx.ellipse(hx, hy + 2, radius, radius * 0.35, 0, 0, Math.PI * 2);
       this.ctx.fill();
 
+      // 2. Aura vertical contornando o herói (corpo e silhueta)
+      const rx = 10 * pulse * hero.rarityGlow.intensity;
+      const ry = 17 * pulse * hero.rarityGlow.intensity;
+      const vertGrad = this.ctx.createRadialGradient(hx, hy - 14, 2, hx, hy - 14, ry);
+      vertGrad.addColorStop(0, colorHex + '80');
+      vertGrad.addColorStop(0.5, colorHex + '30');
+      vertGrad.addColorStop(1, colorHex + '00');
+      
+      this.ctx.fillStyle = vertGrad;
+      this.ctx.beginPath();
+      this.ctx.ellipse(hx, hy - 14, rx, ry, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Detalhes extras para Lendários
       if (hero.rarity === 'Lendário') {
-        this.ctx.strokeStyle = '#ffea3a70';
-        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeStyle = colorHex + '50';
+        this.ctx.lineWidth = 1.0;
+        
+        // Círculo elíptico sutil contornando o herói
+        this.ctx.beginPath();
+        this.ctx.ellipse(hx, hy - 14, rx * 1.15, ry * 1.15, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Anel extra de ouro no chão
+        this.ctx.strokeStyle = '#ffea3a45';
+        this.ctx.lineWidth = 1.2;
         this.ctx.beginPath();
         this.ctx.ellipse(hx, hy + 2, radius * 0.8, radius * 0.8 * 0.35, 0, 0, Math.PI * 2);
         this.ctx.stroke();

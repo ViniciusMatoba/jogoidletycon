@@ -701,6 +701,38 @@ export class Hero {
       this.clampToHunt(viewport);
       this.clampHuntTarget(viewport);
     }
+
+    // Registra as posições anteriores para o rastro da aura (apenas se a aura estiver ativa)
+    if (!this.trail) this.trail = [];
+    if (this.rarityGlow && this.rarityGlow.enabled) {
+      const now = Date.now();
+      const lastPoint = this.trail[this.trail.length - 1];
+      
+      // Limpa rastro se mudou de mapa para evitar linhas conectando mapas diferentes
+      if (lastPoint && lastPoint.map !== this.currentMap) {
+        this.trail = [];
+      }
+
+      // Grava a cada ~40ms se houver movimento
+      if (!lastPoint || now - lastPoint.time > 40) {
+        if (!lastPoint || Math.abs(this.x - lastPoint.x) > 1 || Math.abs(this.y - lastPoint.y) > 1) {
+          this.trail.push({ x: this.x, y: this.y, map: this.currentMap, time: now });
+        }
+      }
+      
+      // Limita o tamanho do rastro com base na raridade
+      let maxTrailLength = 0;
+      if (this.rarity === 'Raro') maxTrailLength = 8;
+      else if (this.rarity === 'Épico') maxTrailLength = 16;
+      else if (this.rarity === 'Lendário') maxTrailLength = 26;
+
+      while (this.trail.length > maxTrailLength) {
+        this.trail.shift();
+      }
+      this.trail = this.trail.filter(pt => now - pt.time < 700);
+    } else {
+      this.trail = [];
+    }
   }
 
   // Avalia as necessidades do herói e define o estado apropriado

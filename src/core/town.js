@@ -229,7 +229,7 @@ export class Town {
       const qty = hero.inventory[itemKey];
       if (qty > 0) {
         const itemInfo = ITEMS_INFO[itemKey];
-        if (itemInfo && (itemInfo.type === 'loot' || itemInfo.type === 'rare')) {
+        if (itemInfo && (itemInfo.type === 'loot' || itemInfo.type === 'rare' || itemInfo.type === 'material')) {
           itemsToSell.push({ key: itemKey, qty, price: itemInfo.price });
         }
       }
