@@ -14,7 +14,7 @@ let wasCraftModalActive = false;
 let activeRecipeFilter = 'all';
 
 const BUILDING_ACTION_LABELS = {
-  townhall: { name: 'Centro da Cidade', icon: '🏛️', modalId: 'config-modal' },
+  townhall: { name: 'Centro da Cidade', icon: '🏛️', modalId: 'town-modal' },
   hotel: { name: 'Hotel', icon: '🏨', modalId: 'craft-modal' },
   restaurant: { name: 'Restaurante', icon: '🍲', modalId: 'craft-modal' },
   hospital: { name: 'Hospital', icon: '🏥', modalId: 'craft-modal' },
@@ -33,45 +33,33 @@ export function setupUI(game) {
       const targetId = btn.getAttribute('data-target');
       
       // Se for Cidade ou Caça, apenas mudamos a tela do canvas (e fechamos modais abertos)
-      if (targetId === 'town-modal') {
+      if (targetId === 'view-town') {
         if (window.gameRenderer) {
           window.gameRenderer.activeView = 'town';
         }
-        const modal = document.getElementById('town-modal');
         menuButtons.forEach(b => {
-          const t = b.getAttribute('data-target');
-          if (t !== 'town-modal') b.classList.remove('active');
+          b.classList.toggle('active', b.getAttribute('data-target') === 'view-town');
         });
         modalOverlays.forEach(m => {
-          if (m.id !== 'town-modal') m.classList.remove('active');
+          m.classList.remove('active');
         });
-        btn.classList.add('active');
-        if (modal) {
-          renderBuildings(game);
-          modal.classList.add('active');
-        }
         return;
       }
       
-      if (targetId === 'dungeons-modal') {
+      if (targetId === 'view-hunt') {
         if (window.gameRenderer) {
           window.gameRenderer.activeView = 'hunt';
         }
         menuButtons.forEach(b => {
-          const t = b.getAttribute('data-target');
-          if (t !== 'dungeons-modal') b.classList.remove('active');
+          b.classList.toggle('active', b.getAttribute('data-target') === 'view-hunt');
         });
         modalOverlays.forEach(m => {
-          if (m.id !== 'dungeons-modal') m.classList.remove('active');
+          m.classList.remove('active');
         });
-        btn.classList.add('active');
-        renderBiomeCards(game);
-        const dModal = document.getElementById('dungeons-modal');
-        if (dModal) dModal.classList.add('active');
         return;
       }
 
-      // Outros modais (Heróis, Crafting, Prefeitura) abrem normalmente como overlays
+      // Outros modais (Heróis, Inventário, Configurações) abrem normalmente como overlays
       const modal = document.getElementById(targetId);
       if (modal) {
         if (modal.classList.contains('active')) {
@@ -81,35 +69,27 @@ export function setupUI(game) {
           const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
           menuButtons.forEach(b => {
             const t = b.getAttribute('data-target');
-            if ((activeScreen === 'town' && t === 'town-modal') || (activeScreen === 'hunt' && t === 'dungeons-modal')) {
+            if ((activeScreen === 'town' && t === 'view-town') || (activeScreen === 'hunt' && t === 'view-hunt')) {
               b.classList.add('active');
             }
           });
           return;
         }
 
-        // Fecha outros overlays de gerenciamento (Heróis, Craft, Config)
+        // Fecha outros overlays de gerenciamento
         menuButtons.forEach(b => {
           const t = b.getAttribute('data-target');
-          if (t !== 'town-modal' && t !== 'dungeons-modal') {
+          if (t !== 'view-town' && t !== 'view-hunt') {
             b.classList.remove('active');
           }
         });
         modalOverlays.forEach(m => {
-          if (m.id !== 'town-modal' && m.id !== 'dungeons-modal') {
-            m.classList.remove('active');
-          }
+          m.classList.remove('active');
         });
 
-        // Reset filtering if opening craft-modal from the bottom menu
-        if (targetId === 'craft-modal') {
-          activeRecipeFilter = 'all';
-          const tabs = document.querySelectorAll('.craft-tab-btn');
-          tabs.forEach(tab => {
-            if (tab.getAttribute('data-filter') === 'all') tab.classList.add('active');
-            else tab.classList.remove('active');
-          });
-          setupCraftingButtons(game);
+        // Se o modal de inventário for aberto, atualiza o baú
+        if (targetId === 'inventory-modal') {
+          updateTownInventory(game);
         }
 
         btn.classList.add('active');
@@ -132,7 +112,7 @@ export function setupUI(game) {
       const activeScreen = window.gameRenderer ? window.gameRenderer.activeView : 'town';
       menuButtons.forEach(b => {
         const t = b.getAttribute('data-target');
-        if ((activeScreen === 'town' && t === 'town-modal') || (activeScreen === 'hunt' && t === 'dungeons-modal')) {
+        if ((activeScreen === 'town' && t === 'view-town') || (activeScreen === 'hunt' && t === 'view-hunt')) {
           b.classList.add('active');
         }
       });
@@ -156,10 +136,10 @@ export function setupUI(game) {
       if (window.gameRenderer) window.gameRenderer.activeView = 'hunt';
       menuButtons.forEach(b => {
         const t = b.getAttribute('data-target');
-        b.classList.toggle('active', t === 'dungeons-modal');
+        b.classList.toggle('active', t === 'view-hunt');
       });
       modalOverlays.forEach(m => {
-        if (m.id !== 'dungeons-modal') m.classList.remove('active');
+        m.classList.remove('active');
       });
       renderBiomeCards(game);
       const dModal = document.getElementById('dungeons-modal');
@@ -776,11 +756,19 @@ function openBuildingFunctions(buildingKey, game, menuButtons) {
   // Filter crafting if opening craft-modal
   if (modalId === 'craft-modal') {
     activeRecipeFilter = buildingKey;
-    const tabs = document.querySelectorAll('.craft-tab-btn');
-    tabs.forEach(tab => {
-      if (tab.getAttribute('data-filter') === buildingKey) tab.classList.add('active');
-      else tab.classList.remove('active');
-    });
+    
+    // Hide the tabs row to restrict crafting to this building
+    const tabRow = modal.querySelector('.craft-tabs-row');
+    if (tabRow) tabRow.style.display = 'none';
+
+    // Set dynamic title
+    const titleEl = document.getElementById('craft-modal-title');
+    if (titleEl) {
+      const bConfig = BUILDINGS_CONFIG[buildingKey];
+      const name = bConfig ? bConfig.name.toUpperCase() : 'PRODUÇÃO';
+      titleEl.innerText = `${name} - PRODUÇÃO E MATERIAIS`;
+    }
+
     setupCraftingButtons(game);
   } else {
     activeRecipeFilter = 'all';
@@ -791,9 +779,10 @@ function openBuildingFunctions(buildingKey, game, menuButtons) {
   }
 
   modal.classList.add('active');
+  
+  // Ensure the active footer button remains view-town since we are operating in the town!
   menuButtons.forEach(b => {
-    if (b.getAttribute('data-target') === modalId) b.classList.add('active');
-    else b.classList.remove('active');
+    b.classList.toggle('active', b.getAttribute('data-target') === 'view-town');
   });
 
   if (modalId === 'town-modal') {
