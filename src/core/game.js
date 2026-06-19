@@ -50,10 +50,8 @@ export class Game {
   }
 
   getHiringCost() {
-    const count = this.heroes.length;
-    if (count <= 3) return 80;
-    if (count <= 5) return 250;
-    return 600;
+    // Retorna custo zero para facilitar testes de variacoes
+    return 0;
   }
 
   addFloater(config) {

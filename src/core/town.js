@@ -78,8 +78,8 @@ export class Town {
   }
 
   getMaxHeroes() {
-    const info = this.getBuildingConfig('townhall');
-    return info?.current?.maxHeroes || 1;
+    // Retorna um limite alto para permitir testes de variacoes
+    return 999;
   }
 
   getBuildingFootprint(buildingType) {
