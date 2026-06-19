@@ -633,6 +633,14 @@ export class GameRenderer {
           }
         });
       }
+      // Árvores decorativas participam do Y-sorting para Z-order correto com heróis/monstros
+      this.trees.forEach(tree => {
+        renderList.push({
+          y: tree.y,
+          render: () => this.drawPixelTree(tree.x, tree.y)
+        });
+      });
+
       // Heróis ativos na cidade (escondidos se estiverem dentro de um prédio construído)
       game.heroes.forEach(h => {
         if (h.currentMap === 'town') {
