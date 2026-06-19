@@ -133,21 +133,21 @@ export class Town {
     return true;
   }
 
-  buildAt(buildingType, col, row) {
+  buildAt(buildingType, col, row, flipped = false) {
     const footprint = this.getBuildingFootprint(buildingType);
     if (!this.isAreaFree(col, row, footprint, buildingType)) {
       return { success: false, reason: 'Esse espaco nao comporta a construcao.' };
     }
 
     if (this.isBuilt(buildingType)) {
-      this.buildingPlacements[buildingType] = { col, row };
+      this.buildingPlacements[buildingType] = { col, row, flipped };
       return { success: true, moved: true };
     }
 
     const result = this.upgradeBuilding(buildingType);
     if (!result.success) return result;
 
-    this.buildingPlacements[buildingType] = { col, row };
+    this.buildingPlacements[buildingType] = { col, row, flipped };
     return { success: true, level: this.buildings[buildingType] };
   }
 

@@ -216,7 +216,8 @@ export class GameRenderer {
       'restaurant': 'assets/buildings/restaurant.png',
       'hospital': 'assets/buildings/hospital.png',
       'tavern': 'assets/buildings/tavern.png',
-      'forge': 'assets/buildings/forge.png',      // Heróis
+      'forge': 'assets/buildings/forge.png',
+      'market': 'assets/buildings/market.png',      // Heróis
       'hero_warrior_walk': 'assets/sprites/guerreiro_walk.png',
       'hero_warrior_slash': 'assets/sprites/guerreiro_slash.png',
       'hero_warrior_thrust': 'assets/sprites/guerreiro_thrust.png',
@@ -477,7 +478,8 @@ export class GameRenderer {
         restaurant: { name: 'Restaurante', icon: '🍲' },
         hospital: { name: 'Hospital', icon: '🏥' },
         tavern: { name: 'Taverna', icon: '🍺' },
-        forge: { name: 'Forja', icon: '⚒️' }
+        forge: { name: 'Forja', icon: '⚒️' },
+        market: { name: 'Mercado da Vila', icon: '⚖️' }
       };
 
       game.town.getPlacedBuildings().forEach(placed => {
@@ -490,6 +492,30 @@ export class GameRenderer {
           render: () => this.drawBuildingIndividual(game.town, b)
         });
       });
+
+      // Desenhar preview do prédio em posicionamento
+      if (this.pendingPlacement && this.hoveredTile) {
+        const footprint = game.town.getBuildingFootprint(this.pendingPlacement);
+        const metrics = this.getTownGridMetrics(game.town);
+        const center = this.gridToScreen(
+          this.hoveredTile.col + footprint.w / 2,
+          this.hoveredTile.row + footprint.h / 2,
+          metrics
+        );
+        const bx = center.x;
+        const by = center.y + metrics.tileH * footprint.h * 0.34;
+        const meta = buildingLabels[this.pendingPlacement] || { name: this.pendingPlacement, icon: '🏠' };
+        const b = { key: this.pendingPlacement, x: bx, y: by, name: meta.name, icon: meta.icon, isPreview: true };
+        renderList.push({
+          y: b.y,
+          render: () => {
+            this.ctx.save();
+            this.ctx.globalAlpha = 0.6;
+            this.drawBuildingIndividual(game.town, b);
+            this.ctx.restore();
+          }
+        });
+      }
       // Heróis ativos na cidade (escondidos se estiverem dentro de um prédio construído)
       game.heroes.forEach(h => {
         if (h.currentMap === 'town') {
@@ -818,8 +844,9 @@ export class GameRenderer {
 
   // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART E LOTES FISICOS) ---
   drawBuildingIndividual(town, b) {
-    const level = town.buildings[b.key];
-    const isBuilt = level > 0;
+    let level = town.buildings[b.key] || 0;
+    if (b.isPreview && level === 0) level = 1;
+    const isBuilt = b.isPreview ? true : level > 0;
 
     const bx = b.x;
     const by = b.y;
@@ -834,10 +861,74 @@ export class GameRenderer {
 
     this.ctx.save();
 
+    // Se for preview, desenha o lote semi-transparente
+    if (b.isPreview) {
+      this.ctx.globalAlpha = 0.6;
+    }
     this.drawBuildingLot(bx, by, wSize, hSize, isBuilt ? level : 1);
 
+    const isFlipped = b.isPreview ? !!this.pendingPlacementFlipped : !!(town.getBuildingPlacement(b.key)?.flipped);
+
     if (isBuilt) {
-      this.drawBuildingByStage(b, level, wSize, hSize);
+      const img = this.images[b.key];
+      let iconY = by - hSize + 5;
+
+      if (img && img.loaded) {
+        this.ctx.save();
+        
+        // Variação de escala por nível (Nível 1: 0.85x, Nível 2: 1.0x, Nível 3: 1.15x)
+        const scaleMult = level === 1 ? 0.85 : (level === 2 ? 1.0 : 1.15);
+        const baseW = b.key === 'townhall' ? 116 : 96;
+        const baseH = b.key === 'townhall' ? 116 : 96;
+        const dw = baseW * scaleMult;
+        const dh = baseH * scaleMult;
+        
+        const dx = bx - dw / 2;
+        const dy = by - dh + 8;
+        iconY = by - dh + 20;
+
+        if (isFlipped) {
+          this.ctx.translate(bx, by);
+          this.ctx.scale(-1, 1);
+          this.ctx.translate(-bx, -by);
+        }
+
+        this.ctx.drawImage(img, dx, dy, dw, dh);
+        this.ctx.restore();
+
+        // Efeito premium no Nível 3: Brilhos dourados flutuando
+        if (level >= 3 && !b.isPreview) {
+          this.ctx.fillStyle = '#ffea3a';
+          const time = performance.now() * 0.003;
+          for (let i = 0; i < 4; i++) {
+            const px = bx + Math.sin(time + i * 1.5) * (dw * 0.35);
+            const py = by - dh * 0.75 + Math.cos(time * 0.8 + i * 2) * 10 - (time * 10 + i * 12) % 15;
+            const pSize = 1.2 + Math.abs(Math.sin(time * 2 + i)) * 1.5;
+            this.ctx.fillRect(px - pSize/2, py - pSize/2, pSize, pSize);
+          }
+        }
+      } else {
+        // Fallback geométrico
+        this.ctx.save();
+        if (isFlipped) {
+          this.ctx.translate(bx, by);
+          this.ctx.scale(-1, 1);
+          this.ctx.translate(-bx, -by);
+        }
+        this.drawBuildingByStage(b, level, wSize, hSize);
+        this.ctx.restore();
+
+        const shape = this.getBuildingShape(b.key, level);
+        const roofH = level === 1 ? 16 : 20;
+        iconY = by - shape.bodyH - 8 - roofH + 6 - 6;
+      }
+
+      // Desenhar ícone do prédio (fora do flip para não espelhar)
+      this.ctx.save();
+      this.ctx.font = '13px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(b.icon, bx, iconY);
+      this.ctx.restore();
 
       // Nível do Prédio
       this.ctx.fillStyle = '#ffffff';
@@ -898,12 +989,12 @@ export class GameRenderer {
       
       // Martelo flutuante no centro
       this.ctx.font = '14px Arial';
-      this.ctx.fillText('ðŸ”¨', bx, by + 4);
+      this.ctx.fillText('🔨', bx, by + 4);
       
-      // Rótulo: ðŸ”’ Trancado
+      // Rótulo: 🔒 Trancado
       this.ctx.fillStyle = '#b0bec5';
       this.ctx.font = '9px monospace';
-      this.ctx.fillText('ðŸ”’ Trancado', bx, by + 16);
+      this.ctx.fillText('🔒 Trancado', bx, by + 16);
     }
 
     this.ctx.restore();

@@ -5,6 +5,7 @@ import { getBuildingVisualStage } from './renderer.js';
 let activeProfileHero = null;
 let activeProfileTab = 'stats';
 let pendingBuildingPlacement = null;
+let pendingPlacementFlipped = false;
 let activeBuildingKey = null;
 
 let lastTownStateKey = '';
@@ -274,13 +275,71 @@ export function setupUI(game) {
       if (!activeBuildingKey || !window.gameRenderer) return;
 
       pendingBuildingPlacement = activeBuildingKey;
+      const currentPlacement = game.town.getBuildingPlacement(activeBuildingKey);
+      pendingPlacementFlipped = currentPlacement ? !!currentPlacement.flipped : false;
+
       window.gameRenderer.activeView = 'town';
       window.gameRenderer.pendingPlacement = activeBuildingKey;
+      window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
       window.gameRenderer.hoveredTile = null;
+
+      const rotationControl = document.getElementById('rotation-control');
+      if (rotationControl) rotationControl.style.display = 'flex';
 
       const actionsModal = document.getElementById('building-actions-modal');
       if (actionsModal) actionsModal.classList.remove('active');
       activeBuildingKey = null;
+    });
+  }
+
+  // Teclado: R para rotacionar, Escape para cancelar posicionamento
+  window.addEventListener('keydown', (e) => {
+    if (pendingBuildingPlacement) {
+      if (e.key === 'r' || e.key === 'R') {
+        pendingPlacementFlipped = !pendingPlacementFlipped;
+        if (window.gameRenderer) {
+          window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
+        }
+        game.addFloater({
+          x: window.gameRenderer.canvas.width / 2,
+          y: window.gameRenderer.canvas.height / 2 - 50,
+          text: 'Rotacionado!',
+          color: '#ffd54f'
+        });
+      } else if (e.key === 'Escape') {
+        pendingBuildingPlacement = null;
+        if (window.gameRenderer) {
+          window.gameRenderer.pendingPlacement = null;
+          window.gameRenderer.hoveredTile = null;
+          window.gameRenderer.pendingPlacementFlipped = false;
+        }
+        const rotationControl = document.getElementById('rotation-control');
+        if (rotationControl) rotationControl.style.display = 'none';
+        game.addFloater({
+          x: window.gameRenderer.canvas.width / 2,
+          y: window.gameRenderer.canvas.height / 2 - 50,
+          text: 'Cancelado',
+          color: '#ff5252'
+        });
+      }
+    }
+  });
+
+  const rotateBtn = document.getElementById('rotate-building-btn');
+  if (rotateBtn) {
+    rotateBtn.addEventListener('click', () => {
+      if (pendingBuildingPlacement) {
+        pendingPlacementFlipped = !pendingPlacementFlipped;
+        if (window.gameRenderer) {
+          window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
+        }
+        game.addFloater({
+          x: window.gameRenderer.canvas.width / 2,
+          y: window.gameRenderer.canvas.height / 2 - 50,
+          text: 'Rotacionado!',
+          color: '#ffd54f'
+        });
+      }
     });
   }
 
@@ -405,12 +464,16 @@ export function setupUI(game) {
         const tile = window.gameRenderer.screenToGrid(x, y, game.town);
         if (!tile) return;
 
-        const result = game.town.buildAt(pendingBuildingPlacement, tile.col, tile.row);
+        const result = game.town.buildAt(pendingBuildingPlacement, tile.col, tile.row, pendingPlacementFlipped);
         if (result.success) {
           const placed = pendingBuildingPlacement;
           pendingBuildingPlacement = null;
+          pendingPlacementFlipped = false;
           window.gameRenderer.pendingPlacement = null;
           window.gameRenderer.hoveredTile = null;
+          window.gameRenderer.pendingPlacementFlipped = false;
+          const rotationControl = document.getElementById('rotation-control');
+          if (rotationControl) rotationControl.style.display = 'none';
           game.addFloater({ x, y, text: result.moved ? 'Movido!' : 'Construido!', color: '#3aff7d' });
           renderBuildings(game);
           game.saveGame();
@@ -901,10 +964,14 @@ export function renderBuildings(game) {
       button.addEventListener('click', () => {
         if (!isBuilt) {
           pendingBuildingPlacement = bKey;
+          pendingPlacementFlipped = false;
           if (window.gameRenderer) {
             window.gameRenderer.activeView = 'town';
             window.gameRenderer.pendingPlacement = bKey;
+            window.gameRenderer.pendingPlacementFlipped = false;
           }
+          const rotationControl = document.getElementById('rotation-control');
+          if (rotationControl) rotationControl.style.display = 'flex';
           document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
           alert('Escolha um espaco livre no mapa para posicionar a construcao.');
           return;
