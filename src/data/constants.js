@@ -111,12 +111,12 @@ export const BIOMES = [
     monsters: [
       { name: 'Rato', hp: 50, atk: 6, def: 1, xp: 12, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'rat_tail', chance: 0.5 }, { item: 'wood_rough', chance: 0.2 }] },
       { name: 'Zoio', hp: 45, atk: 7, def: 0, xp: 10, drops: [{ item: 'bat_wing', chance: 0.6 }, { item: 'guano', chance: 0.4 }] },
-      { name: 'Goblin', hp: 52, atk: 7, def: 1, xp: 13, drops: [{ item: 'wood_rough', chance: 0.25 }, { item: 'rat_tail', chance: 0.4 }] },
-      { name: 'Esqueleto', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'os_seco', chance: 0.5 }, { item: 'iron_ore', chance: 0.3 }] }
+      { name: 'Goblin', hp: 52, atk: 7, def: 1, xp: 13, drops: [{ item: 'goblin_ear', chance: 0.5 }, { item: 'wood_rough', chance: 0.25 }, { item: 'rat_tail', chance: 0.3 }] },
+      { name: 'Esqueleto', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'os_seco', chance: 0.5 }, { item: 'bone_shard', chance: 0.6 }, { item: 'iron_ore', chance: 0.3 }] }
     ],
     // Arrays de chefes para o spawner sortear
     miniBosses: [
-      { name: 'Capitão Orc', hp: 220, atk: 15, def: 4, xp: 70, drops: [{ item: 'iron_ore', chance: 0.75 }, { item: 'rat_fang', chance: 0.4 }] },
+      { name: 'Capitão Orc', hp: 220, atk: 15, def: 4, xp: 70, drops: [{ item: 'orc_captain_badge', chance: 1.0 }, { item: 'iron_ore', chance: 0.75 }, { item: 'rat_fang', chance: 0.4 }] },
       { name: 'Et Verde', hp: 200, atk: 15, def: 4, xp: 60, drops: [{ item: 'rat_fang', chance: 1.0 }, { item: 'iron_ore', chance: 0.5 }] }
     ],
     bosses: [
@@ -135,16 +135,16 @@ export const BIOMES = [
     monsters: [
       { name: 'Lobisomen', hp: 160, atk: 18, def: 5, xp: 35, drops: [{ item: 'wolf_fur', chance: 0.6 }, { item: 'goblin_ear', chance: 0.5 }, { item: 'wood_rough', chance: 0.25 }] },
       { name: 'Vampiro', hp: 180, atk: 22, def: 4, xp: 40, drops: [{ item: 'wolf_fur', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }, { item: 'iron_ore', chance: 0.25 }] },
-      { name: 'Orc', hp: 170, atk: 21, def: 6, xp: 44, drops: [{ item: 'couro_rigido', chance: 0.4 }, { item: 'wood_rough', chance: 0.3 }] },
-      { name: 'Feiticeira', hp: 155, atk: 24, def: 3, xp: 42, drops: [{ item: 'poison_gland', chance: 0.5 }, { item: 'herbs_wild', chance: 0.4 }] },
+      { name: 'Orc', hp: 170, atk: 21, def: 6, xp: 44, drops: [{ item: 'orc_tusk', chance: 0.45 }, { item: 'couro_rigido', chance: 0.4 }, { item: 'wood_rough', chance: 0.3 }] },
+      { name: 'Feiticeira', hp: 155, atk: 24, def: 3, xp: 42, drops: [{ item: 'witch_crystal', chance: 0.4 }, { item: 'poison_gland', chance: 0.5 }, { item: 'herbs_wild', chance: 0.4 }] },
       { name: 'Capelobo', hp: 200, atk: 24, def: 6, xp: 48, drops: [{ item: 'garra_capelobo', chance: 0.5 }, { item: 'wood_rough', chance: 0.3 }] }
     ],
     miniBosses: [
-      { name: 'Cavaleiro Sombrio', hp: 760, atk: 46, def: 11, xp: 190, drops: [{ item: 'iron_ore', chance: 0.9 }, { item: 'goblin_dagger', chance: 0.8 }] },
+      { name: 'Cavaleiro Sombrio', hp: 760, atk: 46, def: 11, xp: 190, drops: [{ item: 'shadow_shard', chance: 1.0 }, { item: 'iron_ore', chance: 0.9 }, { item: 'goblin_dagger', chance: 0.6 }] },
       { name: 'Mula sem Cabeça', hp: 750, atk: 48, def: 10, xp: 180, drops: [{ item: 'ferradura_fogo', chance: 1.0 }, { item: 'iron_ore', chance: 0.8 }] }
     ],
     bosses: [
-      { name: 'Lich', hp: 1900, atk: 80, def: 16, xp: 620, drops: [{ item: 'cabelo_fogo', chance: 0.8 }, { item: 'queen_venom', chance: 0.8 }] },
+      { name: 'Lich', hp: 1900, atk: 80, def: 16, xp: 620, drops: [{ item: 'lich_essence', chance: 1.0 }, { item: 'cabelo_fogo', chance: 0.8 }, { item: 'queen_venom', chance: 0.8 }] },
       { name: 'Curupira', hp: 1800, atk: 82, def: 18, xp: 600, drops: [{ item: 'cabelo_fogo', chance: 1.0 }, { item: 'wood_rough', chance: 1.0 }] }
     ]
   },
@@ -163,11 +163,11 @@ export const BIOMES = [
       { name: 'Boto Sedutor', hp: 420, atk: 48, def: 8, xp: 92, drops: [{ item: 'chapeu_boto', chance: 0.5 }, { item: 'meat_raw', chance: 0.4 }] }
     ],
     miniBosses: [
-      { name: 'Rei Demônios', hp: 2500, atk: 96, def: 24, xp: 480, drops: [{ item: 'steel_ore', chance: 0.8 }, { item: 'leech_tooth', chance: 0.75 }] },
+      { name: 'Rei Demônios', hp: 2500, atk: 96, def: 24, xp: 480, drops: [{ item: 'demon_essence', chance: 1.0 }, { item: 'steel_ore', chance: 0.8 }, { item: 'leech_tooth', chance: 0.75 }] },
       { name: 'Mapinguari', hp: 2400, atk: 98, def: 22, xp: 450, drops: [{ item: 'garra_mapinguari', chance: 1.0 }, { item: 'steel_ore', chance: 0.7 }] }
     ],
     bosses: [
-      { name: 'Dragonborn Boss', hp: 6200, atk: 150, def: 36, xp: 1600, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }, { item: 'olho_boitata', chance: 0.8 }] },
+      { name: 'Dragonborn Boss', hp: 6200, atk: 150, def: 36, xp: 1600, drops: [{ item: 'dragonborn_scale', chance: 1.0 }, { item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }, { item: 'olho_boitata', chance: 0.8 }] },
       { name: 'Boi Tata', hp: 6000, atk: 140, def: 40, xp: 1500, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
     ]
   },
@@ -262,7 +262,15 @@ export const ITEMS_INFO = {
   rat_fang: { name: 'Presa de Rato', price: 10, icon: '🦷', type: 'loot', source: 'Cavernas Rasas (MiniBoss)', rarity: 'rare' },
   king_crown_fragment: { name: 'Fragmento de Coroa', price: 50, icon: '👑', type: 'rare', source: 'Cavernas Rasas (Boss)', rarity: 'legendary' },
 
-  goblin_ear: { name: 'Orelha de Goblin', price: 3, icon: '👂', type: 'loot', source: 'Floresta Escura', rarity: 'common' },
+  goblin_ear: { name: 'Orelha de Goblin', price: 3, icon: '👂', type: 'loot', source: 'Cavernas Rasas / Floresta Escura', rarity: 'common' },
+  bone_shard: { name: 'Fragmento de Osso', price: 3, icon: '🦴', type: 'loot', source: 'Cavernas Rasas (Esqueleto)', rarity: 'common' },
+  orc_tusk: { name: 'Presa de Orc', price: 8, icon: '🐗', type: 'loot', source: 'Floresta Escura (Orc)', rarity: 'uncommon' },
+  orc_captain_badge: { name: 'Insígnia do Capitão Orc', price: 32, icon: '🎖️', type: 'loot', source: 'Cavernas Rasas (MiniBoss)', rarity: 'rare' },
+  witch_crystal: { name: 'Cristal da Feiticeira', price: 14, icon: '🔮', type: 'loot', source: 'Floresta Escura (Feiticeira)', rarity: 'uncommon' },
+  shadow_shard: { name: 'Estilhaço Sombrio', price: 35, icon: '🌑', type: 'loot', source: 'Floresta Escura (MiniBoss)', rarity: 'rare' },
+  lich_essence: { name: 'Essência do Lich', price: 130, icon: '☠️', type: 'rare', source: 'Floresta Escura (Boss)', rarity: 'legendary' },
+  demon_essence: { name: 'Essência Demoníaca', price: 65, icon: '👿', type: 'loot', source: 'Pântano Sombrio (MiniBoss)', rarity: 'rare' },
+  dragonborn_scale: { name: 'Escama Dragonborn', price: 230, icon: '🐲', type: 'rare', source: 'Pântano Sombrio (Boss)', rarity: 'legendary' },
   wolf_fur: { name: 'Pele de Lobo', price: 4, icon: '🐺', type: 'loot', source: 'Floresta Escura', rarity: 'common' },
   spider_silk: { name: 'Teia de Aranha', price: 4, icon: '🕸️', type: 'loot', source: 'Floresta Escura', rarity: 'common' },
   poison_gland: { name: 'Glândula de Veneno', price: 6, icon: '🧪', type: 'loot', source: 'Floresta Escura / Pântano', rarity: 'common' },
@@ -315,6 +323,12 @@ export const ITEMS_INFO = {
   beer_refreshing: { name: 'Cerveja Rústica (T1)', price: 8, icon: '🍺', type: 'consumable', rarity: 'common' },
   bed_disposable: { name: 'Cama de Palha (T1)', price: 8, icon: '🛏️', type: 'consumable', rarity: 'common' },
 
+  potion_bone: { name: 'Poção de Osso Triturado', price: 18, icon: '🦴', type: 'consumable', rarity: 'uncommon' },
+  brew_shadow: { name: 'Cerveja das Sombras', price: 22, icon: '🌑', type: 'consumable', rarity: 'uncommon' },
+  elixir_witch: { name: 'Elixir da Feiticeira', price: 35, icon: '🔮', type: 'consumable', rarity: 'rare' },
+  tonic_demon: { name: 'Tônico Demoníaco', price: 55, icon: '👿', type: 'consumable', rarity: 'rare' },
+  feast_lich: { name: 'Banquete Proibido do Lich', price: 80, icon: '☠️', type: 'consumable', rarity: 'legendary' },
+  suite_dragonborn: { name: 'Suíte do Dragonborn', price: 90, icon: '🐲', type: 'consumable', rarity: 'legendary' },
   meal_cooked_t2: { name: 'Churrasco de Lobo (T2)', price: 20, icon: '🍖', type: 'consumable', rarity: 'uncommon' },
   bandage_basic_t2: { name: 'Atadura Reforçada (T2)', price: 20, icon: '🧻', type: 'consumable', rarity: 'uncommon' },
   beer_refreshing_t2: { name: 'Suco de Caipora (T2)', price: 20, icon: '🍹', type: 'consumable', rarity: 'uncommon' },
@@ -444,6 +458,14 @@ export const CRAFT_RECIPES = {
   beer_refreshing_t3: { result: 'beer_refreshing_t3', cost: { wood_rough: 3, chapeu_boto: 1 }, qty: 1, building: 'tavern' },
   bed_disposable_t3: { result: 'bed_disposable_t3', cost: { wood_rough: 10, linho: 2, couro_rigido: 1 }, qty: 1, building: 'hotel' },
 
+  // --- RECEITAS ESPECIAIS LPC (drops de monstros LPC) ---
+  potion_bone: { result: 'potion_bone', cost: { bone_shard: 3, herbs_wild: 1 }, qty: 1, building: 'hospital' },
+  elixir_witch: { result: 'elixir_witch', cost: { witch_crystal: 1, herbs_wild: 3, linho: 1 }, qty: 1, building: 'hospital' },
+  tonic_demon: { result: 'tonic_demon', cost: { demon_essence: 1, herbs_wild: 4, steel_ore: 1 }, qty: 1, building: 'hospital' },
+  brew_shadow: { result: 'brew_shadow', cost: { shadow_shard: 1, wood_rough: 2, herbs_wild: 1 }, qty: 1, building: 'tavern' },
+  feast_lich: { result: 'feast_lich', cost: { meat_raw: 5, lich_essence: 1 }, qty: 2, building: 'restaurant' },
+  suite_dragonborn: { result: 'suite_dragonborn', cost: { dragonborn_scale: 1, linho: 8 }, qty: 1, building: 'hotel' },
+
   // EQUIPAMENTOS ORIGINAIS E LENDÁRIOS DO FOLCLORE
   // --- GRAU 1 ---
   sword_t1: { name: 'Espada de Ferro Curta', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 1, cost: { iron_ore: 5, wood_rough: 2, gold: 50 }, stats: { atk: 12 } },
@@ -467,6 +489,11 @@ export const CRAFT_RECIPES = {
   belt_t1: { name: 'Cinto de Couro Simples', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { rat_tail: 3, gold: 30 }, stats: { def: 1 } },
   boots_t1: { name: 'Botas de Couro Rústicas', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bat_wing: 4, gold: 35 }, stats: { def: 1, hp: 10 } },
 
+  // Equipamentos LPC — Grau 1 (Goblin / Esqueleto)
+  helmet_goblin_t1: { name: 'Elmo de Crânio Goblin', slot: 'helmet', icon: '💀', class: ['WARRIOR', 'MERCENARY'], tier: 1, cost: { goblin_ear: 5, iron_ore: 2, gold: 45 }, stats: { def: 4, hp: 15 } },
+  boots_bone_t1: { name: 'Botas Reforçadas com Osso', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bone_shard: 4, gold: 35 }, stats: { def: 2, hp: 12 } },
+  necklace_bone_t1: { name: 'Colar de Ossos de Esqueleto', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bone_shard: 5, gold: 30 }, stats: { hp: 20 } },
+
   // --- GRAU 2 ---
   sword_t2: { name: 'Espada de Aço Afiada', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 15, goblin_dagger: 1, gold: 200 }, stats: { atk: 35 } },
   bow_t2: { name: 'Arco Composto Reforçado', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 2, cost: { wood_rough: 20, spider_silk: 3, gold: 200 }, stats: { atk: 30 } },
@@ -475,6 +502,12 @@ export const CRAFT_RECIPES = {
   // Equipamentos Lendários Tier 2 do Folclore (Mula e Curupira)
   bow_mula_t2: { name: 'Arco de Fogo da Mula', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 2, cost: { wood_rough: 12, ferradura_fogo: 1, gold: 300 }, stats: { atk: 52 } },
   sword_curupira_t2: { name: 'Lâmina Curupira', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 10, cabelo_fogo: 1, gold: 320 }, stats: { atk: 60 } },
+
+  // Equipamentos LPC — Grau 2 (Orc / Feiticeira / Cavaleiro Sombrio)
+  sword_orc_t2: { name: 'Espada do Capitão Orc', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { orc_captain_badge: 1, iron_ore: 10, gold: 260 }, stats: { atk: 40 } },
+  staff_witch_t2: { name: 'Cajado da Feiticeira', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 2, cost: { witch_crystal: 2, wood_rough: 14, gold: 220 }, stats: { atk: 34 } },
+  armor_orc_t2: { name: 'Couraça de Couro de Orc', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 2, cost: { orc_tusk: 3, wolf_fur: 10, gold: 240 }, stats: { hp: 115, def: 21 } },
+  armor_shadow_t2: { name: 'Armadura do Cavaleiro Sombrio', slot: 'armor', icon: '🛡️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { shadow_shard: 1, iron_ore: 18, gold: 290 }, stats: { hp: 130, def: 26 } },
 
   armor_t2_heavy: { name: 'Armadura de Malha de Aço', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 2, cost: { iron_ore: 20, wood_rough: 5, gold: 250 }, stats: { hp: 120, def: 22 } },
   armor_t2_medium: { name: 'Cota de Couro Reforçado', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 2, cost: { wolf_fur: 12, spider_silk: 2, gold: 250 }, stats: { hp: 80, def: 12 } },
@@ -498,6 +531,12 @@ export const CRAFT_RECIPES = {
   // Equipamento Lendário Tier 3 do Folclore (Boitatá e Mapinguari)
   sword_boitata_t3: { name: 'Lâmina Flamejante de Boitatá', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { steel_ore: 15, olho_boitata: 1, gold: 1200 }, stats: { atk: 140 } },
   armor_mapinguari_t3: { name: 'Gibão de Couro de Mapinguari', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 10, garra_mapinguari: 1, gold: 900 }, stats: { hp: 280, def: 38 } },
+
+  // Equipamentos LPC — Grau 3 (Lich / Dragonborn)
+  staff_lich_t3: { name: 'Cetro do Lich Imortal', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 3, cost: { lich_essence: 1, wood_rough: 12, steel_ore: 5, gold: 1100 }, stats: { atk: 105 } },
+  sword_demon_t3: { name: 'Lâmina da Essência Demoníaca', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { demon_essence: 1, steel_ore: 15, gold: 950 }, stats: { atk: 100 } },
+  armor_dragonborn_t3: { name: 'Armadura de Escama Dragonborn', slot: 'armor', icon: '🛡️', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { dragonborn_scale: 1, steel_ore: 20, gold: 1200 }, stats: { hp: 380, def: 62 } },
+  helmet_lich_t3: { name: 'Crânio do Lich Encantado', slot: 'helmet', icon: '💀', class: ['MAGE', 'PRIEST'], tier: 3, cost: { lich_essence: 1, linho: 15, gold: 800 }, stats: { def: 18, hp: 90 } },
 
   armor_t3_heavy: { name: 'Muralha de Aço Escamada', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 3, cost: { steel_ore: 25, crocodile_scale: 8, gold: 1000 }, stats: { hp: 350, def: 55 } },
   armor_t3_medium: { name: 'Armadura de Escamas de Hidra', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 15, crocodile_scale: 5, gold: 1000 }, stats: { hp: 220, def: 32 } },
