@@ -1,6 +1,22 @@
 import { BIOMES, ITEMS_INFO } from '../data/constants.js';
 import { getRandomHuntPoint } from './navigation.js';
 
+function clampHuntPointLocal(point, width = 960, height = 540) {
+  const w = width || 960;
+  const h = height || 540;
+  const minX = Math.max(42, w * 0.055);
+  const maxX = Math.max(minX, w - minX);
+  const minY = Math.max(70, h * 0.12);
+  const maxY = Math.max(minY, h - Math.max(58, h * 0.13));
+  const x = Number.isFinite(point?.x) ? point.x : (minX + maxX) * 0.5;
+  const y = Number.isFinite(point?.y) ? point.y : (minY + maxY) * 0.5;
+
+  return {
+    x: Math.max(minX, Math.min(maxX, x)),
+    y: Math.max(minY, Math.min(maxY, y))
+  };
+}
+
 export class Monster {
   constructor(config, isMiniBoss = false, isBoss = false, viewport = {}) {
     this.name = config.name;
@@ -30,6 +46,18 @@ export class Monster {
     this.attackSpeed = isBoss ? 0.6 : (isMiniBoss ? 0.9 : 1.2); // Ataques por segundo
     this.targetHero = null; // Herói alvo atual
     this.aggroRange = isBoss ? 350 : (isMiniBoss ? 280 : 200); // Raio de detecção de herói
+  }
+
+  clampToHunt(viewport = {}) {
+    const point = clampHuntPointLocal({ x: this.x, y: this.y }, viewport.width, viewport.height);
+    this.x = point.x;
+    this.y = point.y;
+  }
+
+  clampHuntTarget(viewport = {}) {
+    const point = clampHuntPointLocal({ x: this.targetX, y: this.targetY }, viewport.width, viewport.height);
+    this.targetX = point.x;
+    this.targetY = point.y;
   }
 
   takeDamage(amount, attacker, addFloater, town) {
@@ -115,6 +143,8 @@ export class Monster {
     if (this.hp <= 0) return;
 
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
+    this.clampToHunt(viewport);
+    this.clampHuntTarget(viewport);
 
     // --- Buscar o herói mais próximo no mapa de caça ---
     let nearestHero = null;
@@ -137,6 +167,7 @@ export class Monster {
       this.targetHero = nearestHero;
       this.targetX = nearestHero.x;
       this.targetY = nearestHero.y;
+      this.clampHuntTarget(viewport);
       this.wanderTimer = 2.0; // Resetar timer de vaguear
 
       // --- ATAQUE INDEPENDENTE DO MONSTRO ---
@@ -175,6 +206,7 @@ export class Monster {
         const point = getRandomHuntPoint(viewport.width, viewport.height);
         this.targetX = point.x;
         this.targetY = point.y;
+        this.clampHuntTarget(viewport);
         this.wanderTimer = 3 + Math.random() * 4;
       }
     }
@@ -191,16 +223,8 @@ export class Monster {
       this.y += (dy / dist) * this.speed * dt;
     }
 
-    if (isNaN(this.x) || isNaN(this.y)) {
-      const minX = 48;
-      const maxX = (viewport.width || 960) - 48;
-      const minY = 76;
-      const maxY = (viewport.height || 540) - 58;
-      this.x = (minX + maxX) * 0.5;
-      this.y = (minY + maxY) * 0.5;
-      this.targetX = this.x;
-      this.targetY = this.y;
-    }
+    this.clampToHunt(viewport);
+    this.clampHuntTarget(viewport);
   }
 }
 
@@ -320,7 +344,9 @@ export class MonsterSpawner {
     monster.y = (viewport.height || 540) * 0.45;
     monster.targetX = monster.x;
     monster.targetY = monster.y;
-    
+    monster.clampToHunt(viewport);
+    monster.clampHuntTarget(viewport);
+
     this.activeMonsters.push(monster);
     this.bossSpawned = true;
     this.logs.unshift(`ALERTA DE CHEFE! O poderoso ${config.name} despertou!`);

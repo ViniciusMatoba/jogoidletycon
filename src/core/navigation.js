@@ -57,9 +57,10 @@ export function getTownExitPoint(town, width = 960, height = 540) {
 }
 
 export function getHuntEntryPoint(width = 960, height = 540) {
+  const bounds = getHuntBounds(width, height);
   return {
-    x: width * 0.5,
-    y: Math.min(height - 42, Math.max(82, height * 0.86))
+    x: (bounds.minX + bounds.maxX) * 0.5,
+    y: bounds.maxY
   };
 }
 
@@ -68,9 +69,36 @@ export function getHuntExitPoint(width = 960, height = 540) {
 }
 
 export function getRandomHuntPoint(width = 960, height = 540) {
+  const bounds = getHuntBounds(width, height);
   return {
-    x: Math.max(48, Math.min(width - 48, 70 + Math.random() * Math.max(120, width - 140))),
-    y: Math.max(76, Math.min(height - 58, 84 + Math.random() * Math.max(120, height - 168)))
+    x: bounds.minX + Math.random() * Math.max(1, bounds.maxX - bounds.minX),
+    y: bounds.minY + Math.random() * Math.max(1, bounds.maxY - bounds.minY)
+  };
+}
+
+export function getHuntBounds(width = 960, height = 540) {
+  const w = width || 960;
+  const h = height || 540;
+  const sideMargin = Math.max(42, w * 0.055);
+  const topMargin = Math.max(70, h * 0.12);
+  const bottomMargin = Math.max(58, h * 0.13);
+
+  return {
+    minX: sideMargin,
+    maxX: Math.max(sideMargin, w - sideMargin),
+    minY: topMargin,
+    maxY: Math.max(topMargin, h - bottomMargin)
+  };
+}
+
+export function clampHuntPoint(point, width = 960, height = 540) {
+  const bounds = getHuntBounds(width, height);
+  const x = Number.isFinite(point?.x) ? point.x : (bounds.minX + bounds.maxX) * 0.5;
+  const y = Number.isFinite(point?.y) ? point.y : (bounds.minY + bounds.maxY) * 0.5;
+
+  return {
+    x: Math.max(bounds.minX, Math.min(bounds.maxX, x)),
+    y: Math.max(bounds.minY, Math.min(bounds.maxY, y))
   };
 }
 

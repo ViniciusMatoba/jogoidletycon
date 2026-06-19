@@ -9,6 +9,22 @@ import {
   isPointInsideTown
 } from './navigation.js';
 
+function clampHuntPointLocal(point, width = 960, height = 540) {
+  const w = width || 960;
+  const h = height || 540;
+  const minX = Math.max(42, w * 0.055);
+  const maxX = Math.max(minX, w - minX);
+  const minY = Math.max(70, h * 0.12);
+  const maxY = Math.max(minY, h - Math.max(58, h * 0.13));
+  const x = Number.isFinite(point?.x) ? point.x : (minX + maxX) * 0.5;
+  const y = Number.isFinite(point?.y) ? point.y : (minY + maxY) * 0.5;
+
+  return {
+    x: Math.max(minX, Math.min(maxX, x)),
+    y: Math.max(minY, Math.min(maxY, y))
+  };
+}
+
 const HERO_NAMES = [
   'Alistair', 'Boran', 'Cedric', 'Dalia', 'Elysia', 
   'Fiona', 'Garrick', 'Hilda', 'Kaelen', 'Lyra', 
@@ -190,6 +206,18 @@ export class Hero {
   }
 
   // Escolhe novas coordenadas de alvo dentro do mapa de caça (tela cheia)
+  clampToHunt(viewport = {}) {
+    const point = clampHuntPointLocal({ x: this.x, y: this.y }, viewport.width, viewport.height);
+    this.x = point.x;
+    this.y = point.y;
+  }
+
+  clampHuntTarget(viewport = {}) {
+    const point = clampHuntPointLocal({ x: this.targetX, y: this.targetY }, viewport.width, viewport.height);
+    this.targetX = point.x;
+    this.targetY = point.y;
+  }
+
   wanderForest(viewport = {}) {
     const point = getRandomHuntPoint(viewport.width, viewport.height);
     this.targetX = point.x;
@@ -249,20 +277,8 @@ export class Hero {
     }
 
     if (this.currentMap === 'hunt') {
-      const minX = 48;
-      const maxX = (viewport.width || 960) - 48;
-      const minY = 76;
-      const maxY = (viewport.height || 540) - 58;
-
-      if (this.x < minX || this.x > maxX || this.y < minY || this.y > maxY || isNaN(this.x) || isNaN(this.y)) {
-        this.x = Math.max(minX, Math.min(maxX, this.x));
-        this.y = Math.max(minY, Math.min(maxY, this.y));
-        if (isNaN(this.x) || isNaN(this.y)) {
-          this.x = (minX + maxX) * 0.5;
-          this.y = (minY + maxY) * 0.5;
-        }
-        this.wanderForest(viewport);
-      }
+      this.clampToHunt(viewport);
+      this.clampHuntTarget(viewport);
     }
 
     // Necessidades decaem de forma lenta
@@ -335,6 +351,7 @@ export class Hero {
           this.targetMonster = closest;
           this.targetX = closest.x;
           this.targetY = closest.y;
+          this.clampHuntTarget(viewport);
           
           if (minDist < 25) {
             this.state = 'FIGHTING';
@@ -372,7 +389,9 @@ export class Hero {
               const ny = mdy / mdist;
               this.targetX = this.x - nx * (this.keepAwayRange + 30);
               this.targetY = this.y - ny * (this.keepAwayRange + 30);
+              this.clampHuntTarget(viewport);
               this.moveTowardsTarget(dt);
+              this.clampToHunt(viewport);
             } else if (mdist <= this.attackRange) {
               // Dentro do alcance: parar e atacar
               this.targetX = this.x;
@@ -385,14 +404,18 @@ export class Hero {
               // Fora do alcance: avançar até o alcance máximo
               this.targetX = this.targetMonster.x;
               this.targetY = this.targetMonster.y;
+              this.clampHuntTarget(viewport);
               this.moveTowardsTarget(dt);
+              this.clampToHunt(viewport);
             }
           } else {
             // === ATAQUE CORPO-A-CORPO ===
             if (mdist > this.attackRange) {
               this.targetX = this.targetMonster.x;
               this.targetY = this.targetMonster.y;
+              this.clampHuntTarget(viewport);
               this.moveTowardsTarget(dt);
+              this.clampToHunt(viewport);
             } else if (this.cooldownTimer <= 0) {
               this.attackMonster(this.targetMonster, addFloater, town);
               this.cooldownTimer = 1 / this.spd;
@@ -573,6 +596,11 @@ export class Hero {
           this.wanderTown(town, viewport);
         }
         break;
+    }
+
+    if (this.currentMap === 'hunt') {
+      this.clampToHunt(viewport);
+      this.clampHuntTarget(viewport);
     }
   }
 
