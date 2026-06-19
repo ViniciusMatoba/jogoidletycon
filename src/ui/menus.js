@@ -426,6 +426,49 @@ export function setupUI(game) {
         const y = (e.clientY - rect.top) * scaleY + window.gameRenderer.cameraY;
         window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
       }
+
+      // Cursor dinâmico: pointer sobre áreas clicáveis da cidade
+      if (window.gameRenderer.activeView === 'town' && !pendingBuildingPlacement) {
+        const x = (e.clientX - rect.left) * scaleX + window.gameRenderer.cameraX;
+        const y = (e.clientY - rect.top) * scaleY + window.gameRenderer.cameraY;
+
+        let isCursorPointer = false;
+
+        // Verifica se o cursor está sobre um herói clicável
+        for (const h of (window.game ? window.game.heroes : [])) {
+          if (h.currentMap === 'town') {
+            const dist = Math.sqrt((h.x - x) ** 2 + (h.y - y) ** 2);
+            if (dist < 35) { isCursorPointer = true; break; }
+          }
+        }
+
+        // Verifica se está sobre um prédio clicável
+        if (!isCursorPointer && window.game) {
+          for (const placed of window.game.town.getPlacedBuildings()) {
+            const pos = window.gameRenderer.getBuildingScreenPosition(window.game.town, placed.key);
+            if (!pos) continue;
+            const wSize = placed.key === 'townhall' ? 86 : 66;
+            const hSize = placed.key === 'townhall' ? 86 : 66;
+            if (x >= pos.x - wSize / 2 && x <= pos.x + wSize / 2 && y >= pos.y - hSize + 8 && y <= pos.y + 8) {
+              isCursorPointer = true; break;
+            }
+          }
+        }
+
+        // Verifica se está sobre uma área livre de construção
+        if (!isCursorPointer && window.game) {
+          const tile = window.gameRenderer.screenToGrid(x, y, window.game.town);
+          if (tile && window.game.town.isAreaFree(tile.col, tile.row, { w: 2, h: 2 })) {
+            isCursorPointer = true;
+          }
+        }
+
+        canvas.style.cursor = isCursorPointer ? 'pointer' : 'default';
+      } else if (pendingBuildingPlacement) {
+        canvas.style.cursor = 'crosshair';
+      } else {
+        canvas.style.cursor = 'default';
+      }
     });
 
     canvas.addEventListener('mouseup', () => {
@@ -1855,7 +1898,8 @@ function openBuildTileModal(col, row, game) {
     // Verificar se o jogador tem recursos suficientes
     let canAfford = true;
     let costTextList = [];
-    const cost = config.cost;
+    // O custo de construção é o custo do nível 1 (upgrades[0].cost)
+    const cost = config.upgrades && config.upgrades[0] ? config.upgrades[0].cost : {};
 
     for (const resKey in cost) {
       const required = cost[resKey];

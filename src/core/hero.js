@@ -122,6 +122,8 @@ export class Hero {
     // Comunicação herói → renderer (para spawnar projéteis)
     this.pendingAttack = null;
     
+    this.isGhost = false; // Estado de fantasma após morte
+
     // Histórico de logs de atividades do herói
     this.logs = [`Chegou à cidade.`];
   }
@@ -421,7 +423,8 @@ export class Hero {
         // Se o herói morrer, ele foge
         if (this.hp <= 0) {
           this.hp = 1;
-          this.addLog(`Ficou inconsciente! Fugindo...`);
+          this.isGhost = true;
+          this.addLog(`Ficou inconsciente! Voltando como fantasma...`);
           const fallbackTarget = town.isBuilt('hospital') ? 'hospital' : 'townhall';
           if (this.currentMap === 'hunt') {
             this.tempTargetBuilding = fallbackTarget;
@@ -470,6 +473,7 @@ export class Hero {
             town.gold += 8;
             this.gold -= 8;
             this.hp = this.maxHp;
+            this.isGhost = false;
             this.addLog(`Tratamento concluído.`);
             this.state = 'IDLE_TOWN';
             this.wanderTown(town, viewport);
@@ -478,6 +482,7 @@ export class Hero {
           // Sem recursos no hospital, cura passiva lenta
           this.hp = Math.min(this.maxHp, this.hp + 2 * dt);
           if (this.hp >= this.maxHp) {
+            this.isGhost = false;
             this.state = 'IDLE_TOWN';
             this.wanderTown(town, viewport);
           }
@@ -602,6 +607,21 @@ export class Hero {
 
   // Avalia as necessidades do herói e define o estado apropriado
   evaluateNeeds(town, viewport = {}) {
+    if (this.isGhost) {
+      const target = town.isBuilt('hospital') ? 'hospital' : 'townhall';
+      this.state = 'RETURNING_TOWN';
+      this.stateTimer = 0;
+      if (this.currentMap === 'hunt') {
+        this.tempTargetBuilding = target;
+        const huntExit = getHuntExitPoint(viewport.width, viewport.height);
+        this.targetX = huntExit.x;
+        this.targetY = huntExit.y;
+      } else {
+        this.targetBuilding(target, town, viewport);
+      }
+      return true;
+    }
+
     let target = null;
     let logMsg = "";
 

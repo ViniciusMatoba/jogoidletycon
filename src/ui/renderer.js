@@ -362,17 +362,75 @@ export class GameRenderer {
 
   drawTownGridTiles(town, width, height) {
     const metrics = this.getTownGridMetrics(town, width, height);
+    const now = performance.now();
 
-    // Apenas desenha o quadriculado verde se estiver posicionando um prédio (modo de edição)
+    // Zona permitida para construção: col 2-11, row 2-9 (evita árvores das bordas)
+    const BUILD_COL_MIN = 2, BUILD_COL_MAX = 11;
+    const BUILD_ROW_MIN = 2, BUILD_ROW_MAX = 9;
+
+    // Calcular quais células estão ocupadas por edifícios construídos
+    const occupiedCells = new Set();
+    town.getPlacedBuildings().forEach(placed => {
+      const fp = placed.footprint;
+      for (let dy = 0; dy < fp.h; dy++) {
+        for (let dx = 0; dx < fp.w; dx++) {
+          occupiedCells.add(`${placed.col + dx},${placed.row + dy}`);
+        }
+      }
+    });
+
     if (this.pendingPlacement) {
+      // === MODO DE COLOCAÇÃO: quadriculado completo + highlight da zona permitida ===
       for (let row = 0; row < town.grid.rows; row++) {
         for (let col = 0; col < town.grid.cols; col++) {
           const checker = (col + row) % 2 === 0;
-          this.drawIsoTile(col, row, metrics, checker ? 'rgba(54, 95, 49, 0.35)' : 'rgba(49, 88, 46, 0.35)', 'rgba(24, 34, 28, 0.15)');
+          const inBuildZone = col >= BUILD_COL_MIN && col < BUILD_COL_MAX &&
+                              row >= BUILD_ROW_MIN && row < BUILD_ROW_MAX;
+
+          if (inBuildZone) {
+            // Células na zona válida: verde pulsante mais forte
+            const pulse = 0.25 + 0.10 * Math.sin(now * 0.002 + col * 0.5 + row * 0.7);
+            this.drawIsoTile(col, row, metrics,
+              checker ? `rgba(54, 120, 49, ${pulse})` : `rgba(38, 100, 38, ${pulse})`,
+              'rgba(88, 180, 88, 0.25)'
+            );
+          } else {
+            // Células fora da zona: tom escuro neutro
+            this.drawIsoTile(col, row, metrics,
+              checker ? 'rgba(30, 45, 30, 0.20)' : 'rgba(25, 38, 25, 0.20)',
+              'rgba(20, 30, 20, 0.08)'
+            );
+          }
+        }
+      }
+    } else {
+      // === MODO NORMAL: apenas marcar suavemente as áreas disponíveis para construção ===
+      // Pulsação global sincronizada (0.06 a 0.14 de opacidade)
+      const globalPulse = 0.07 + 0.04 * Math.sin(now * 0.0015);
+
+      for (let row = BUILD_ROW_MIN; row < BUILD_ROW_MAX; row++) {
+        for (let col = BUILD_COL_MIN; col < BUILD_COL_MAX; col++) {
+          const isOccupied = occupiedCells.has(`${col},${row}`);
+
+          if (isOccupied) {
+            // Célula ocupada por um prédio: marcação dourada muito sutil
+            this.drawIsoTile(col, row, metrics,
+              'rgba(200, 160, 60, 0.08)',
+              'rgba(200, 160, 60, 0.18)'
+            );
+          } else {
+            // Célula livre: marcação verde-menta suave pulsante — indica que é clicável
+            const localPulse = globalPulse + 0.02 * Math.sin(now * 0.002 + col * 0.4 + row * 0.6);
+            this.drawIsoTile(col, row, metrics,
+              `rgba(100, 220, 130, ${localPulse})`,
+              'rgba(80, 200, 110, 0.22)'
+            );
+          }
         }
       }
     }
 
+    // Highlight do tile hovered durante colocação
     if (this.pendingPlacement && this.hoveredTile) {
       const footprint = town.getBuildingFootprint(this.pendingPlacement);
       const canPlace = town.isAreaFree(this.hoveredTile.col, this.hoveredTile.row, footprint, this.pendingPlacement);
@@ -2076,6 +2134,11 @@ export class GameRenderer {
   drawHeroIndividual(hero) {
     this.ctx.save();
     const time = performance.now();
+
+    // Se for fantasma, desenhar com opacidade suave (35% transparente)
+    if (hero.isGhost) {
+      this.ctx.globalAlpha = 0.35;
+    }
 
     // Cálculo do Dash de Combate
     let dx = 0;

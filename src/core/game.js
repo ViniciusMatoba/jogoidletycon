@@ -147,7 +147,8 @@ export class Game {
         y: h.y,
         targetX: h.targetX,
         targetY: h.targetY,
-        state: h.state
+        state: h.state,
+        isGhost: h.isGhost || false
       })),
       lastSavedTime: Date.now()
     };
@@ -196,6 +197,7 @@ export class Game {
         hero.targetX = hData.targetX ?? hero.targetX;
         hero.targetY = hData.targetY ?? hero.targetY;
         hero.state = hData.state || hero.state;
+        hero.isGhost = !!hData.isGhost;
         hero.recalculateStats();
         return hero;
       });

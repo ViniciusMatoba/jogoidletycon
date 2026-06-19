@@ -1,5 +1,5 @@
 import { BIOMES, ITEMS_INFO } from '../data/constants.js';
-import { getRandomHuntPoint } from './navigation.js';
+import { getRandomHuntPoint, getHuntExitPoint } from './navigation.js';
 
 function clampHuntPointLocal(point, width = 960, height = 540) {
   const w = width || 960;
@@ -180,7 +180,7 @@ export class Monster {
     let nearestDist = Infinity;
     if (heroes && Array.isArray(heroes)) {
       for (const h of heroes) {
-        if (h.currentMap !== 'hunt' || h.hp <= 0) continue;
+        if (h.currentMap !== 'hunt' || h.hp <= 0 || h.isGhost) continue;
         const ddx = h.x - this.x;
         const ddy = h.y - this.y;
         const d = Math.sqrt(ddx * ddx + ddy * ddy);
@@ -220,10 +220,14 @@ export class Monster {
         // Se herói for derrubado pelo monstro
         if (nearestHero.hp <= 0) {
           nearestHero.hp = 1;
-          nearestHero.addLog(`Derrubado por ${this.name}! Fugindo...`);
+          nearestHero.isGhost = true;
+          nearestHero.addLog(`Derrubado por ${this.name}! Voltando como fantasma...`);
           if (nearestHero.currentMap === 'hunt') {
-            nearestHero.tempTargetBuilding = 'hospital';
+            nearestHero.tempTargetBuilding = town.isBuilt('hospital') ? 'hospital' : 'townhall';
             nearestHero.state = 'RETURNING_TOWN';
+            const huntExit = getHuntExitPoint(viewport.width, viewport.height);
+            nearestHero.targetX = huntExit.x;
+            nearestHero.targetY = huntExit.y;
           }
         }
       }
