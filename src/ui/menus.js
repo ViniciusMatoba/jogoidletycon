@@ -450,6 +450,11 @@ export function setupUI(game) {
     let startY = 0;
     let startCamX = 0;
     let startCamY = 0;
+    
+    // Zoom por pinça (multi-touch) no mobile
+    let isPinching = false;
+    let startPinchDist = 0;
+    let startPinchZoom = 1.0;
 
     canvas.addEventListener('mousedown', (e) => {
       if (!window.gameRenderer) return;
@@ -553,6 +558,22 @@ export function setupUI(game) {
     // Suporte para Toques no Celular (Touch Events)
     canvas.addEventListener('touchstart', (e) => {
       if (!window.gameRenderer || e.touches.length === 0) return;
+      
+      // Se for toque com dois dedos, ativa modo pinch-zoom
+      if (e.touches.length === 2) {
+        isPinching = true;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        startPinchDist = Math.sqrt(dx * dx + dy * dy);
+        startPinchZoom = window.gameRenderer.zoomLevel || 1.0;
+        
+        // Cancela drag normal para evitar pulo na câmera
+        isMouseDown = false;
+        window.gameRenderer.isDragging = false;
+        return;
+      }
+
+      isPinching = false;
       isMouseDown = true;
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
@@ -564,6 +585,22 @@ export function setupUI(game) {
 
     canvas.addEventListener('touchmove', (e) => {
       if (!window.gameRenderer || e.touches.length === 0) return;
+
+      // Se estiver pinçando, calcula o zoom
+      if (isPinching && e.touches.length === 2) {
+        e.preventDefault(); // Impede rolagem nativa do navegador
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const newDist = Math.sqrt(dx * dx + dy * dy);
+        if (startPinchDist > 5) {
+          const ratio = newDist / startPinchDist;
+          let newZoom = startPinchZoom * ratio;
+          newZoom = Math.max(0.5, Math.min(2.0, newZoom));
+          window.gameRenderer.zoomLevel = newZoom;
+        }
+        return;
+      }
+
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
@@ -575,7 +612,7 @@ export function setupUI(game) {
       const sx = (e.touches[0].clientX - rect.left) * scaleX;
       const sy = (e.touches[0].clientY - rect.top) * scaleY;
 
-      if (isMouseDown && window.gameRenderer.activeView === 'town') {
+      if (isMouseDown && !isPinching && window.gameRenderer.activeView === 'town') {
         const dx = e.touches[0].clientX - startX;
         const dy = e.touches[0].clientY - startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
@@ -592,11 +629,14 @@ export function setupUI(game) {
         const y = (sy - centerY) / zoom + centerY + window.gameRenderer.cameraY;
         window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
       }
-    });
+    }, { passive: false });
 
-    canvas.addEventListener('touchend', () => {
+    canvas.addEventListener('touchend', (e) => {
       isMouseDown = false;
-      if (window.gameRenderer) {
+      if (e.touches.length < 2) {
+        isPinching = false;
+      }
+      if (window.gameRenderer && e.touches.length === 0) {
         window.gameRenderer.isDragging = false;
       }
     });
