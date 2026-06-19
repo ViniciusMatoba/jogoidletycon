@@ -995,7 +995,7 @@ export class GameRenderer {
 
     if (isBuilt) {
       const img = this.images[b.key];
-      let iconY = by - hSize + 5;
+      let iconY = by - hSize + 5; // caso: preview/sem imagem ainda carregada
 
       if (img && img.loaded) {
         this.ctx.save();
@@ -1008,7 +1008,7 @@ export class GameRenderer {
         
         const dx = bx - dw / 2;
         const dy = by - dh + 8;
-        iconY = by - dh + 20;
+        iconY = by - dh + 20; // caso: imagem PNG carregada
 
         if (isFlipped) {
           this.ctx.translate(bx, by);
@@ -1043,7 +1043,7 @@ export class GameRenderer {
 
         const shape = this.getBuildingShape(b.key, level);
         const roofH = level === 1 ? 16 : 20;
-        iconY = by - shape.bodyH - 8 - roofH + 6 - 6;
+        iconY = by - shape.bodyH - 8 - roofH + 6 - 6; // caso: fallback geométrico
       }
 
       // Desenhar ícone do prédio (fora do flip para não espelhar)
