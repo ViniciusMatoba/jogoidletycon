@@ -234,13 +234,66 @@ export function setupUI(game) {
       const item = btn.getAttribute('data-item');
       const qty = parseInt(btn.getAttribute('data-qty'));
       const cost = parseInt(btn.getAttribute('data-cost'));
-      if (game.town.importMaterials(item, qty, cost)) {
-        game.addFloater({ x: 200, y: 150, text: `+${qty} ${ITEMS_INFO[item].icon}`, color: '#3aff7d' });
+      const result = game.town.importMaterials(item, qty, cost);
+      if (result.success) {
+        const info = ITEMS_INFO[item];
+        game.addFloater({ x: 200, y: 150, text: `+${qty} ${info?.icon || item}`, color: '#3aff7d' });
+        updateImportButtons(game); // Atualizar saldo e estado dos botões
       } else {
-        alert('Ouro insuficiente na Prefeitura!');
+        alert(result.reason || 'Não foi possível importar o material.');
       }
     });
   });
+
+  // Função auxiliar: atualiza visual dos botões de importação conforme pré-requisitos
+  window.updateImportButtons = function(game) {
+    const hasTownhall = game.town.isBuilt('townhall');
+    const hasMarket = game.town.isBuilt('market');
+    const canImport = hasTownhall && hasMarket;
+
+    // Aviso de pré-requisito acima dos botões
+    const importSection = document.querySelector('.emergency-imports-grid');
+    if (importSection) {
+      let warningEl = document.getElementById('import-prereq-warning');
+      if (!canImport) {
+        if (!warningEl) {
+          warningEl = document.createElement('div');
+          warningEl.id = 'import-prereq-warning';
+          warningEl.style.cssText = 'background:rgba(180,60,30,0.18);border:1px solid rgba(220,100,60,0.5);border-radius:5px;padding:8px 10px;margin-bottom:8px;font-size:10px;color:#ffb07a;line-height:1.5;text-align:center;';
+          importSection.insertAdjacentElement('beforebegin', warningEl);
+        }
+        if (!hasTownhall) {
+          warningEl.innerHTML = '🔒 <strong>Bloqueado:</strong> Construa o <strong>Centro da Cidade</strong> para habilitar as importações.';
+        } else {
+          warningEl.innerHTML = '🔒 <strong>Bloqueado:</strong> Construa o <strong>Mercado da Vila</strong> para habilitar as importações.';
+        }
+      } else if (warningEl) {
+        warningEl.remove();
+      }
+    }
+
+    // Estado visual de cada botão
+    importButtons.forEach(btn => {
+      const cost = parseInt(btn.getAttribute('data-cost'));
+      const canAfford = game.town.gold >= cost;
+      const enabled = canImport && canAfford;
+      btn.disabled = !enabled;
+      btn.style.opacity = enabled ? '1' : '0.45';
+      btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+      // Atualizar ícone de cadeado no label
+      const costLabel = `🪙 ${cost} Ouro`;
+      if (!canImport) {
+        btn.textContent = `🔒 ${costLabel}`;
+      } else if (!canAfford) {
+        btn.textContent = `❌ ${costLabel}`;
+      } else {
+        btn.textContent = costLabel;
+      }
+    });
+  };
+
+  // Chamada inicial
+  window.updateImportButtons(game);
 
   // 6.5 Configurar o toggle de compra automática (Mercado)
   const autobuyToggle = document.getElementById('market-autobuy-toggle');
@@ -1264,6 +1317,10 @@ export function updateUI(game) {
     lastTownStateKey = currentTownStateKey;
     // Atualizar Armazém de Recursos da Prefeitura
     updateTownInventory(game);
+    // Atualizar estado dos botões de importação (pré-requisitos e saldo)
+    if (typeof window.updateImportButtons === 'function') {
+      window.updateImportButtons(game);
+    }
   }
 
   // Re-renderização dos modais em tempo real caso estejam ativos
@@ -1886,6 +1943,22 @@ function openBuildTileModal(col, row, game) {
 
   optionsContainer.innerHTML = '';
 
+  const hasTownhall = game.town.isBuilt('townhall');
+
+  // Aviso de sequência obrigatória se o Centro da Cidade não existir
+  if (!hasTownhall) {
+    optionsContainer.innerHTML = `
+      <div style="background:rgba(180,120,0,0.18);border:1px solid rgba(220,160,60,0.5);border-radius:5px;padding:10px;margin-bottom:10px;text-align:center;">
+        <div style="font-size:20px;margin-bottom:4px;">🏛️</div>
+        <strong style="color:#ffd54f;font-size:11px;">Comece pelo Centro da Cidade!</strong>
+        <p style="font-size:9px;color:#b0bec5;margin:4px 0 0 0;line-height:1.4;">
+          O Centro da Cidade (Prefeitura) é o primeiro edifício obrigatório.<br>
+          Depois, construa o <strong>Mercado</strong> para habilitar as importações de materiais.
+        </p>
+      </div>
+    `;
+  }
+
   // Lista de edifícios que podem ser construídos
   const buildables = ['townhall', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market'];
 
@@ -1893,13 +1966,15 @@ function openBuildTileModal(col, row, game) {
     const config = BUILDINGS_CONFIG[bKey];
     const isBuilt = game.town.isBuilt(bKey);
 
-    // Se já estiver construído, não mostramos na lista (apenas um edifício de cada tipo é permitido)
+    // Se já estiver construído, não mostramos na lista
     if (isBuilt) return;
+
+    // Verificar pré-requisito: Mercado requer Centro da Cidade
+    const isMarketBlocked = bKey === 'market' && !hasTownhall;
 
     // Verificar se o jogador tem recursos suficientes
     let canAfford = true;
     let costTextList = [];
-    // O custo de construção é o custo do nível 1 (upgrades[0].cost)
     const cost = config.upgrades && config.upgrades[0] ? config.upgrades[0].cost : {};
 
     for (const resKey in cost) {
@@ -1913,34 +1988,38 @@ function openBuildTileModal(col, row, game) {
       }
     }
 
+    const canBuild = canAfford && !isMarketBlocked;
     const costText = costTextList.join(', ');
     const optionEl = document.createElement('div');
     optionEl.className = 'build-option-item';
-    optionEl.style = 'background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;';
-    
-    // Ícones correspondentes
+    optionEl.style = `background: rgba(0,0,0,0.25); border: 1px solid ${isMarketBlocked ? 'rgba(200,100,50,0.4)' : 'rgba(255,255,255,0.1)'}; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;`;
+
     const icons = { townhall: '🏛️', hotel: '🏨', restaurant: '🍲', hospital: '🏥', tavern: '🍺', forge: '⚒️', market: '⚖️' };
     const icon = icons[bKey] || '🏠';
 
+    const prereqNote = isMarketBlocked
+      ? `<p style="font-size:9px;margin:2px 0 0 0;color:#ff9870;">🔒 Requer: Centro da Cidade primeiro</p>`
+      : `<p style="font-size:9px;margin:2px 0 0 0;color:#b0bec5;line-height:1.3;">Custo: ${costText}</p>`;
+
     optionEl.innerHTML = `
       <div style="text-align: left; flex: 1;">
-        <strong style="color: #ffd54f; font-size: 11px;">${icon} ${config.name}</strong>
-        <p style="font-size: 9px; margin: 2px 0 0 0; color: #b0bec5; line-height: 1.3;">Custo: ${costText}</p>
+        <strong style="color: ${isMarketBlocked ? '#a08c80' : '#ffd54f'}; font-size: 11px;">${isMarketBlocked ? '🔒' : icon} ${config.name}</strong>
+        ${prereqNote}
       </div>
-      <button class="action-btn-retro ${canAfford ? '' : 'disabled'}" style="padding: 4px 8px; font-size: 10px;" ${canAfford ? '' : 'disabled'}>Construir</button>
+      <button class="action-btn-retro ${canBuild ? '' : 'disabled'}" style="padding: 4px 8px; font-size: 10px;" ${canBuild ? '' : 'disabled'}>${isMarketBlocked ? '🔒 Bloqueado' : 'Construir'}</button>
     `;
 
     const buildBtn = optionEl.querySelector('button');
-    if (canAfford) {
+    if (canBuild) {
       buildBtn.addEventListener('click', () => {
         const result = game.town.buildAt(bKey, col, row);
         if (result.success) {
           modal.classList.remove('active');
-          game.addFloater({ 
-            x: window.gameRenderer.canvas.width / 2, 
-            y: window.gameRenderer.canvas.height / 2 - 50, 
-            text: 'Construído!', 
-            color: '#3aff7d' 
+          game.addFloater({
+            x: window.gameRenderer.canvas.width / 2,
+            y: window.gameRenderer.canvas.height / 2 - 50,
+            text: 'Construído!',
+            color: '#3aff7d'
           });
           game.saveGame();
           renderBuildings(game);
@@ -1953,12 +2032,18 @@ function openBuildTileModal(col, row, game) {
     optionsContainer.appendChild(optionEl);
   });
 
-  if (optionsContainer.children.length === 0) {
-    optionsContainer.innerHTML = `<div style="color: #a08c80; font-size: 11px; text-align: center; padding: 10px;">Todos os edifícios já foram construídos na cidade!</div>`;
+  if (optionsContainer.children.length === 0 ||
+      (optionsContainer.children.length === 1 && optionsContainer.querySelector('div[style*="background"]'))) {
+    // Todos construídos
+    const allBuiltMsg = document.createElement('div');
+    allBuiltMsg.style.cssText = 'color:#a08c80;font-size:11px;text-align:center;padding:10px;';
+    allBuiltMsg.textContent = 'Todos os edifícios já foram construídos na cidade!';
+    optionsContainer.appendChild(allBuiltMsg);
   }
 
   modal.classList.add('active');
 }
+
 
 function formatResourceName(res) {
   const names = {

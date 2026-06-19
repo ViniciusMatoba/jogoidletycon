@@ -334,11 +334,18 @@ export class Town {
   }
 
   importMaterials(itemKey, amount, costGold) {
-    if (this.gold >= costGold) {
-      this.gold -= costGold;
-      this.addResource(itemKey, amount);
-      return true;
+    // Verifica sequência obrigatória: Centro da Cidade primeiro, depois o Mercado
+    if (!this.isBuilt('townhall')) {
+      return { success: false, reason: 'Construa o Centro da Cidade primeiro!' };
     }
-    return false;
+    if (!this.isBuilt('market')) {
+      return { success: false, reason: 'Construa o Mercado da Vila para importar materiais!' };
+    }
+    if (this.gold < costGold) {
+      return { success: false, reason: 'Ouro insuficiente na Prefeitura!' };
+    }
+    this.gold -= costGold;
+    this.addResource(itemKey, amount);
+    return { success: true };
   }
 }
