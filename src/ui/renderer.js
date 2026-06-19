@@ -215,12 +215,16 @@ export class GameRenderer {
       'hero_priest': 'assets/sprites/hero_priest.png',
       'hero_archer': 'assets/sprites/hero_archer.png',
       // Monstros
-      'monster_saci': 'assets/sprites/monster_saci.png',
-      'monster_curupira': 'assets/sprites/monster_curupira.png',
-      'monster_boitata': 'assets/sprites/boi tata_universal.png',
+      'monster_gravida_taubate': 'assets/sprites/Gravida Taubate_universal.png',
+      'monster_home_do_saco': 'assets/sprites/Home do Saco_universal.png',
+      'monster_boi_brabo': 'assets/sprites/boi brabo_universal.png',
+      'monster_boi_tata': 'assets/sprites/boi tata_universal.png',
+      'monster_caveira_2': 'assets/sprites/caveira 2_universal.png',
       'monster_caveira': 'assets/sprites/caveira_universal.png',
-      'monster_coelho': 'assets/sprites/coelho pascoa_universal.png',
+      'monster_ciclops_mulher': 'assets/sprites/ciclops mulher_universal.png',
+      'monster_coelho_pascoa': 'assets/sprites/coelho pascoa_universal.png',
       'monster_et_varginha': 'assets/sprites/et varginha_universal.png',
+      'monster_et_verde': 'assets/sprites/et verde_universal.png',
       'monster_et': 'assets/sprites/et_universal.png',
       'monster_lagarto': 'assets/sprites/lagarto_universal.png',
       'monster_lobisomen': 'assets/sprites/lobisomen_universal.png',
@@ -228,7 +232,10 @@ export class GameRenderer {
       'monster_rato': 'assets/sprites/rato_universal.png',
       'monster_vampiro': 'assets/sprites/vampiro_universal.png',
       'monster_zoio': 'assets/sprites/zoio_universal.png',
-      'monster_zombie': 'assets/sprites/zombie.png'
+      // Folclore opcional (Carregado se existirem as imagens LPC, caso contrário usa fallback procedural)
+      'monster_saci_perere': 'assets/sprites/saci_perere_universal.png',
+      'monster_curupira': 'assets/sprites/curupira_universal.png',
+      'monster_mula_sem_cabeca': 'assets/sprites/mula_sem_cabeca_universal.png'
     };
 
     for (const key in assetsList) {
@@ -1475,38 +1482,8 @@ export class GameRenderer {
     this.ctx.save();
 
     const name = monster.name;
-    const nameLower = name.toLowerCase();
-    let imgKey = null;
-
-    if (nameLower.includes('saci')) {
-      imgKey = 'monster_saci';
-    } else if (nameLower.includes('curupira')) {
-      imgKey = 'monster_curupira';
-    } else if (nameLower.includes('boitatá') || nameLower.includes('boitata')) {
-      imgKey = 'monster_boitata';
-    } else if (nameLower.includes('corpo-seco') || nameLower.includes('caveira')) {
-      imgKey = 'monster_caveira';
-    } else if (nameLower.includes('coelho')) {
-      imgKey = 'monster_coelho';
-    } else if (nameLower.includes('varginha')) {
-      imgKey = 'monster_et_varginha';
-    } else if (nameLower.split(' ').includes('et') || nameLower.includes('alien')) {
-      imgKey = 'monster_et';
-    } else if (nameLower.includes('lagarto') || nameLower.includes('teju') || nameLower.includes('crocodilo')) {
-      imgKey = 'monster_lagarto';
-    } else if (nameLower.includes('lobisomem') || nameLower.includes('lobo') || nameLower.includes('capelobo')) {
-      imgKey = 'monster_lobisomen';
-    } else if (nameLower.includes('porco')) {
-      imgKey = 'monster_porco';
-    } else if (nameLower.includes('rato')) {
-      imgKey = 'monster_rato';
-    } else if (nameLower.includes('vampiro') || nameLower.includes('boto')) {
-      imgKey = 'monster_vampiro';
-    } else if (nameLower.includes('zoio') || nameLower.includes('olho') || nameLower.includes('morcego')) {
-      imgKey = 'monster_zoio';
-    } else if (nameLower.includes('zombie') || nameLower.includes('zumbi') || nameLower.includes('quibungo') || nameLower.includes('pisadeira') || nameLower.includes('chibamba')) {
-      imgKey = 'monster_zombie';
-    }
+    const formattedName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s-]+/g, '_');
+    const imgKey = `monster_${formattedName}`;
 
     const img = imgKey ? this.images[imgKey] : null;
 
@@ -1953,10 +1930,15 @@ export class GameRenderer {
     else if (hero.className === 'PRIEST') imgKey = 'hero_priest';
     else if (hero.className === 'ARCHER') imgKey = 'hero_archer';
 
-    const img = this.images[imgKey];
+    let img = this.images[imgKey];
+    if (!img || !img.loaded) {
+      if (hero.className === 'MERCENARY') imgKey = 'hero_warrior';
+      else if (hero.className === 'PRIEST') imgKey = 'hero_mage';
+      img = this.images[imgKey];
+    }
 
     if (img && img.loaded) {
-      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART E ANIMAÇÕES PROCEDURAIS ---
+      // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART ---
       this.ctx.save();
       
       // Sombra
@@ -1968,42 +1950,111 @@ export class GameRenderer {
       // Transladar para o ponto de base dos pés no chão
       this.ctx.translate(hx, hy);
 
-      // Escalar herói e equipamentos juntos por 1.4x
-      this.ctx.scale(1.4, 1.4);
+      const isSpritesheet = (img.naturalWidth === 832 || img.width === 832);
 
-      // Efeito de caminhada (bounce e inclinação leve)
-      if (isWalking) {
-        const bounce = Math.abs(Math.sin(time * 0.015)) * 3;
-        this.ctx.translate(0, -bounce);
-        const angle = Math.sin(time * 0.015) * 0.04;
-        this.ctx.rotate(angle);
-      }
+      if (isSpritesheet) {
+        // Escalar herói por 1.4x
+        this.ctx.scale(1.4, 1.4);
 
-      // Efeito de ataque (squash & stretch)
-      if (hero.state === 'FIGHTING' && hero.targetMonster) {
-        const cdPct = hero.cooldownTimer * hero.spd;
-        if (cdPct > 0.6) {
-          const attackFactor = Math.sin(((cdPct - 0.6) / 0.4) * Math.PI);
-          this.ctx.scale(1 + attackFactor * 0.2, 1 - attackFactor * 0.15);
+        // --- LPC Spritesheet Cropping & Animation for Heroes ---
+        let rowOffset = 10; // Walk South
+        let colCount = 9;
+        const isFighting = hero.state === 'FIGHTING';
+
+        // Calculate direction
+        const dx = hero.targetX - hero.x;
+        const dy = hero.targetY - hero.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!hero.facingDir) {
+          hero.facingDir = 'S';
         }
+
+        if (dist > 2) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            hero.facingDir = dx > 0 ? 'E' : 'W';
+          } else {
+            hero.facingDir = dy > 0 ? 'S' : 'N';
+          }
+        } else if (isFighting && hero.targetMonster) {
+          const mx = hero.targetMonster.x - hero.x;
+          const my = hero.targetMonster.y - hero.y;
+          if (Math.abs(mx) > Math.abs(my)) {
+            hero.facingDir = mx > 0 ? 'E' : 'W';
+          } else {
+            hero.facingDir = my > 0 ? 'S' : 'N';
+          }
+        }
+
+        if (isFighting) {
+          colCount = 6; // Slash has 6 frames
+          if (hero.facingDir === 'N') rowOffset = 12;
+          else if (hero.facingDir === 'W') rowOffset = 13;
+          else if (hero.facingDir === 'S') rowOffset = 14;
+          else if (hero.facingDir === 'E') rowOffset = 15;
+        } else {
+          colCount = 9; // Walk has 9 frames
+          if (hero.facingDir === 'N') rowOffset = 8;
+          else if (hero.facingDir === 'W') rowOffset = 9;
+          else if (hero.facingDir === 'S') rowOffset = 10;
+          else if (hero.facingDir === 'E') rowOffset = 11;
+        }
+
+        // Frame selection
+        let frameIndex = 0;
+        if (isFighting) {
+          frameIndex = Math.floor(time * 0.008) % colCount;
+        } else if (dist > 2) {
+          frameIndex = Math.floor(time * 0.012) % colCount;
+        } else {
+          frameIndex = 0;
+        }
+
+        const sx = frameIndex * 64;
+        const sy = rowOffset * 64;
+        const sw = 64;
+        const sh = 64;
+
+        const size = 28; // Standard size inside scaled context
+        this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+      } else {
+        // Escalar herói e equipamentos juntos por 1.4x
+        this.ctx.scale(1.4, 1.4);
+
+        // Efeito de caminhada (bounce e inclinação leve)
+        if (isWalking) {
+          const bounce = Math.abs(Math.sin(time * 0.015)) * 3;
+          this.ctx.translate(0, -bounce);
+          const angle = Math.sin(time * 0.015) * 0.04;
+          this.ctx.rotate(angle);
+        }
+
+        // Efeito de ataque (squash & stretch)
+        if (hero.state === 'FIGHTING' && hero.targetMonster) {
+          const cdPct = hero.cooldownTimer * hero.spd;
+          if (cdPct > 0.6) {
+            const attackFactor = Math.sin(((cdPct - 0.6) / 0.4) * Math.PI);
+            this.ctx.scale(1 + attackFactor * 0.2, 1 - attackFactor * 0.15);
+          }
+        }
+
+        // 1. DESENHAR ASAS (Atrás do corpo)
+        this.drawHeroWingsStacked(hero, time);
+
+        // 2. DESENHAR SPRITE CENTRADO (Corpo Base)
+        const wSize = 28;
+        const hSize = 28;
+        this.ctx.drawImage(img, -wSize / 2, -hSize + 2, wSize, hSize);
+
+        // 3. DESENHAR ARMADURA (Por cima do corpo)
+        this.drawHeroArmorStacked(hero);
+
+        // 4. DESENHAR CAPACETE (Por cima da cabeça)
+        this.drawHeroHelmetStacked(hero);
+
+        // 5. DESENHAR ARMA (Por cima de tudo)
+        this.drawHeroWeaponStacked(hero);
       }
-
-      // 1. DESENHAR ASAS (Atrás do corpo)
-      this.drawHeroWingsStacked(hero, time);
-
-      // 2. DESENHAR SPRITE CENTRADO (Corpo Base)
-      const wSize = 28;
-      const hSize = 28;
-      this.ctx.drawImage(img, -wSize / 2, -hSize + 2, wSize, hSize);
-
-      // 3. DESENHAR ARMADURA (Por cima do corpo)
-      this.drawHeroArmorStacked(hero);
-
-      // 4. DESENHAR CAPACETE (Por cima da cabeça)
-      this.drawHeroHelmetStacked(hero);
-
-      // 5. DESENHAR ARMA (Por cima de tudo)
-      this.drawHeroWeaponStacked(hero);
 
       this.ctx.restore();
 
