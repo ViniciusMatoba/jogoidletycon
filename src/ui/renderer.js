@@ -3257,7 +3257,7 @@ export class GameRenderer {
       this.ctx.fillStyle = '#3aff7d';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'left';
-      this.ctx.fillText('â˜€ï¸ Dia', 16, 19);
+      this.ctx.fillText('☀️ Dia', 16, 19);
       this.ctx.restore();
     }
   }
