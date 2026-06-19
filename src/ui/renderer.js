@@ -3034,6 +3034,7 @@ export class GameRenderer {
   }
 
   _drawProjectile(p) {
+    if (!isFinite(p.vx) || !isFinite(p.vy)) { p.life = 0; return; }
     const pos = this.toIso(p.x, p.y);
     this.ctx.save();
 
