@@ -408,9 +408,9 @@ export class GameRenderer {
     this.ctx.fillRect(0, 0, width, height);
   }
 
-  drawTownGridTiles(town, width, height) {
+  drawTownGridTiles(town, width, height, time = performance.now()) {
     const metrics = this.getTownGridMetrics(town, width, height);
-    const now = performance.now();
+    const now = time;
 
     // Zona de construção: grid completo (sem restrição de borda)
     const BUILD_COL_MIN = 0, BUILD_COL_MAX = town.grid.cols;
@@ -581,7 +581,7 @@ export class GameRenderer {
         this.ctx.fillStyle = '#1e3320';
         this.ctx.fillRect(-this.maxCameraX, -this.maxCameraY, width + this.maxCameraX * 2, height + this.maxCameraY * 2);
       }
-      this.drawTownGridTiles(game.town, width, height);
+      this.drawTownGridTiles(game.town, width, height, time);
     }
 
     // 2. Criar a lista de objetos para ordenação por profundidade (Y-sorting)
@@ -606,7 +606,7 @@ export class GameRenderer {
         const b = { key: placed.key, x: pos.x, y: pos.y, name: meta.name, icon: meta.icon };
         renderList.push({
           y: b.y,
-          render: () => this.drawBuildingIndividual(game.town, b)
+          render: () => this.drawBuildingIndividual(game.town, b, time)
         });
       });
 
@@ -656,7 +656,7 @@ export class GameRenderer {
 
           renderList.push({
             y: h.y,
-            render: () => this.drawHeroIndividual(h)
+            render: () => this.drawHeroIndividual(h, time)
           });
         }
       });
@@ -730,7 +730,7 @@ export class GameRenderer {
         if (m.hp > 0) {
           renderList.push({
             y: m.y,
-            render: () => this.drawMonsterIndividual(m, game)
+            render: () => this.drawMonsterIndividual(m, game, time)
           });
         }
       });
@@ -740,7 +740,7 @@ export class GameRenderer {
         if (h.currentMap === 'hunt') {
           renderList.push({
             y: h.y,
-            render: () => this.drawHeroIndividual(h)
+            render: () => this.drawHeroIndividual(h, time)
           });
         }
       });
@@ -774,9 +774,8 @@ export class GameRenderer {
   }
 
   // --- RENDERIZADORES DE TERRENO TOP-DOWN ---
-  drawTerrain(game, w, h) {
+  drawTerrain(game, w, h, time = performance.now()) {
     const biome = game.spawner.getBiomeConfig();
-    const time = performance.now();
 
     // 1. Grama Geral de Fundo
     this.ctx.fillStyle = this.patterns['tile_grass'] || '#395c2f';
@@ -968,7 +967,7 @@ export class GameRenderer {
   }
 
   // --- RENDER DE EDIFÍCIO (COM IMAGEM PIXEL ART E LOTES FISICOS) ---
-  drawBuildingIndividual(town, b) {
+  drawBuildingIndividual(town, b, time = performance.now()) {
     let level = town.buildings[b.key] || 0;
     if (b.isPreview && level === 0) level = 1;
     const isBuilt = b.isPreview ? true : level > 0;
@@ -1031,11 +1030,11 @@ export class GameRenderer {
         // Efeito premium no Nível 3: Brilhos dourados flutuando
         if (level >= 3 && !b.isPreview) {
           this.ctx.fillStyle = '#ffea3a';
-          const time = performance.now() * 0.003;
+          const time2 = time * 0.003;
           for (let i = 0; i < 4; i++) {
-            const px = bx + Math.sin(time + i * 1.5) * (dw * 0.35);
-            const py = by - dh * 0.75 + Math.cos(time * 0.8 + i * 2) * 10 - (time * 10 + i * 12) % 15;
-            const pSize = 1.2 + Math.abs(Math.sin(time * 2 + i)) * 1.5;
+            const px = bx + Math.sin(time2 + i * 1.5) * (dw * 0.35);
+            const py = by - dh * 0.75 + Math.cos(time2 * 0.8 + i * 2) * 10 - (time2 * 10 + i * 12) % 15;
+            const pSize = 1.2 + Math.abs(Math.sin(time2 * 2 + i)) * 1.5;
             this.ctx.fillRect(px - pSize/2, py - pSize/2, pSize, pSize);
           }
         }
@@ -1778,9 +1777,8 @@ export class GameRenderer {
   }
 
   // --- RENDER MONSTROS TOP-DOWN ---
-  drawMonsterIndividual(monster, game) {
+  drawMonsterIndividual(monster, game, time = performance.now()) {
     const pos = this.toIso(monster.x, monster.y);
-    const time = performance.now();
 
     this.ctx.save();
 
@@ -2202,9 +2200,8 @@ export class GameRenderer {
   }
 
   // --- RENDER HEROIS ---
-  drawHeroIndividual(hero) {
+  drawHeroIndividual(hero, time = performance.now()) {
     this.ctx.save();
-    const time = performance.now();
 
     // Se for fantasma, desenhar com opacidade suave (35% transparente)
     if (hero.isGhost) {
