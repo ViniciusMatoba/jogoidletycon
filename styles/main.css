@@ -1499,6 +1499,32 @@ body {
   margin-left: 2px;
 }
 
+/* Monster Level Indicator */
+.monster-level-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(45,28,28,0.92), rgba(60,38,38,0.92));
+  border: 1.5px solid #8c2323;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+  user-select: none;
+}
+.monster-level-indicator:hover {
+  border-color: #ff5252;
+  box-shadow: 0 0 12px rgba(255,82,82,0.35);
+  transform: translateY(-1px);
+}
+.monster-level-indicator:active { transform: translateY(0); }
+.monster-level-indicator strong {
+  font-size: 11px;
+  color: #ff5252;
+  font-family: var(--font-retro);
+}
+
+
 /* Biome Cards Grid */
 .biome-cards-grid {
   display: grid;

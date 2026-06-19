@@ -18,13 +18,26 @@ function clampHuntPointLocal(point, width = 960, height = 540) {
 }
 
 export class Monster {
-  constructor(config, isMiniBoss = false, isBoss = false, viewport = {}) {
+  constructor(config, isMiniBoss = false, isBoss = false, viewport = {}, monsterLevel = 2) {
     this.name = config.name;
-    this.maxHp = config.hp;
-    this.hp = config.hp;
-    this.atk = config.atk;
-    this.def = config.def;
-    this.xpReward = config.xp;
+    this.monsterLevel = monsterLevel;
+
+    // Multiplicadores baseados no nível selecionado (1 a 4)
+    const levelMultipliers = {
+      1: { stat: 0.6, reward: 0.6 },
+      2: { stat: 1.0, reward: 1.0 },
+      3: { stat: 1.5, reward: 1.5 },
+      4: { stat: 2.2, reward: 2.2 }
+    };
+    const mult = levelMultipliers[monsterLevel] || { stat: 1.0, reward: 1.0 };
+    this.statMult = mult.stat;
+    this.rewardMult = mult.reward;
+
+    this.maxHp = Math.max(1, Math.round(config.hp * this.statMult));
+    this.hp = this.maxHp;
+    this.atk = Math.max(1, Math.round(config.atk * this.statMult));
+    this.def = Math.max(0, Math.round(config.def * this.statMult));
+    this.xpReward = Math.max(1, Math.round(config.xp * this.rewardMult));
     this.drops = config.drops;
 
     this.isMiniBoss = isMiniBoss;
@@ -73,15 +86,29 @@ export class Monster {
 
     // Calcular Drops
     this.drops.forEach(drop => {
-      if (Math.random() <= drop.chance) {
+      const finalChance = drop.chance * this.rewardMult;
+      let qty = 0;
+      if (finalChance > 1.0) {
+        qty = Math.floor(finalChance);
+        const extraChance = finalChance - qty;
+        if (Math.random() <= extraChance) {
+          qty++;
+        }
+      } else {
+        if (Math.random() <= finalChance) {
+          qty = 1;
+        }
+      }
+
+      if (qty > 0) {
         const itemInfo = ITEMS_INFO[drop.item];
         if (itemInfo) {
-          attacker.lootItem(drop.item, 1);
+          attacker.lootItem(drop.item, qty);
           // Adiciona animação de loot flutuante
           addFloater({
             x: this.x,
             y: this.y - 30,
-            text: `+1 ${itemInfo.icon}`,
+            text: `+${qty} ${itemInfo.icon}`,
             color: '#ffea3a',
             time: 1.2,
             map: 'hunt'
@@ -95,10 +122,12 @@ export class Monster {
     let totalGold = baseGold;
 
     if (this.isBoss) {
-      totalGold += 30;
+      totalGold += 30 * this.rewardMult;
     } else if (this.isMiniBoss) {
-      totalGold += 12;
+      totalGold += 12 * this.rewardMult;
     }
+
+    totalGold = Math.max(1, Math.round(totalGold));
 
     const tax = Math.floor(totalGold * 0.1); // 10% de imposto
     const netGold = totalGold - tax;
@@ -240,6 +269,8 @@ export class MonsterSpawner {
     this.bossSpawned = false;
     this.miniBossSpawned = false;
 
+    this.monsterLevel = 2; // Nível padrão: Normal
+
     // Logs do spawn
     this.logs = ['Spawner inicializado nas Cavernas Rasas.'];
   }
@@ -317,7 +348,7 @@ export class MonsterSpawner {
     const biome = this.getBiomeConfig();
     // Escolhe um monstro normal aleatório da lista do bioma
     const mConfig = biome.monsters[Math.floor(Math.random() * biome.monsters.length)];
-    const monster = new Monster(mConfig, false, false, viewport);
+    const monster = new Monster(mConfig, false, false, viewport, this.monsterLevel);
     this.activeMonsters.push(monster);
   }
 
@@ -325,7 +356,7 @@ export class MonsterSpawner {
     const biome = this.getBiomeConfig();
     // Escolhe aleatoriamente da lista de mini boss
     const config = biome.miniBosses[Math.floor(Math.random() * biome.miniBosses.length)];
-    const monster = new Monster(config, true, false, viewport);
+    const monster = new Monster(config, true, false, viewport, this.monsterLevel);
     this.activeMonsters.push(monster);
     this.miniBossSpawned = true;
     this.logs.unshift(`Cuidado! Um Mini-Boss apareceu: ${config.name}!`);
@@ -338,7 +369,7 @@ export class MonsterSpawner {
     
     // Escolhe aleatoriamente da lista de bosses
     const config = biome.bosses[Math.floor(Math.random() * biome.bosses.length)];
-    const monster = new Monster(config, false, true, viewport);
+    const monster = new Monster(config, false, true, viewport, this.monsterLevel);
     // Colocar o Boss no centro da arena de batalha (tela cheia)
     monster.x = (viewport.width || 960) * 0.5;
     monster.y = (viewport.height || 540) * 0.45;

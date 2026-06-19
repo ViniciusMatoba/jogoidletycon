@@ -148,6 +148,46 @@ export function setupUI(game) {
     });
   }
 
+  // 2.5 Botão rápido de nível dos monstros
+  const monsterLevelBtn = document.getElementById('monster-level-btn');
+  if (monsterLevelBtn) {
+    monsterLevelBtn.addEventListener('click', () => {
+      let lvl = game.spawner.monsterLevel || 2;
+      lvl = lvl + 1;
+      if (lvl > 4) lvl = 1;
+      game.spawner.monsterLevel = lvl;
+
+      // Limpar monstros ativos para gerar novos monstros no novo nível instantaneamente
+      game.spawner.activeMonsters = [];
+      if (window.gameRenderer && window.gameRenderer.activeView === 'hunt') {
+        game.spawner.update(0, game.town, game.heroes, { width: window.gameRenderer.canvas.width, height: window.gameRenderer.canvas.height });
+      }
+
+      const difficultyNames = {
+        1: 'Fácil',
+        2: 'Normal',
+        3: 'Difícil',
+        4: 'Pesadelo'
+      };
+      const name = difficultyNames[lvl] || 'Normal';
+      
+      game.addFloater({
+        x: window.gameRenderer ? window.gameRenderer.canvas.width / 2 : 480,
+        y: window.gameRenderer ? window.gameRenderer.canvas.height / 2 - 50 : 220,
+        text: `Dificuldade: ${name}!`,
+        color: lvl === 1 ? '#a5d6a7' : (lvl === 3 ? '#ffb74d' : (lvl === 4 ? '#ff5252' : '#ffffff')),
+        time: 1.2
+      });
+
+      game.saveGame();
+      
+      const levelNameEl = document.getElementById('current-monster-level-name');
+      if (levelNameEl) {
+        levelNameEl.innerText = `${name} (Lvl ${lvl})`;
+      }
+    });
+  }
+
   // 3. Contratação de Heróis
   const hireButtons = document.querySelectorAll('.hire-btn');
   hireButtons.forEach(btn => {
@@ -1134,6 +1174,30 @@ function setupCraftingButtons(game) {
 
 // Atualiza dinamicamente as tabelas de recursos e heróis a cada frame/tick
 export function updateUI(game) {
+  // 0. Controlar visibilidade e sincronizar o seletor de nível dos monstros
+  const activeView = window.gameRenderer ? window.gameRenderer.activeView : 'town';
+  const monsterLevelBtn = document.getElementById('monster-level-btn');
+  if (monsterLevelBtn) {
+    if (activeView === 'hunt') {
+      monsterLevelBtn.style.display = 'flex';
+      
+      const lvl = game.spawner.monsterLevel || 2;
+      const difficultyNames = {
+        1: 'Fácil',
+        2: 'Normal',
+        3: 'Difícil',
+        4: 'Pesadelo'
+      };
+      const name = difficultyNames[lvl] || 'Normal';
+      const levelNameEl = document.getElementById('current-monster-level-name');
+      if (levelNameEl && levelNameEl.innerText !== `${name} (Lvl ${lvl})`) {
+        levelNameEl.innerText = `${name} (Lvl ${lvl})`;
+      }
+    } else {
+      monsterLevelBtn.style.display = 'none';
+    }
+  }
+
   // 1. Atualizar Recursos Globais da Cidade na Barra Superior
   const goldEl = document.getElementById('town-gold');
   if (goldEl) goldEl.innerText = game.town.gold;

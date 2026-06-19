@@ -125,7 +125,8 @@ export class Game {
       spawner: {
         currentBiomeId: this.spawner.currentBiomeId,
         killsCount: this.spawner.killsCount,
-        bossKillsCount: this.spawner.bossKillsCount
+        bossKillsCount: this.spawner.bossKillsCount,
+        monsterLevel: this.spawner.monsterLevel || 2
       },
       heroes: this.heroes.map(h => ({
         name: h.name,
@@ -170,6 +171,7 @@ export class Game {
       this.spawner.currentBiomeId = data.spawner.currentBiomeId;
       this.spawner.killsCount = data.spawner.killsCount;
       this.spawner.bossKillsCount = data.spawner.bossKillsCount;
+      this.spawner.monsterLevel = data.spawner.monsterLevel || 2;
 
       this.heroes = data.heroes.map((hData, index) => {
         const hero = new Hero(index + 1, hData.className);
