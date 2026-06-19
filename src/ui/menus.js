@@ -603,14 +603,14 @@ function renderBiomeCards(game) {
         ${isLocked
           ? `<div class="biome-card-lock-info">🔒 Requer: <strong>${visual.unlockReq}</strong></div>`
           : isActive
-            ? `<button class="biome-select-btn biome-btn--active" disabled>✅ Zona Selecionada</button>`
+            ? `<button class="biome-select-btn biome-btn--active" data-active-biome="true">✅ Zona Selecionada</button>`
             : `<button class="biome-select-btn" data-biome-id="${idx}">⚔️ Selecionar esta Zona</button>`
         }
       </div>
     `;
   }).join('');
 
-  // Vincular cliques nos botões de seleção
+  // Vincular cliques nos botões de seleção de nova zona
   container.querySelectorAll('.biome-select-btn[data-biome-id]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = parseInt(btn.getAttribute('data-biome-id'));
@@ -621,6 +621,20 @@ function renderBiomeCards(game) {
         renderBiomeCards(game); // Re-render para atualizar o estado ativo
         const dModal = document.getElementById('dungeons-modal');
         if (dModal) dModal.classList.remove('active');
+        if (window.gameRenderer) {
+          window.gameRenderer.activeView = 'hunt';
+        }
+      }
+    });
+  });
+
+  // Vincular clique no botão da zona que já está ativa
+  container.querySelectorAll('.biome-select-btn[data-active-biome]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dModal = document.getElementById('dungeons-modal');
+      if (dModal) dModal.classList.remove('active');
+      if (window.gameRenderer) {
+        window.gameRenderer.activeView = 'hunt';
       }
     });
   });
