@@ -24,6 +24,15 @@ export class Town {
       leech_tooth: 0,
       hydra_scale: 0,
 
+      escaravelho_ouro: 0,
+      coracao_areia: 0,
+      cristal_eterno: 0,
+      coroa_gelo: 0,
+      nucleo_magma: 0,
+      escama_dragao: 0,
+      pena_sagrada: 0,
+      essencia_divina: 0,
+
       wood_rough: 10,
       iron_ore: 5,
       steel_ore: 0,
@@ -45,7 +54,27 @@ export class Town {
       meal_cooked_t3: 0,
       bandage_basic_t3: 0,
       beer_refreshing_t3: 0,
-      bed_disposable_t3: 0
+      bed_disposable_t3: 0,
+
+      meal_cooked_t4: 0,
+      bandage_basic_t4: 0,
+      beer_refreshing_t4: 0,
+      bed_disposable_t4: 0,
+
+      meal_cooked_t5: 0,
+      bandage_basic_t5: 0,
+      beer_refreshing_t5: 0,
+      bed_disposable_t5: 0,
+
+      meal_cooked_t6: 0,
+      bandage_basic_t6: 0,
+      beer_refreshing_t6: 0,
+      bed_disposable_t6: 0,
+
+      meal_cooked_t7: 0,
+      bandage_basic_t7: 0,
+      beer_refreshing_t7: 0,
+      bed_disposable_t7: 0
     };
 
     this.buildings = {

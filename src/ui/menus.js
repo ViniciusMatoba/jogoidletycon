@@ -468,6 +468,13 @@ export function setupUI(game) {
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
+      const zoom = window.gameRenderer.zoomLevel || 1.0;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      const sx = (e.clientX - rect.left) * scaleX;
+      const sy = (e.clientY - rect.top) * scaleY;
+
       if (isMouseDown && window.gameRenderer.activeView === 'town') {
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
@@ -476,20 +483,19 @@ export function setupUI(game) {
         }
         const maxCamX = window.gameRenderer.maxCameraX ?? 300;
         const maxCamY = window.gameRenderer.maxCameraY ?? 200;
-        window.gameRenderer.cameraX = Math.max(-maxCamX, Math.min(maxCamX, startCamX - dx * scaleX));
-        window.gameRenderer.cameraY = Math.max(-maxCamY, Math.min(maxCamY, startCamY - dy * scaleY));
+        window.gameRenderer.cameraX = Math.max(-maxCamX, Math.min(maxCamX, startCamX - (dx * scaleX) / zoom));
+        window.gameRenderer.cameraY = Math.max(-maxCamY, Math.min(maxCamY, startCamY - (dy * scaleY) / zoom));
       }
 
+      const x = (sx - centerX) / zoom + centerX + window.gameRenderer.cameraX;
+      const y = (sy - centerY) / zoom + centerY + window.gameRenderer.cameraY;
+
       if (pendingBuildingPlacement) {
-        const x = (e.clientX - rect.left) * scaleX + window.gameRenderer.cameraX;
-        const y = (e.clientY - rect.top) * scaleY + window.gameRenderer.cameraY;
         window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
       }
 
       // Cursor dinâmico: pointer sobre áreas clicáveis da cidade
       if (window.gameRenderer.activeView === 'town' && !pendingBuildingPlacement) {
-        const x = (e.clientX - rect.left) * scaleX + window.gameRenderer.cameraX;
-        const y = (e.clientY - rect.top) * scaleY + window.gameRenderer.cameraY;
 
         let isCursorPointer = false;
 
@@ -562,6 +568,13 @@ export function setupUI(game) {
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
+      const zoom = window.gameRenderer ? window.gameRenderer.zoomLevel : 1.0;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      const sx = (e.touches[0].clientX - rect.left) * scaleX;
+      const sy = (e.touches[0].clientY - rect.top) * scaleY;
+
       if (isMouseDown && window.gameRenderer.activeView === 'town') {
         const dx = e.touches[0].clientX - startX;
         const dy = e.touches[0].clientY - startY;
@@ -570,13 +583,13 @@ export function setupUI(game) {
         }
         const maxCamX = window.gameRenderer.maxCameraX ?? 300;
         const maxCamY = window.gameRenderer.maxCameraY ?? 200;
-        window.gameRenderer.cameraX = Math.max(-maxCamX, Math.min(maxCamX, startCamX - dx * scaleX));
-        window.gameRenderer.cameraY = Math.max(-maxCamY, Math.min(maxCamY, startCamY - dy * scaleY));
+        window.gameRenderer.cameraX = Math.max(-maxCamX, Math.min(maxCamX, startCamX - (dx * scaleX) / zoom));
+        window.gameRenderer.cameraY = Math.max(-maxCamY, Math.min(maxCamY, startCamY - (dy * scaleY) / zoom));
       }
 
       if (pendingBuildingPlacement) {
-        const x = (e.touches[0].clientX - rect.left) * scaleX + window.gameRenderer.cameraX;
-        const y = (e.touches[0].clientY - rect.top) * scaleY + window.gameRenderer.cameraY;
+        const x = (sx - centerX) / zoom + centerX + window.gameRenderer.cameraX;
+        const y = (sy - centerY) / zoom + centerY + window.gameRenderer.cameraY;
         window.gameRenderer.hoveredTile = window.gameRenderer.screenToGrid(x, y, game.town);
       }
     });
@@ -597,8 +610,16 @@ export function setupUI(game) {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
-      const x = (e.clientX - rect.left) * scaleX + (window.gameRenderer ? window.gameRenderer.cameraX : 0);
-      const y = (e.clientY - rect.top) * scaleY + (window.gameRenderer ? window.gameRenderer.cameraY : 0);
+      
+      const zoom = window.gameRenderer ? window.gameRenderer.zoomLevel : 1.0;
+      const cX = canvas.width / 2;
+      const cY = canvas.height / 2;
+
+      const clickSx = (e.clientX - rect.left) * scaleX;
+      const clickSy = (e.clientY - rect.top) * scaleY;
+
+      const x = (clickSx - cX) / zoom + cX + (window.gameRenderer ? window.gameRenderer.cameraX : 0);
+      const y = (clickSy - cY) / zoom + cY + (window.gameRenderer ? window.gameRenderer.cameraY : 0);
 
       const activeView = window.gameRenderer ? window.gameRenderer.activeView : 'town';
 
@@ -697,6 +718,21 @@ export function setupUI(game) {
         }
       }
     });
+
+    // Zoom via Scroll do Mouse no PC
+    canvas.addEventListener('wheel', (e) => {
+      if (!window.gameRenderer) return;
+      e.preventDefault();
+      
+      const zoomSpeed = 0.08;
+      let newZoom = window.gameRenderer.zoomLevel || 1.0;
+      if (e.deltaY < 0) {
+        newZoom = Math.min(2.0, newZoom + zoomSpeed);
+      } else {
+        newZoom = Math.max(0.5, newZoom - zoomSpeed);
+      }
+      window.gameRenderer.zoomLevel = newZoom;
+    }, { passive: false });
   }
 }
 
@@ -1218,7 +1254,11 @@ function setupCraftingButtons(game) {
       if (isEquip) {
         recipeTier = recipe.tier || 1;
       } else {
-        if (recipeKey.endsWith('_t3')) recipeTier = 3;
+        if (recipeKey.endsWith('_t7')) recipeTier = 7;
+        else if (recipeKey.endsWith('_t6')) recipeTier = 6;
+        else if (recipeKey.endsWith('_t5')) recipeTier = 5;
+        else if (recipeKey.endsWith('_t4')) recipeTier = 4;
+        else if (recipeKey.endsWith('_t3')) recipeTier = 3;
         else if (recipeKey.endsWith('_t2')) recipeTier = 2;
       }
 

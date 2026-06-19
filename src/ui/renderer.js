@@ -59,6 +59,7 @@ export class GameRenderer {
     this.cameraY = 0;
     this.maxCameraX = 160;
     this.maxCameraY = 90;
+    this.zoomLevel = 1.0;
     this.isDragging = false;
     this.hasDragged = false;
     this.dragStartX = 0;
@@ -243,6 +244,10 @@ export class GameRenderer {
       'bg_cave': 'assets/terrain/bg_cave.png',
       'bg_forest': 'assets/terrain/bg_forest.png',
       'bg_swamp': 'assets/terrain/bg_swamp.png',
+      'bg_desert': 'assets/terrain/bg_desert.png',
+      'bg_tundra': 'assets/terrain/bg_tundra.png',
+      'bg_volcano': 'assets/terrain/bg_volcano.png',
+      'bg_citadel': 'assets/terrain/bg_citadel.png',
       // Solo / Texturas de Terreno (Seamless)
       'tile_grass': 'assets/terrain/tile_grass.png',
       'tile_dirt': 'assets/terrain/tile_dirt.png',
@@ -596,6 +601,10 @@ export class GameRenderer {
       let bgKey = 'bg_forest';
       if (biome.id === 0) bgKey = 'bg_cave';
       else if (biome.id === 2) bgKey = 'bg_swamp';
+      else if (biome.id === 3) bgKey = 'bg_desert';
+      else if (biome.id === 4) bgKey = 'bg_tundra';
+      else if (biome.id === 5) bgKey = 'bg_volcano';
+      else if (biome.id === 6) bgKey = 'bg_citadel';
 
       const bg = this.images[bgKey];
       if (bg && bg.loaded) {
@@ -612,9 +621,13 @@ export class GameRenderer {
       }
     }
 
-    // === INICIALIZAR MUNDO (Salvar e aplicar translação da câmera) ===
+    // === INICIALIZAR MUNDO (Salvar, aplicar zoom centrado, e translação da câmera) ===
     this.ctx.save();
-    this.ctx.translate(-this.cameraX, -this.cameraY);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    this.ctx.translate(centerX, centerY);
+    this.ctx.scale(this.zoomLevel, this.zoomLevel);
+    this.ctx.translate(-centerX - this.cameraX, -centerY - this.cameraY);
 
     // Se for Cidade, desenha o background HD e as tiles sob translação
     if (this.activeView === 'town') {
@@ -774,6 +787,58 @@ export class GameRenderer {
               render: () => {
                 if (typeIdx === 1) this.drawReeds(pt.x, pt.y);
                 else this.drawPoisonFlower(pt.x, pt.y, time);
+              }
+            });
+          }
+        } else if (biome.id === 3) { // Deserto
+          if (typeIdx === 0) {
+            // Osso plano desértico desenhado direto
+            this.drawDesertBone(pt.x, pt.y);
+          } else {
+            renderList.push({
+              y: pt.y,
+              render: () => {
+                if (typeIdx === 1) this.drawDesertCactus(pt.x, pt.y);
+                else this.drawDesertRuin(pt.x, pt.y);
+              }
+            });
+          }
+        } else if (biome.id === 4) { // Tundra
+          if (typeIdx === 0) {
+            // Montículo de neve plano desenhado direto
+            this.drawSnowMound(pt.x, pt.y);
+          } else {
+            renderList.push({
+              y: pt.y,
+              render: () => {
+                if (typeIdx === 1) this.drawIceCrystal(pt.x, pt.y, time, index);
+                else this.drawSnowBush(pt.x, pt.y);
+              }
+            });
+          }
+        } else if (biome.id === 5) { // Vulcão
+          if (typeIdx === 0) {
+            // Poça de lava plana desenhada direto
+            this.drawLavaPool(pt.x, pt.y, time);
+          } else {
+            renderList.push({
+              y: pt.y,
+              render: () => {
+                if (typeIdx === 1) this.drawLavaRock(pt.x, pt.y);
+                else this.drawObsidianShard(pt.x, pt.y);
+              }
+            });
+          }
+        } else if (biome.id === 6) { // Cidadela
+          if (typeIdx === 0) {
+            // Nuvem celestial plana desenhada direto
+            this.drawCelestialCloud(pt.x, pt.y, time, index);
+          } else {
+            renderList.push({
+              y: pt.y,
+              render: () => {
+                if (typeIdx === 1) this.drawCelestialPillar(pt.x, pt.y);
+                else this.drawGoldStatue(pt.x, pt.y);
               }
             });
           }
@@ -1775,6 +1840,192 @@ export class GameRenderer {
     this.ctx.fillRect(x - 1.5, y - 4.5, 3, 3);
   }
 
+  drawDesertBone(x, y) {
+    this.ctx.fillStyle = '#e0dbcd';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y + 1, 6, 4, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.strokeStyle = '#c2baa7';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 4, y - 1);
+    this.ctx.lineTo(x - 8, y - 3);
+    this.ctx.moveTo(x + 4, y - 1);
+    this.ctx.lineTo(x + 8, y - 3);
+    this.ctx.stroke();
+  }
+
+  drawDesertCactus(x, y) {
+    this.ctx.fillStyle = '#2e7d32';
+    this.ctx.fillRect(x - 2.5, y - 14, 5, 16);
+    this.ctx.fillRect(x - 7, y - 9, 5, 2.5);
+    this.ctx.fillRect(x - 7, y - 13, 2.5, 5);
+    this.ctx.fillRect(x + 2, y - 6, 5, 2.5);
+    this.ctx.fillRect(x + 4.5, y - 10, 2.5, 5);
+    this.ctx.fillStyle = '#e91e63';
+    this.ctx.fillRect(x - 1, y - 15.5, 2, 2);
+  }
+
+  drawDesertRuin(x, y) {
+    this.ctx.fillStyle = '#d7ccc8';
+    this.ctx.fillRect(x - 5, y - 12, 10, 14);
+    this.ctx.fillStyle = '#bcaaa4';
+    this.ctx.fillRect(x - 5, y - 6, 6, 1.5);
+    this.ctx.fillRect(x + 1, y - 2, 4, 1.5);
+    this.ctx.fillRect(x - 3, y - 10, 1.5, 3);
+    this.ctx.fillStyle = '#8d6e63';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 5, y - 12);
+    this.ctx.lineTo(x + 5, y - 12);
+    this.ctx.lineTo(x + 5, y - 8);
+    this.ctx.closePath();
+    this.ctx.fill();
+  }
+
+  drawSnowMound(x, y) {
+    this.ctx.fillStyle = '#e0f7fa';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y + 2, 12, 4, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x - 2, y + 1, 8, 2.5, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawIceCrystal(x, y, time, index) {
+    const floatOffset = Math.sin(time * 0.003 + index) * 1.5;
+    const cy = y - 7 + floatOffset;
+    this.ctx.fillStyle = 'rgba(0, 229, 255, 0.25)';
+    this.ctx.beginPath();
+    this.ctx.arc(x, cy, 7, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#e0f7fa';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, cy - 8);
+    this.ctx.lineTo(x + 4, cy);
+    this.ctx.lineTo(x, cy + 8);
+    this.ctx.lineTo(x - 4, cy);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.fillStyle = '#80deea';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, cy - 8);
+    this.ctx.lineTo(x, cy + 8);
+    this.ctx.lineTo(x - 4, cy);
+    this.ctx.closePath();
+    this.ctx.fill();
+  }
+
+  drawSnowBush(x, y) {
+    this.ctx.fillStyle = '#004d40';
+    this.ctx.beginPath();
+    this.ctx.arc(x, y + 1, 6, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.beginPath();
+    this.ctx.arc(x - 1, y - 3, 4, 0, Math.PI * 2);
+    this.ctx.arc(x + 2, y - 2, 3, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawLavaPool(x, y, time) {
+    const pulse = Math.abs(Math.sin(time * 0.002)) * 1.5;
+    this.ctx.fillStyle = '#3e2723';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y + 2, 13, 4.5, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#ff3d00';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y + 2, 10 + pulse, 3 + pulse * 0.3, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#ffeb3b';
+    this.ctx.beginPath();
+    this.ctx.ellipse(x - 1, y + 1.5, 6, 1.8, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawLavaRock(x, y) {
+    this.ctx.fillStyle = '#212121';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 6, y + 2);
+    this.ctx.lineTo(x - 3, y - 8);
+    this.ctx.lineTo(x + 3, y - 7);
+    this.ctx.lineTo(x + 6, y + 2);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.fillStyle = '#ff3d00';
+    this.ctx.fillRect(x - 3, y - 4, 1.5, 4);
+    this.ctx.fillRect(x + 1, y - 5, 1.5, 3);
+  }
+
+  drawObsidianShard(x, y) {
+    this.ctx.fillStyle = '#311b92';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y - 12);
+    this.ctx.lineTo(x + 3.5, y + 1);
+    this.ctx.lineTo(x - 3.5, y + 1);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.fillStyle = '#b388ff';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y - 12);
+    this.ctx.lineTo(x, y + 1);
+    this.ctx.lineTo(x - 3.5, y + 1);
+    this.ctx.closePath();
+    this.ctx.fill();
+  }
+
+  drawCelestialCloud(x, y, time, index) {
+    const floatX = Math.sin(time * 0.0015 + index) * 12;
+    const cx = x + floatX;
+    this.ctx.fillStyle = 'rgba(255, 235, 59, 0.15)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, y, 16, 6, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    this.ctx.beginPath();
+    this.ctx.arc(cx - 5, y - 1, 5, 0, Math.PI * 2);
+    this.ctx.arc(cx + 4, y, 4, 0, Math.PI * 2);
+    this.ctx.arc(cx, y - 3, 5.5, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  drawCelestialPillar(x, y) {
+    this.ctx.fillStyle = '#eceff1';
+    this.ctx.fillRect(x - 6, y - 2, 12, 4);
+    this.ctx.fillStyle = '#cfd8dc';
+    this.ctx.fillRect(x - 4, y - 16, 8, 14);
+    this.ctx.fillStyle = '#ffb300';
+    this.ctx.fillRect(x - 4, y - 16, 1, 14);
+    this.ctx.fillRect(x + 3, y - 16, 1, 14);
+    this.ctx.fillStyle = '#eceff1';
+    this.ctx.fillRect(x - 6, y - 18, 12, 3);
+  }
+
+  drawGoldStatue(x, y) {
+    this.ctx.fillStyle = '#ffe082';
+    this.ctx.fillRect(x - 5, y - 1, 10, 3);
+    this.ctx.fillStyle = '#ffb300';
+    this.ctx.fillRect(x - 2.5, y - 9, 5, 8);
+    this.ctx.beginPath();
+    this.ctx.arc(x, y - 11.5, 2.5, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#ffe082';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 2, y - 8);
+    this.ctx.lineTo(x - 7, y - 12);
+    this.ctx.lineTo(x - 4, y - 5);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.beginPath();
+    this.ctx.moveTo(x + 2, y - 8);
+    this.ctx.lineTo(x + 7, y - 12);
+    this.ctx.lineTo(x + 4, y - 5);
+    this.ctx.closePath();
+    this.ctx.fill();
+  }
+
   // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
   getChaminePos(town, bKey) {
     if (!town.isBuilt(bKey)) return null;
@@ -1839,7 +2090,72 @@ export class GameRenderer {
 
     const name = monster.name;
     const formattedName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s-]+/g, '_');
-    const imgKey = `monster_${formattedName}`;
+    
+    let imgKey = `monster_${formattedName}`;
+    let filterString = 'none';
+
+    // Mapeamento dinâmico de spritesheets e filtros de cores para novos biomas
+    if (name.includes('Múmia')) {
+      imgKey = 'monster_esqueleto';
+      filterString = 'sepia(0.85) hue-rotate(-20deg) brightness(0.9)';
+    } else if (name.includes('Escorpião')) {
+      imgKey = 'monster_goblin';
+      filterString = 'sepia(0.9) hue-rotate(-10deg) saturate(1.3) brightness(0.95)';
+    } else if (name.includes('Ladrão do Deserto')) {
+      imgKey = 'monster_orc';
+      filterString = 'sepia(0.65) hue-rotate(-15deg) brightness(0.85)';
+    } else if (name.includes('Faraó Sombrio')) {
+      imgKey = 'monster_rei_demonios';
+      filterString = 'sepia(0.85) hue-rotate(-25deg) brightness(0.8)';
+    } else if (name.includes('Esfinge de Areia')) {
+      imgKey = 'monster_dragonborn_boss';
+      filterString = 'sepia(0.8) hue-rotate(5deg) saturate(1.4) brightness(0.95)';
+    } else if (name.includes('Yeti')) {
+      imgKey = 'monster_orc';
+      filterString = 'hue-rotate(180deg) saturate(0.15) brightness(1.6) contrast(1.1)';
+    } else if (name.includes('Guerreiro Gelado')) {
+      imgKey = 'monster_esqueleto';
+      filterString = 'hue-rotate(185deg) saturate(1.6) brightness(1.3)';
+    } else if (name.includes('Lobo das Neves')) {
+      imgKey = 'monster_lobisomen';
+      filterString = 'hue-rotate(180deg) saturate(0.2) brightness(1.5)';
+    } else if (name.includes('Gigante de Gelo')) {
+      imgKey = 'monster_capitao_orc';
+      filterString = 'hue-rotate(180deg) saturate(1.5) brightness(1.35)';
+    } else if (name.includes('Rei do Gelo')) {
+      imgKey = 'monster_lich';
+      filterString = 'hue-rotate(190deg) saturate(1.7) brightness(1.2) drop-shadow(0 0 8px rgba(0,229,255,0.6))';
+    } else if (name.includes('Elementar de Fogo')) {
+      imgKey = 'monster_feiticeira';
+      filterString = 'hue-rotate(-50deg) saturate(2.2) brightness(1.1) drop-shadow(0 0 6px rgba(255,61,61,0.75))';
+    } else if (name.includes('Guerreiro de Lava')) {
+      imgKey = 'monster_esqueleto';
+      filterString = 'hue-rotate(-50deg) saturate(1.9) brightness(0.8)';
+    } else if (name.includes('Demônio Menor')) {
+      imgKey = 'monster_goblin';
+      filterString = 'hue-rotate(-60deg) saturate(2) brightness(0.7)';
+    } else if (name.includes('General de Lava')) {
+      imgKey = 'monster_cavaleiro_sombrio';
+      filterString = 'hue-rotate(-45deg) saturate(2.2) brightness(0.9) drop-shadow(0 0 10px rgba(255,23,73,0.8))';
+    } else if (name.includes('Dragão do Vulcão')) {
+      imgKey = 'monster_dragonborn_boss';
+      filterString = 'hue-rotate(-50deg) saturate(2.2) brightness(0.9) drop-shadow(0 0 12px rgba(255,23,73,0.9))';
+    } else if (name.includes('Guerreiro Alado')) {
+      imgKey = 'monster_orc';
+      filterString = 'saturate(0.5) brightness(1.55) sepia(0.3) hue-rotate(10deg)';
+    } else if (name.includes('Guardião Rúnico')) {
+      imgKey = 'monster_cavaleiro_sombrio';
+      filterString = 'hue-rotate(150deg) saturate(1.3) brightness(1.4) drop-shadow(0 0 8px rgba(0,229,255,0.7))';
+    } else if (name.includes('Querubim Sombrio')) {
+      imgKey = 'monster_feiticeira';
+      filterString = 'hue-rotate(240deg) saturate(1.4) brightness(1.1) drop-shadow(0 0 6px rgba(213,0,249,0.7))';
+    } else if (name.includes('Arcanjo Caído')) {
+      imgKey = 'monster_rei_demonios';
+      filterString = 'brightness(1.45) sepia(0.4) hue-rotate(15deg) drop-shadow(0 0 10px rgba(255,234,58,0.85))';
+    } else if (name.includes('Avatar Celestial')) {
+      imgKey = 'monster_dragonborn_boss';
+      filterString = 'brightness(1.55) sepia(0.5) hue-rotate(20deg) drop-shadow(0 0 15px rgba(255,234,58,0.98))';
+    }
 
     const img = imgKey ? this.images[imgKey] : null;
 
@@ -1923,7 +2239,13 @@ export class GameRenderer {
         const sh = 64;
 
         const size = monster.isBoss ? 134 : (monster.isMiniBoss ? 100 : 78);
+        if (filterString && filterString !== 'none') {
+          this.ctx.filter = filterString;
+        }
         this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+        if (filterString && filterString !== 'none') {
+          this.ctx.filter = 'none';
+        }
       } else {
         // --- Static 1024x1024 image ---
         const isFighting = (game && game.heroes) ? game.heroes.some(h => h.currentMap === 'hunt' && h.targetMonster === monster) : false;
@@ -1932,7 +2254,13 @@ export class GameRenderer {
           this.ctx.translate(0, -bounce);
         }
         const size = monster.isBoss ? 118 : (monster.isMiniBoss ? 90 : 67);
+        if (filterString && filterString !== 'none') {
+          this.ctx.filter = filterString;
+        }
         this.ctx.drawImage(img, -size / 2, -size + 2, size, size);
+        if (filterString && filterString !== 'none') {
+          this.ctx.filter = 'none';
+        }
       }
 
       this.ctx.restore();
@@ -2853,6 +3181,50 @@ export class GameRenderer {
       this.ctx.fillRect(hx - barW / 2, hy - 17, barW * hpPct, barH);
     }
 
+    // Shield visual effect around hero body
+    const isLayered = !!(img && img.loaded);
+    const centerY = isLayered ? hy - 14 : hy - 2;
+    const shieldRadius = isLayered ? 24 : 12;
+    const headY = isLayered ? hy - 68 : hy - 32;
+
+    if (hero.shieldHp && hero.shieldHp > 0) {
+      this.ctx.save();
+      const pulse = 1.0 + Math.sin(time * 0.006) * 0.08;
+      const radius = shieldRadius * pulse;
+      this.ctx.strokeStyle = 'rgba(0, 229, 255, 0.85)';
+      this.ctx.lineWidth = 2;
+      this.ctx.shadowColor = '#00e5ff';
+      this.ctx.shadowBlur = 10;
+      this.ctx.fillStyle = 'rgba(0, 229, 255, 0.15)';
+      this.ctx.beginPath();
+      this.ctx.arc(hx, centerY, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+      this.ctx.restore();
+    }
+
+    // Buff symbols indicators above hero head (⚡, 🎯, ⚔️)
+    const activeBuffs = [];
+    if (hero.atkSpdBuffTimer && hero.atkSpdBuffTimer > 0) activeBuffs.push('⚡');
+    if (hero.critBuffTimer && hero.critBuffTimer > 0) activeBuffs.push('🎯');
+    if (hero.atkBuffTimer && hero.atkBuffTimer > 0) activeBuffs.push('⚔️');
+
+    if (activeBuffs.length > 0) {
+      this.ctx.save();
+      this.ctx.font = '10px monospace';
+      this.ctx.textAlign = 'center';
+      
+      const totalWidth = (activeBuffs.length - 1) * 12;
+      const startX = hx - totalWidth / 2;
+      
+      activeBuffs.forEach((buff, i) => {
+        const bx = startX + i * 12;
+        const by = headY;
+        this.ctx.fillText(buff, bx, by);
+      });
+      this.ctx.restore();
+    }
+
     this.ctx.restore();
   }
 
@@ -2867,9 +3239,14 @@ export class GameRenderer {
     if (hero.equipment.weapon) {
       const tier = hero.equipment.weapon.tier;
       if (tier === 1) weaponColor = '#818b96';
-      if (tier === 2) weaponColor = '#4e5b66';
-      if (tier === 3) {
-        weaponColor = '#ffea3a';
+      else if (tier === 2) weaponColor = '#4e5b66';
+      else if (tier === 3) weaponColor = '#ffea3a';
+      else if (tier === 4) weaponColor = '#e0c068';
+      else if (tier === 5) weaponColor = '#80deea';
+      else if (tier === 6) weaponColor = '#ff5722';
+      else if (tier >= 7) weaponColor = '#ffffff';
+      
+      if (tier >= 3) {
         isLendaria = true;
       }
     } else {
@@ -2963,25 +3340,53 @@ export class GameRenderer {
     this.ctx.save();
     
     if (hero.className === 'WARRIOR' || hero.className === 'MERCENARY') {
-      this.ctx.fillStyle = tier === 3 ? '#cca93d' : (tier === 2 ? '#4e5a66' : '#818b96');
+      let color = '#818b96';
+      if (tier === 2) color = '#4e5a66';
+      else if (tier === 3) color = '#cca93d';
+      else if (tier === 4) color = '#bcaaa4'; // Deserto (Bege)
+      else if (tier === 5) color = '#80deea'; // Tundra (Ciano)
+      else if (tier === 6) color = '#212121'; // Vulcão (Preto)
+      else if (tier >= 7) color = '#eceff1';  // Cidadela (Branco)
+
+      this.ctx.fillStyle = color;
       this.ctx.fillRect(-6, -15, 3, 3);
       this.ctx.fillRect(3, -15, 3, 3);
       this.ctx.fillRect(-4, -14, 8, 6);
       
-      if (tier === 3) {
+      // Detalhe extra dourado/lava/luz para níveis lendários
+      if (tier === 3 || tier === 4 || tier === 7) {
         this.ctx.fillStyle = '#ffea3a';
+        this.ctx.fillRect(-2, -12, 4, 2);
+      } else if (tier === 6) {
+        this.ctx.fillStyle = '#ff3d00'; // lava
         this.ctx.fillRect(-2, -12, 4, 2);
       }
     } else if (hero.className === 'ARCHER') {
-      this.ctx.fillStyle = tier === 3 ? '#bf360c' : (tier === 2 ? '#8d6e63' : '#a1887f');
+      let color = '#a1887f';
+      if (tier === 2) color = '#8d6e63';
+      else if (tier === 3) color = '#bf360c';
+      else if (tier === 4) color = '#ffe082';
+      else if (tier === 5) color = '#00e5ff';
+      else if (tier === 6) color = '#ff3d00';
+      else if (tier >= 7) color = '#ffffff';
+
+      this.ctx.fillStyle = color;
       this.ctx.fillRect(-4, -14, 8, 5);
       this.ctx.fillStyle = '#3e2723';
       this.ctx.fillRect(-3, -14, 1, 5);
       this.ctx.fillRect(2, -11, 1, 2);
     } else {
-      this.ctx.fillStyle = tier === 3 ? '#4a148c' : (tier === 2 ? '#0288d1' : '#b0bec5');
+      let color = '#b0bec5';
+      if (tier === 2) color = '#0288d1';
+      else if (tier === 3) color = '#4a148c';
+      else if (tier === 4) color = '#ffb300';
+      else if (tier === 5) color = '#00e5ff';
+      else if (tier === 6) color = '#d84315';
+      else if (tier >= 7) color = '#ffffff';
+
+      this.ctx.fillStyle = color;
       this.ctx.fillRect(-4, -14, 8, 7);
-      this.ctx.fillStyle = '#ffea3a';
+      this.ctx.fillStyle = (tier === 3 || tier === 4 || tier >= 7) ? '#ffea3a' : '#212121';
       this.ctx.fillRect(-4, -8, 8, 1);
     }
     
@@ -2995,21 +3400,52 @@ export class GameRenderer {
     this.ctx.save();
     
     if (hero.className === 'WARRIOR' || hero.className === 'MERCENARY') {
-      this.ctx.fillStyle = tier === 3 ? '#cca93d' : (tier === 2 ? '#4e5a66' : '#818b96');
+      let color = '#818b96';
+      if (tier === 2) color = '#4e5a66';
+      else if (tier === 3) color = '#cca93d';
+      else if (tier === 4) color = '#d7ccc8';
+      else if (tier === 5) color = '#b2ebf2';
+      else if (tier === 6) color = '#212121';
+      else if (tier >= 7) color = '#eceff1';
+
+      this.ctx.fillStyle = color;
       this.ctx.fillRect(-5, -27, 10, 4);
       this.ctx.fillRect(-6, -23, 12, 2);
       this.ctx.fillRect(-1, -21, 2, 3);
       
-      this.ctx.fillStyle = tier === 3 ? '#2979ff' : '#ff1744';
+      let plumeColor = '#ff1744';
+      if (tier === 3) plumeColor = '#2979ff';
+      else if (tier === 4) plumeColor = '#ffb300';
+      else if (tier === 5) plumeColor = '#00e5ff';
+      else if (tier === 6) plumeColor = '#ff3d00';
+      else if (tier >= 7) plumeColor = '#ffd54f';
+
+      this.ctx.fillStyle = plumeColor;
       this.ctx.fillRect(-1, -29, 2, 2);
     } else if (hero.className === 'ARCHER') {
-      this.ctx.fillStyle = tier === 3 ? '#d84315' : (tier === 2 ? '#2e7d32' : '#5d4037');
+      let color = '#5d4037';
+      if (tier === 2) color = '#2e7d32';
+      else if (tier === 3) color = '#d84315';
+      else if (tier === 4) color = '#ffe082';
+      else if (tier === 5) color = '#80deea';
+      else if (tier === 6) color = '#e64a19';
+      else if (tier >= 7) color = '#ffffff';
+
+      this.ctx.fillStyle = color;
       this.ctx.fillRect(-5, -26, 10, 3);
       this.ctx.fillRect(-6, -23, 3, 4);
       this.ctx.fillRect(3, -23, 3, 4);
     } else {
       if (hero.className === 'MAGE') {
-        this.ctx.fillStyle = tier === 3 ? '#4a148c' : (tier === 2 ? '#0288d1' : '#511b85');
+        let color = '#511b85';
+        if (tier === 2) color = '#0288d1';
+        else if (tier === 3) color = '#4a148c';
+        else if (tier === 4) color = '#ffb300';
+        else if (tier === 5) color = '#00e5ff';
+        else if (tier === 6) color = '#d84315';
+        else if (tier >= 7) color = '#ffffff';
+
+        this.ctx.fillStyle = color;
         this.ctx.fillRect(-6, -24, 12, 2);
         this.ctx.beginPath();
         this.ctx.moveTo(-4, -24);
@@ -3018,9 +3454,25 @@ export class GameRenderer {
         this.ctx.closePath();
         this.ctx.fill();
       } else {
-        this.ctx.fillStyle = tier === 3 ? '#ffea3a' : (tier === 2 ? '#80deea' : '#b0bec5');
+        let color = '#b0bec5';
+        if (tier === 2) color = '#80deea';
+        else if (tier === 3) color = '#ffea3a';
+        else if (tier === 4) color = '#ffe082';
+        else if (tier === 5) color = '#e0f7fa';
+        else if (tier === 6) color = '#ffab91';
+        else if (tier >= 7) color = '#ffffff';
+
+        this.ctx.fillStyle = color;
         this.ctx.fillRect(-5, -24, 10, 2);
-        this.ctx.fillStyle = tier === 3 ? '#d500f9' : '#00e5ff';
+        
+        let gemColor = '#00e5ff';
+        if (tier === 3) gemColor = '#d500f9';
+        else if (tier === 4) gemColor = '#ff5722';
+        else if (tier === 5) gemColor = '#00e5ff';
+        else if (tier === 6) gemColor = '#ff1744';
+        else if (tier >= 7) gemColor = '#ffea3a';
+
+        this.ctx.fillStyle = gemColor;
         this.ctx.fillRect(-1, -25, 2, 2);
       }
     }
@@ -3038,8 +3490,12 @@ export class GameRenderer {
     
     let weaponColor = '#bf9b30';
     if (tier === 1) weaponColor = '#818b96';
-    if (tier === 2) weaponColor = '#4e5b66';
-    if (tier === 3) weaponColor = '#ffea3a';
+    else if (tier === 2) weaponColor = '#4e5b66';
+    else if (tier === 3) weaponColor = '#ffea3a';
+    else if (tier === 4) weaponColor = '#e0c068';
+    else if (tier === 5) weaponColor = '#80deea';
+    else if (tier === 6) weaponColor = '#ff5722';
+    else if (tier >= 7) weaponColor = '#ffffff';
     
     this.ctx.save();
     
@@ -3101,18 +3557,22 @@ export class GameRenderer {
 
       const type = atk.type;
 
-      if (type === 'melee' || type === 'slash') {
-        // Melee: efeito imediato no local do monstro
+      if (type === 'melee' || type === 'slash' || type === 'skill_taunt' || type === 'skill_buff_atk' || type === 'skill_brutal_strike') {
+        // Melee ou imediato: cria efeito visual imediato
         this._spawnMeleeEffect(atk, hero.className);
       } else {
-        // Ranged: criar projétil que voa até o alvo
-        const speed = type === 'arrow' ? 320 : (type === 'holy' ? 200 : 260);
+        // Projéteis e magias: cria projétil voador
+        let speed = type === 'arrow' ? 320 : (type === 'holy' ? 200 : 260);
+        if (type === 'skill_double_shot') speed = 360;
+        else if (type === 'skill_fireball_aoe') speed = 245;
+        else if (type === 'skill_freeze') speed = 285;
+        else if (type === 'skill_heal') speed = 290;
+
         const dx = atk.toX - atk.fromX;
         const dy = atk.toY - atk.fromY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (isNaN(dist) || dist <= 0) {
-          // Se for inválido, dá dano imediato sem projétil para não travar
           const spawnFn = addFloater || this._addFloater;
           if (spawnFn) {
             spawnFn({
@@ -3127,24 +3587,65 @@ export class GameRenderer {
           return;
         }
 
-        this.projectiles.push({
-          type,
-          x: atk.fromX,
-          y: atk.fromY,
-          vx: (dx / dist) * speed,
-          vy: (dy / dist) * speed,
-          toX: atk.toX,
-          toY: atk.toY,
-          color: atk.color,
-          impactColor: atk.impactColor,
-          damage: atk.damage,
-          dist,
-          traveled: 0,
-          time: 0,
-          addFloater: addFloater || this._addFloater,
-          trail: [],
-          life: 1.0
-        });
+        if (type === 'skill_double_shot') {
+          // Flecha 1
+          this.projectiles.push({
+            type: 'arrow',
+            x: atk.fromX - 4,
+            y: atk.fromY - 4,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+            toX: atk.toX,
+            toY: atk.toY,
+            color: atk.color,
+            impactColor: atk.impactColor,
+            damage: Math.round(atk.damage / 2),
+            dist,
+            traveled: 0,
+            time: 0,
+            addFloater: addFloater || this._addFloater,
+            trail: [],
+            life: 1.0
+          });
+          // Flecha 2 (pequeno atraso no início)
+          this.projectiles.push({
+            type: 'arrow',
+            x: atk.fromX + 4,
+            y: atk.fromY + 4,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+            toX: atk.toX,
+            toY: atk.toY,
+            color: atk.color,
+            impactColor: atk.impactColor,
+            damage: Math.round(atk.damage / 2),
+            dist,
+            traveled: 0,
+            time: 0.08,
+            addFloater: addFloater || this._addFloater,
+            trail: [],
+            life: 1.0
+          });
+        } else {
+          this.projectiles.push({
+            type,
+            x: atk.fromX,
+            y: atk.fromY,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+            toX: atk.toX,
+            toY: atk.toY,
+            color: atk.color,
+            impactColor: atk.impactColor,
+            damage: atk.damage,
+            dist,
+            traveled: 0,
+            time: 0,
+            addFloater: addFloater || this._addFloater,
+            trail: [],
+            life: 1.0
+          });
+        }
       }
     });
 
@@ -3249,7 +3750,66 @@ export class GameRenderer {
     this.ctx.save();
     this.ctx.globalAlpha = alpha;
 
-    if (e.className === 'WARRIOR') {
+    if (e.type === 'skill_taunt') {
+      // Provocar: Onda de choque vermelha em expansão ao redor do Guerreiro
+      const radius = 10 + t * 45;
+      this.ctx.strokeStyle = 'rgba(255, 23, 73, 0.8)';
+      this.ctx.lineWidth = 3;
+      this.ctx.shadowColor = '#ff1744';
+      this.ctx.shadowBlur = 15;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      this.ctx.stroke();
+      
+      // Símbolos de raiva 💢
+      this.ctx.fillStyle = '#ff1744';
+      this.ctx.font = 'bold 12px monospace';
+      this.ctx.fillText('💢', pos.x - 18, pos.y - 30 - t * 10);
+      this.ctx.fillText('💢', pos.x + 18, pos.y - 30 - t * 10);
+
+    } else if (e.type === 'skill_buff_atk') {
+      // Bênção da Força: Círculo dourado em expansão com estrelas brilhantes subindo
+      const radius = 10 + t * 60;
+      this.ctx.strokeStyle = 'rgba(255, 179, 0, 0.85)';
+      this.ctx.lineWidth = 4;
+      this.ctx.shadowColor = '#ffd54f';
+      this.ctx.shadowBlur = 18;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      this.ctx.stroke();
+      
+      // Estrelas subindo
+      this.ctx.fillStyle = '#ffea00';
+      this.ctx.font = '10px monospace';
+      for (let i = 0; i < 4; i++) {
+        const sx = pos.x + Math.sin(t * 12 + i * 2) * 20;
+        const sy = pos.y - 10 - t * 35 - i * 4;
+        this.ctx.fillText('⭐', sx, sy);
+      }
+
+    } else if (e.type === 'skill_brutal_strike') {
+      // Golpe Brutal: Dois cortes amarelos e vermelhos gigantes cruzando o monstro
+      const r = 24 + t * 12;
+      this.ctx.strokeStyle = '#ffd54f';
+      this.ctx.lineWidth = 5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos.x - r, pos.y - r);
+      this.ctx.lineTo(pos.x + r, pos.y + r);
+      this.ctx.moveTo(pos.x + r, pos.y - r);
+      this.ctx.lineTo(pos.x - r, pos.y + r);
+      this.ctx.stroke();
+      
+      // Corte secundário vermelho
+      this.ctx.strokeStyle = '#ff1744';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos.x - r * 0.7, pos.y - r * 0.7);
+      this.ctx.lineTo(pos.x + r * 0.7, pos.y + r * 0.7);
+      this.ctx.moveTo(pos.x + r * 0.7, pos.y - r * 0.7);
+      this.ctx.lineTo(pos.x - r * 0.7, pos.y + r * 0.7);
+      this.ctx.stroke();
+
+    } else if (e.className === 'WARRIOR') {
       // Arco largo de golpe (espada pesada)
       const angle = Math.atan2(pos.y - fromPos.y, pos.x - fromPos.x);
       const radius = 22 + t * 10;
@@ -3399,6 +3959,75 @@ export class GameRenderer {
       this.ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
       this.ctx.fill();
 
+    } else if (p.type === 'skill_fireball_aoe') {
+      // Bola de fogo gigante (Especial do Mago)
+      p.trail.forEach((t, i) => {
+        const tp = this.toIso(t.x, t.y);
+        const a = Math.max(0, (1 - t.age * 2.5) * 0.6);
+        const r = 9 * (1 - t.age * 1.5);
+        if (r > 0) {
+          this.ctx.globalAlpha = a;
+          this.ctx.fillStyle = i % 2 === 0 ? '#ff3d00' : '#ffeb3b';
+          this.ctx.beginPath();
+          this.ctx.arc(tp.x, tp.y, r, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+      });
+      this.ctx.globalAlpha = 1;
+      const grad = this.ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 11);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, '#ffeb3b');
+      grad.addColorStop(1, '#ff3d00');
+      this.ctx.fillStyle = grad;
+      this.ctx.shadowColor = '#ff3d00';
+      this.ctx.shadowBlur = 18;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, 11, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (p.type === 'skill_freeze') {
+      // Congelamento: Esfera gélida com espinhos
+      p.trail.forEach((t, i) => {
+        const tp = this.toIso(t.x, t.y);
+        const a = Math.max(0, (1 - t.age * 3) * 0.6);
+        this.ctx.globalAlpha = a;
+        this.ctx.fillStyle = '#80deea';
+        this.ctx.beginPath();
+        this.ctx.arc(tp.x, tp.y, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+      });
+      this.ctx.globalAlpha = 1;
+      this.ctx.fillStyle = '#00e5ff';
+      this.ctx.shadowColor = '#00e5ff';
+      this.ctx.shadowBlur = 12;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      // Detalhe de floco de neve
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos.x - 9, pos.y); this.ctx.lineTo(pos.x + 9, pos.y);
+      this.ctx.moveTo(pos.x, pos.y - 9); this.ctx.lineTo(pos.x, pos.y + 9);
+      this.ctx.stroke();
+
+    } else if (p.type === 'skill_heal') {
+      // Luz Curativa: Sparkles verdes
+      p.trail.forEach((t, i) => {
+        const tp = this.toIso(t.x, t.y);
+        const a = Math.max(0, (1 - t.age * 4) * 0.7);
+        this.ctx.globalAlpha = a;
+        this.ctx.fillStyle = '#4caf50';
+        this.ctx.font = '8px monospace';
+        this.ctx.fillText('➕', tp.x, tp.y);
+      });
+      this.ctx.globalAlpha = 1;
+      this.ctx.fillStyle = '#81c784';
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+      this.ctx.fill();
+
     } else if (p.type === 'holy') {
       // Raio de luz sagrado: estrela/cross pulsante
       const pulse = 0.8 + 0.2 * Math.sin(p.time * 15);
@@ -3493,6 +4122,72 @@ export class GameRenderer {
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
       this.ctx.stroke();
+    } else if (imp.type === 'skill_fireball_aoe') {
+      // Explosão de fogo gigante (AoE Mago)
+      const r = 20 + t * 65;
+      const grad = this.ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, r);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      grad.addColorStop(0.2, 'rgba(255, 235, 59, 0.9)');
+      grad.addColorStop(0.5, 'rgba(255, 61, 0, 0.8)');
+      grad.addColorStop(0.8, 'rgba(191, 54, 12, 0.4)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      
+      this.ctx.fillStyle = grad;
+      this.ctx.shadowColor = '#ff3d00';
+      this.ctx.shadowBlur = 30 * (1 - t);
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      this.ctx.strokeStyle = 'rgba(255, 61, 0, 0.85)';
+      this.ctx.lineWidth = 4 * (1 - t);
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, r * 0.9, 0, Math.PI * 2);
+      this.ctx.stroke();
+    } else if (imp.type === 'skill_freeze') {
+      // Congelamento: Anel de flocos de neve ciano com linhas de gelo radiais
+      const r = 12 + t * 38;
+      this.ctx.strokeStyle = 'rgba(0, 229, 255, 0.85)';
+      this.ctx.shadowColor = '#00e5ff';
+      this.ctx.shadowBlur = 15;
+      this.ctx.lineWidth = 3 * (1 - t);
+      
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pos.x + Math.cos(angle) * (r * 0.3), pos.y + Math.sin(angle) * (r * 0.3));
+        this.ctx.lineTo(pos.x + Math.cos(angle) * r, pos.y + Math.sin(angle) * r);
+        this.ctx.stroke();
+      }
+      
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, r * 0.7, 0, Math.PI * 2);
+      this.ctx.stroke();
+      
+      this.ctx.fillStyle = '#80deea';
+      this.ctx.font = '8px monospace';
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + t * 3;
+        const fx = pos.x + Math.cos(angle) * r * 0.8;
+        const fy = pos.y + Math.sin(angle) * r * 0.8;
+        this.ctx.fillText('❄️', fx - 4, fy + 3);
+      }
+    } else if (imp.type === 'skill_heal') {
+      // Luz Curativa: Cruzes verdes subindo verticalmente
+      this.ctx.fillStyle = '#4caf50';
+      this.ctx.font = 'bold 12px monospace';
+      this.ctx.shadowColor = '#81c784';
+      this.ctx.shadowBlur = 10;
+      
+      const lift1 = t * 30;
+      const lift2 = Math.max(0, (t - 0.2) * 35);
+      const lift3 = Math.max(0, (t - 0.4) * 40);
+      
+      this.ctx.fillText('➕', pos.x - 8, pos.y - lift1);
+      if (t > 0.2) this.ctx.fillText('➕', pos.x + 8, pos.y - 5 - lift2);
+      if (t > 0.4) this.ctx.fillText('➕', pos.x, pos.y - 12 - lift3);
     } else if (imp.type === 'holy') {
       // Burst de luz sagrada
       const r = 8 + t * 18;

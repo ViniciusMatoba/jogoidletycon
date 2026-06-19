@@ -217,6 +217,13 @@ export class Hero {
     // Comunicação herói → renderer (para spawnar projéteis)
     this.pendingAttack = null;
     
+    // Recargas de habilidades e temporizadores de buffs
+    this.skillCooldowns = [0, 0];
+    this.atkSpdBuffTimer = 0;
+    this.critBuffTimer = 0;
+    this.atkBuffTimer = 0;
+    this.shieldHp = 0;
+    
     this.isGhost = false; // Estado de fantasma após morte
 
     // Histórico de logs de atividades do herói
@@ -341,6 +348,17 @@ export class Hero {
 
   // Ciclo principal de atualização da IA do Herói
   update(dt, town, monsters, addFloater, viewport = {}, allHeroes = []) {
+    // Decrementa temporizadores de buffs e recargas
+    if (this.atkSpdBuffTimer > 0) this.atkSpdBuffTimer -= dt;
+    if (this.critBuffTimer > 0) this.critBuffTimer -= dt;
+    if (this.atkBuffTimer > 0) this.atkBuffTimer -= dt;
+    if (!this.skillCooldowns) this.skillCooldowns = [0, 0];
+    this.skillCooldowns[0] = Math.max(0, this.skillCooldowns[0] - dt);
+    this.skillCooldowns[1] = Math.max(0, this.skillCooldowns[1] - dt);
+
+    // Avalia e usa habilidades ativas em combate
+    this.evaluateAndUseSkills(monsters, allHeroes, addFloater, town, dt);
+
     this.cooldownTimer = Math.max(0, this.cooldownTimer - dt);
 
     // Repulsion Separation from other heroes
@@ -493,7 +511,9 @@ export class Hero {
               this.targetY = this.y;
               if (this.cooldownTimer <= 0) {
                 this.attackMonster(this.targetMonster, addFloater, town);
-                this.cooldownTimer = 1 / this.spd;
+                let currentSpd = this.spd;
+                if (this.atkSpdBuffTimer > 0) currentSpd *= 1.5;
+                this.cooldownTimer = 1 / currentSpd;
               }
             } else {
               // Fora do alcance: avançar até o alcance máximo
@@ -513,7 +533,9 @@ export class Hero {
               this.clampToHunt(viewport);
             } else if (this.cooldownTimer <= 0) {
               this.attackMonster(this.targetMonster, addFloater, town);
-              this.cooldownTimer = 1 / this.spd;
+              let currentSpd = this.spd;
+              if (this.atkSpdBuffTimer > 0) currentSpd *= 1.5;
+              this.cooldownTimer = 1 / currentSpd;
             }
           }
         }
@@ -558,7 +580,7 @@ export class Hero {
       case 'HEALING_HOSP':
         // Recuperar vida no hospital
         const hospLevel = town.buildings.hospital || 0;
-        const hospResKey = hospLevel === 3 ? 'bandage_basic_t3' : (hospLevel === 2 ? 'bandage_basic_t2' : 'bandage_basic');
+        const hospResKey = hospLevel > 1 ? 'bandage_basic_t' + Math.min(hospLevel, 7) : 'bandage_basic';
         
         if (town.isBuilt('hospital') && (town.resources[hospResKey] || 0) > 0 && this.gold >= 8) {
           const rate = town.getBuildingConfig('hospital').current.hpRecovery;
@@ -589,7 +611,7 @@ export class Hero {
 
       case 'EATING_REST':
         const restLevel = town.buildings.restaurant || 0;
-        const restResKey = restLevel === 3 ? 'meal_cooked_t3' : (restLevel === 2 ? 'meal_cooked_t2' : 'meal_cooked');
+        const restResKey = restLevel > 1 ? 'meal_cooked_t' + Math.min(restLevel, 7) : 'meal_cooked';
 
         if (town.isBuilt('restaurant') && (town.resources[restResKey] || 0) > 0 && this.gold >= 8) {
           const rate = town.getBuildingConfig('restaurant').current.foodRecovery;
@@ -617,7 +639,7 @@ export class Hero {
 
       case 'RESTING_HOTEL':
         const hotelLevel = town.buildings.hotel || 0;
-        const hotelResKey = hotelLevel === 3 ? 'bed_disposable_t3' : (hotelLevel === 2 ? 'bed_disposable_t2' : 'bed_disposable');
+        const hotelResKey = hotelLevel > 1 ? 'bed_disposable_t' + Math.min(hotelLevel, 7) : 'bed_disposable';
 
         if (town.isBuilt('hotel') && (town.resources[hotelResKey] || 0) > 0 && this.gold >= 6) {
           const rate = town.getBuildingConfig('hotel').current.energyRecovery;
@@ -647,7 +669,7 @@ export class Hero {
 
       case 'DRINKING_TAVERN':
         const tavernLevel = town.buildings.tavern || 0;
-        const tavernResKey = tavernLevel === 3 ? 'beer_refreshing_t3' : (tavernLevel === 2 ? 'beer_refreshing_t2' : 'beer_refreshing');
+        const tavernResKey = tavernLevel > 1 ? 'beer_refreshing_t' + Math.min(tavernLevel, 7) : 'beer_refreshing';
 
         if (town.isBuilt('tavern') && (town.resources[tavernResKey] || 0) > 0 && this.gold >= 8) {
           const rate = town.getBuildingConfig('tavern').current.moodRecovery;
@@ -757,16 +779,16 @@ export class Hero {
 
     // Obter as chaves de recursos correspondentes aos níveis atuais das construções
     const hospLevel = town.buildings.hospital || 0;
-    const hospResKey = hospLevel === 3 ? 'bandage_basic_t3' : (hospLevel === 2 ? 'bandage_basic_t2' : 'bandage_basic');
+    const hospResKey = hospLevel > 1 ? 'bandage_basic_t' + Math.min(hospLevel, 7) : 'bandage_basic';
 
     const restLevel = town.buildings.restaurant || 0;
-    const restResKey = restLevel === 3 ? 'meal_cooked_t3' : (restLevel === 2 ? 'meal_cooked_t2' : 'meal_cooked');
+    const restResKey = restLevel > 1 ? 'meal_cooked_t' + Math.min(restLevel, 7) : 'meal_cooked';
 
     const hotelLevel = town.buildings.hotel || 0;
-    const hotelResKey = hotelLevel === 3 ? 'bed_disposable_t3' : (hotelLevel === 2 ? 'bed_disposable_t2' : 'bed_disposable');
+    const hotelResKey = hotelLevel > 1 ? 'bed_disposable_t' + Math.min(hotelLevel, 7) : 'bed_disposable';
 
     const tavernLevel = town.buildings.tavern || 0;
-    const tavernResKey = tavernLevel === 3 ? 'beer_refreshing_t3' : (tavernLevel === 2 ? 'beer_refreshing_t2' : 'beer_refreshing');
+    const tavernResKey = tavernLevel > 1 ? 'beer_refreshing_t' + Math.min(tavernLevel, 7) : 'beer_refreshing';
 
     // 1. Hospital (Vida)
     if (this.hp < this.maxHp * 0.35) {
@@ -897,7 +919,24 @@ export class Hero {
 
   // Executa o ataque ao monstro (dano do herói ao monstro)
   attackMonster(monster, addFloater, town) {
-    const netDamage = Math.max(1, this.atk - (monster.def || 0));
+    let currentAtk = this.atk;
+    if (this.atkBuffTimer && this.atkBuffTimer > 0) {
+      currentAtk = Math.round(currentAtk * 1.25);
+    }
+    
+    // Calcula chance de crítico
+    let critChance = 0.08; // Base 8%
+    if (this.critBuffTimer && this.critBuffTimer > 0) {
+      critChance += 0.30;
+    }
+    
+    const isCrit = Math.random() < critChance;
+    let baseDmg = currentAtk;
+    if (isCrit) {
+      baseDmg = Math.round(baseDmg * 1.5);
+    }
+
+    const netDamage = Math.max(1, baseDmg - (monster.def || 0));
     monster.takeDamage(netDamage, this, addFloater, town);
 
     // Registrar ataque pendente para o renderer criar o efeito visual
@@ -907,9 +946,10 @@ export class Hero {
       fromY: this.y,
       toX: monster.x,
       toY: monster.y,
-      color: this.classConfig.projectileColor || '#ffffff',
-      impactColor: this.classConfig.impactColor || '#ffffff',
+      color: isCrit ? '#ffea3a' : (this.classConfig.projectileColor || '#ffffff'),
+      impactColor: isCrit ? '#ff5722' : (this.classConfig.impactColor || '#ffffff'),
       damage: netDamage,
+      isCrit: isCrit,
       consumed: false
     };
 
@@ -920,8 +960,8 @@ export class Hero {
       addFloater({
         x: monster.x,
         y: monster.y - 15,
-        text: `${netDamage}`,
-        color: this.classConfig.projectileColor || '#ffffff',
+        text: isCrit ? `${netDamage} 💥` : `${netDamage}`,
+        color: isCrit ? '#ff9100' : (this.classConfig.projectileColor || '#ffffff'),
         time: 0.8,
         map: 'hunt'
       });
@@ -976,6 +1016,248 @@ export class Hero {
 
     if (boughtAny) {
       this.recalculateStats();
+    }
+  }
+
+  evaluateAndUseSkills(monsters, allHeroes, addFloater, town, dt) {
+    if (this.isGhost || this.hp <= 0) return;
+    if (this.shieldHp === undefined) this.shieldHp = 0;
+
+    // Apenas usa habilidades em combate ativo contra monstros vivos
+    if (this.state !== 'FIGHTING' || !this.targetMonster || this.targetMonster.hp <= 0) return;
+
+    const classBase = HERO_CLASSES[this.className];
+    const skills = classBase.skills || [];
+
+    for (let i = 0; i < skills.length; i++) {
+      if (this.skillCooldowns[i] <= 0) {
+        const skill = skills[i];
+        let activated = false;
+
+        if (this.className === 'WARRIOR') {
+          if (skill.effect === 'taunt') {
+            // Provocar: chama atenção de monstros próximos num raio de 150px
+            monsters.forEach(m => {
+              const dx = m.x - this.x;
+              const dy = m.y - this.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist <= 150) {
+                m.tauntedBy = this;
+              }
+            });
+            
+            // Ativa efeito visual local
+            this.pendingAttack = {
+              type: 'skill_taunt',
+              fromX: this.x,
+              fromY: this.y,
+              toX: this.x,
+              toY: this.y,
+              color: '#ff1744',
+              impactColor: '#ff1744',
+              damage: 0,
+              consumed: false
+            };
+            
+            activated = true;
+          } else if (skill.effect === 'shield') {
+            // Escudo Divino: ativa se vida cair abaixo de 70%
+            if (this.hp < this.maxHp * 0.70) {
+              this.shieldHp = skill.amount;
+              activated = true;
+            }
+          }
+        } 
+        else if (this.className === 'MERCENARY') {
+          if (skill.effect === 'dmg_mult') {
+            // Golpe Brutal: Dano aumentado
+            const dmgMult = skill.mult || 2.0;
+            const netDamage = Math.max(1, Math.round(this.atk * dmgMult) - (this.targetMonster.def || 0));
+            this.targetMonster.takeDamage(netDamage, this, addFloater, town);
+            
+            this.pendingAttack = {
+              type: 'skill_brutal_strike',
+              fromX: this.x,
+              fromY: this.y,
+              toX: this.targetMonster.x,
+              toY: this.targetMonster.y,
+              color: '#ffd54f',
+              impactColor: '#ff1744',
+              damage: netDamage,
+              consumed: false
+            };
+            activated = true;
+          } else if (skill.effect === 'atk_spd_buff') {
+            // Fúria da Batalha: Buff de velocidade
+            this.atkSpdBuffTimer = skill.duration || 6.0;
+            activated = true;
+          }
+        }
+        else if (this.className === 'ARCHER') {
+          if (skill.effect === 'double_shot') {
+            // Tiro Duplo: O renderer criará os projéteis apropriados
+            const netDamage1 = Math.max(1, this.atk - (this.targetMonster.def || 0));
+            const netDamage2 = Math.max(1, this.atk - (this.targetMonster.def || 0));
+            
+            this.pendingAttack = {
+              type: 'skill_double_shot',
+              fromX: this.x,
+              fromY: this.y,
+              toX: this.targetMonster.x,
+              toY: this.targetMonster.y,
+              color: '#3aff7d',
+              impactColor: '#3aff7d',
+              damage: netDamage1 + netDamage2,
+              consumed: false
+            };
+            
+            this.targetMonster.takeDamage(netDamage1, this, addFloater, town);
+            this.targetMonster.takeDamage(netDamage2, this, addFloater, town);
+            
+            activated = true;
+          } else if (skill.effect === 'crit_buff') {
+            // Disparo de Precisão: Aumenta crítico
+            this.critBuffTimer = skill.duration || 5.0;
+            activated = true;
+          }
+        }
+        else if (this.className === 'MAGE') {
+          if (skill.effect === 'aoe_dmg') {
+            // Bola de Fogo (Dano em Área)
+            const baseDmg = skill.dmg || 40;
+            const netDamage = Math.max(1, Math.round(baseDmg * (1 + (this.level - 1) * 0.08)));
+            
+            monsters.forEach(m => {
+              if (m.hp > 0) {
+                const dx = m.x - this.targetMonster.x;
+                const dy = m.y - this.targetMonster.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist <= 80) {
+                  m.takeDamage(netDamage, this, addFloater, town);
+                }
+              }
+            });
+            
+            this.pendingAttack = {
+              type: 'skill_fireball_aoe',
+              fromX: this.x,
+              fromY: this.y,
+              toX: this.targetMonster.x,
+              toY: this.targetMonster.y,
+              color: '#ff5722',
+              impactColor: '#ffeb3b',
+              damage: netDamage,
+              consumed: false
+            };
+            activated = true;
+          } else if (skill.effect === 'stun') {
+            // Congelamento: Paralisa monstro
+            this.targetMonster.stunTimer = skill.duration || 2.5;
+            
+            this.pendingAttack = {
+              type: 'skill_freeze',
+              fromX: this.x,
+              fromY: this.y,
+              toX: this.targetMonster.x,
+              toY: this.targetMonster.y,
+              color: '#00e5ff',
+              impactColor: '#e0f7fa',
+              damage: 0,
+              consumed: false
+            };
+            activated = true;
+          }
+        }
+        else if (this.className === 'PRIEST') {
+          if (skill.effect === 'heal') {
+            // Luz Curativa: Cura aliado com menor vida %
+            let lowestAlly = null;
+            let lowestRatio = 1.0;
+            
+            allHeroes.forEach(h => {
+              if (h.currentMap === 'hunt' && h.hp > 0 && !h.isGhost) {
+                const ratio = h.hp / h.maxHp;
+                if (ratio < lowestRatio) {
+                  lowestRatio = ratio;
+                  lowestAlly = h;
+                }
+              }
+            });
+            
+            if (lowestAlly) {
+              const healAmt = skill.amount || 30;
+              const actualHeal = Math.round(healAmt * (1 + (this.level - 1) * 0.08));
+              lowestAlly.hp = Math.min(lowestAlly.maxHp, lowestAlly.hp + actualHeal);
+              
+              addFloater({
+                x: lowestAlly.x,
+                y: lowestAlly.y - 25,
+                text: `+${actualHeal} ✨`,
+                color: '#4caf50',
+                time: 1.0,
+                map: 'hunt'
+              });
+              
+              this.pendingAttack = {
+                type: 'skill_heal',
+                fromX: this.x,
+                fromY: this.y,
+                toX: lowestAlly.x,
+                toY: lowestAlly.y,
+                color: '#81c784',
+                impactColor: '#ffffff',
+                damage: 0,
+                consumed: false
+              };
+              
+              activated = true;
+            }
+          } else if (skill.effect === 'buff_atk') {
+            // Bênção da Força: Aumenta ataque de todos
+            allHeroes.forEach(h => {
+              if (h.currentMap === 'hunt' && h.hp > 0 && !h.isGhost) {
+                h.atkBuffTimer = skill.duration || 8.0;
+                addFloater({
+                  x: h.x,
+                  y: h.y - 25,
+                  text: `Fúria! ⚔️`,
+                  color: '#ffd54f',
+                  time: 1.0,
+                  map: 'hunt'
+                });
+              }
+            });
+            
+            this.pendingAttack = {
+              type: 'skill_buff_atk',
+              fromX: this.x,
+              fromY: this.y,
+              toX: this.x,
+              toY: this.y,
+              color: '#ffb300',
+              impactColor: '#ffea00',
+              damage: 0,
+              consumed: false
+            };
+            activated = true;
+          }
+        }
+
+        if (activated) {
+          this.skillCooldowns[i] = skill.cd || 10;
+          
+          addFloater({
+            x: this.x,
+            y: this.y - 30,
+            text: `${skill.name}!`,
+            color: '#00e5ff',
+            time: 1.2,
+            map: 'hunt'
+          });
+          
+          break; // Apenas usa uma habilidade por quadro
+        }
+      }
     }
   }
 

@@ -170,6 +170,86 @@ export const BIOMES = [
       { name: 'Dragonborn Boss', hp: 6200, atk: 150, def: 36, xp: 1600, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }, { item: 'olho_boitata', chance: 0.8 }] },
       { name: 'Boi Tata', hp: 6000, atk: 140, def: 40, xp: 1500, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
     ]
+  },
+  {
+    id: 3,
+    name: 'Deserto das Sombras',
+    minLevel: 45,
+    requiredBossKillsToUnlock: 3,
+    targetKillsForBoss: 75,
+    color: '#8d6e63',
+    bgClass: 'shadow-desert',
+    monsters: [
+      { name: 'Múmia', hp: 1100, atk: 85, def: 28, xp: 210, drops: [{ item: 'os_seco', chance: 0.65 }, { item: 'linho', chance: 0.4 }] },
+      { name: 'Escorpião', hp: 980, atk: 92, def: 22, xp: 200, drops: [{ item: 'poison_gland', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }] },
+      { name: 'Ladrão do Deserto', hp: 1200, atk: 90, def: 30, xp: 230, drops: [{ item: 'linho', chance: 0.5 }, { item: 'steel_ore', chance: 0.3 }] }
+    ],
+    miniBosses: [
+      { name: 'Faraó Sombrio', hp: 4800, atk: 180, def: 52, xp: 950, drops: [{ item: 'escaravelho_ouro', chance: 1.0 }, { item: 'steel_ore', chance: 0.5 }] }
+    ],
+    bosses: [
+      { name: 'Esfinge de Areia', hp: 12000, atk: 320, def: 85, xp: 3200, drops: [{ item: 'coracao_areia', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
+    ]
+  },
+  {
+    id: 4,
+    name: 'Tundra Congelada',
+    minLevel: 60,
+    requiredBossKillsToUnlock: 4,
+    targetKillsForBoss: 90,
+    color: '#80deea',
+    bgClass: 'frozen-tundra',
+    monsters: [
+      { name: 'Yeti', hp: 2400, atk: 160, def: 55, xp: 420, drops: [{ item: 'wolf_fur', chance: 0.7 }, { item: 'meat_raw', chance: 0.6 }] },
+      { name: 'Guerreiro Gelado', hp: 2200, atk: 175, def: 65, xp: 440, drops: [{ item: 'os_seco', chance: 0.6 }, { item: 'steel_ore', chance: 0.45 }] },
+      { name: 'Lobo das Neves', hp: 2100, atk: 170, def: 50, xp: 410, drops: [{ item: 'wolf_fur', chance: 0.75 }, { item: 'meat_raw', chance: 0.5 }] }
+    ],
+    miniBosses: [
+      { name: 'Gigante de Gelo', hp: 9500, atk: 310, def: 90, xp: 1800, drops: [{ item: 'cristal_eterno', chance: 1.0 }, { item: 'steel_ore', chance: 0.5 }] }
+    ],
+    bosses: [
+      { name: 'Rei do Gelo', hp: 25000, atk: 540, def: 140, xp: 6500, drops: [{ item: 'coroa_gelo', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
+    ]
+  },
+  {
+    id: 5,
+    name: 'Vulcão Ativo',
+    minLevel: 75,
+    requiredBossKillsToUnlock: 5,
+    targetKillsForBoss: 100,
+    color: '#d84315',
+    bgClass: 'active-volcano',
+    monsters: [
+      { name: 'Elementar de Fogo', hp: 4800, atk: 290, def: 95, xp: 850, drops: [{ item: 'cabelo_fogo', chance: 0.15 }, { item: 'steel_ore', chance: 0.5 }] },
+      { name: 'Guerreiro de Lava', hp: 5200, atk: 280, def: 115, xp: 900, drops: [{ item: 'steel_ore', chance: 0.65 }, { item: 'os_seco', chance: 0.5 }] },
+      { name: 'Demônio Menor', hp: 4500, atk: 310, def: 85, xp: 800, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'linho', chance: 0.4 }] }
+    ],
+    miniBosses: [
+      { name: 'General de Lava', hp: 18000, atk: 560, def: 170, xp: 3600, drops: [{ item: 'nucleo_magma', chance: 1.0 }, { item: 'steel_ore', chance: 0.5 }] }
+    ],
+    bosses: [
+      { name: 'Dragão do Vulcão', hp: 48000, atk: 920, def: 240, xp: 12000, drops: [{ item: 'escama_dragao', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
+    ]
+  },
+  {
+    id: 6,
+    name: 'Cidadela Celestial',
+    minLevel: 90,
+    requiredBossKillsToUnlock: 6,
+    targetKillsForBoss: 120,
+    color: '#fbc02d',
+    bgClass: 'celestial-citadel',
+    monsters: [
+      { name: 'Guerreiro Alado', hp: 9500, atk: 520, def: 180, xp: 1700, drops: [{ item: 'linho', chance: 0.7 }, { item: 'steel_ore', chance: 0.6 }] },
+      { name: 'Guardião Rúnico', hp: 11000, atk: 490, def: 230, xp: 1900, drops: [{ item: 'steel_ore', chance: 0.8 }, { item: 'linho', chance: 0.5 }] },
+      { name: 'Querubim Sombrio', hp: 8800, atk: 550, def: 150, xp: 1650, drops: [{ item: 'herbs_wild', chance: 0.6 }, { item: 'meat_raw', chance: 0.5 }] }
+    ],
+    miniBosses: [
+      { name: 'Arcanjo Caído', hp: 35000, atk: 1100, def: 340, xp: 7000, drops: [{ item: 'pena_sagrada', chance: 1.0 }, { item: 'steel_ore', chance: 0.5 }] }
+    ],
+    bosses: [
+      { name: 'Avatar Celestial', hp: 90000, atk: 1800, def: 500, xp: 25000, drops: [{ item: 'essencia_divina', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
+    ]
   }
 ];
 
@@ -213,6 +293,15 @@ export const ITEMS_INFO = {
   garra_mapinguari: { name: 'Garra de Mapinguari', price: 60, icon: '🐾', type: 'loot', source: 'Mapinguari', rarity: 'rare' },
   olho_boitata: { name: 'Olho do Boitatá', price: 250, icon: '👁️', type: 'rare', source: 'Boitatá', rarity: 'legendary' },
 
+  escaravelho_ouro: { name: 'Escaravelho de Ouro', price: 40, icon: '🪲', type: 'loot', source: 'Deserto das Sombras (MiniBoss)', rarity: 'rare' },
+  coracao_areia: { name: 'Coração de Areia', price: 150, icon: '🤎', type: 'rare', source: 'Deserto das Sombras (Boss)', rarity: 'legendary' },
+  cristal_eterno: { name: 'Cristal de Gelo Eterno', price: 50, icon: '❄️', type: 'loot', source: 'Tundra Congelada (MiniBoss)', rarity: 'rare' },
+  coroa_gelo: { name: 'Coroa de Gelo', price: 180, icon: '👑', type: 'rare', source: 'Tundra Congelada (Boss)', rarity: 'legendary' },
+  nucleo_magma: { name: 'Núcleo de Magma', price: 60, icon: '🔥', type: 'loot', source: 'Vulcão Ativo (MiniBoss)', rarity: 'rare' },
+  escama_dragao: { name: 'Escama de Dragão de Lava', price: 220, icon: '🌋', type: 'rare', source: 'Vulcão Ativo (Boss)', rarity: 'legendary' },
+  pena_sagrada: { name: 'Pena Celestial Sagrada', price: 80, icon: '🪶', type: 'loot', source: 'Cidadela Celestial (MiniBoss)', rarity: 'rare' },
+  essencia_divina: { name: 'Essência Divina', price: 300, icon: '✨', type: 'rare', source: 'Cidadela Celestial (Boss)', rarity: 'legendary' },
+
   // Matérias-Primas
   wood_rough: { name: 'Madeira Bruta', price: 3, icon: '🪵', type: 'material', source: 'Coleta', rarity: 'uncommon' },
   iron_ore: { name: 'Minério de Ferro', price: 5, icon: '🪨', type: 'material', source: 'Coleta', rarity: 'uncommon' },
@@ -246,7 +335,11 @@ export const BUILDINGS_CONFIG = {
       { level: 1, cost: { gold: 100 }, maxHeroes: 3, desc: 'Permite abrigar até 3 heróis.' },
       { level: 2, cost: { gold: 500, wood_rough: 20, iron_ore: 10 }, maxHeroes: 5, desc: 'Permite abrigar até 5 heróis.' },
       { level: 3, cost: { gold: 1500, wood_rough: 50, iron_ore: 30, gorro_vermelho: 1 }, maxHeroes: 7, desc: 'Permite abrigar 7 heróis. Libera bioma 2.' }, // Requer item folclórico ou original
-      { level: 4, cost: { gold: 4000, wood_rough: 100, steel_ore: 40, cabelo_fogo: 1 }, maxHeroes: 10, desc: 'Permite abrigar 10 heróis. Libera bioma 3.' }
+      { level: 4, cost: { gold: 4000, wood_rough: 100, steel_ore: 40, cabelo_fogo: 1 }, maxHeroes: 10, desc: 'Permite abrigar 10 heróis. Libera bioma 3.' },
+      { level: 5, cost: { gold: 8000, steel_ore: 80, linho: 50, presa_teju: 2 }, maxHeroes: 12, desc: 'Permite abrigar 12 heróis. Libera bioma 4.' },
+      { level: 6, cost: { gold: 15000, steel_ore: 120, linho: 80, garra_mapinguari: 2 }, maxHeroes: 15, desc: 'Permite abrigar 15 heróis. Libera bioma 5.' },
+      { level: 7, cost: { gold: 30000, steel_ore: 200, linho: 120, olho_boitata: 2 }, maxHeroes: 18, desc: 'Permite abrigar 18 heróis. Libera bioma 6.' },
+      { level: 8, cost: { gold: 60000, steel_ore: 350, linho: 200, hydra_scale: 3 }, maxHeroes: 22, desc: 'Permite abrigar 22 heróis. Nível máximo.' }
     ]
   },
   hotel: {
@@ -256,7 +349,11 @@ export const BUILDINGS_CONFIG = {
     upgrades: [
       { level: 1, cost: { gold: 50, wood_rough: 5 }, energyRecovery: 5, goldEarned: 5, desc: 'Recupera +5 energia/s. Diária: 5 Ouro.' },
       { level: 2, cost: { gold: 300, wood_rough: 15, iron_ore: 5 }, energyRecovery: 10, goldEarned: 12, desc: 'Recupera +10 energia/s. Diária: 12 Ouro.' },
-      { level: 3, cost: { gold: 1000, wood_rough: 40, iron_ore: 20 }, energyRecovery: 18, goldEarned: 25, desc: 'Recupera +18 energia/s. Diária: 25 Ouro.' }
+      { level: 3, cost: { gold: 1000, wood_rough: 40, iron_ore: 20 }, energyRecovery: 18, goldEarned: 25, desc: 'Recupera +18 energia/s. Diária: 25 Ouro.' },
+      { level: 4, cost: { gold: 3000, wood_rough: 80, steel_ore: 20, escaravelho_ouro: 1 }, energyRecovery: 30, goldEarned: 50, desc: 'Recupera +30 energia/s. Diária: 50 Ouro.' },
+      { level: 5, cost: { gold: 7000, steel_ore: 60, linho: 30, cristal_eterno: 1 }, energyRecovery: 45, goldEarned: 90, desc: 'Recupera +45 energia/s. Diária: 90 Ouro.' },
+      { level: 6, cost: { gold: 15000, steel_ore: 100, linho: 60, nucleo_magma: 1 }, energyRecovery: 65, goldEarned: 150, desc: 'Recupera +65 energia/s. Diária: 150 Ouro.' },
+      { level: 7, cost: { gold: 30000, steel_ore: 180, linho: 100, pena_sagrada: 1 }, energyRecovery: 90, goldEarned: 250, desc: 'Recupera +90 energia/s. Diária: 250 Ouro.' }
     ]
   },
   restaurant: {
@@ -266,7 +363,11 @@ export const BUILDINGS_CONFIG = {
     upgrades: [
       { level: 1, cost: { gold: 80, wood_rough: 8 }, foodRecovery: 5, craftSpeed: 1.0, desc: 'Refeições restauram +5 fome/s.' },
       { level: 2, cost: { gold: 400, wood_rough: 25, iron_ore: 10 }, foodRecovery: 10, craftSpeed: 1.3, desc: 'Refeições restauram +10 fome/s e cozinha 30% mais rápido.' },
-      { level: 3, cost: { gold: 1200, wood_rough: 60, steel_ore: 15 }, foodRecovery: 20, craftSpeed: 1.6, desc: 'Refeições restauram +20 fome/s e cozinha 60% mais rápido.' }
+      { level: 3, cost: { gold: 1200, wood_rough: 60, steel_ore: 15 }, foodRecovery: 20, craftSpeed: 1.6, desc: 'Refeições restauram +20 fome/s e cozinha 60% mais rápido.' },
+      { level: 4, cost: { gold: 3500, steel_ore: 40, linho: 20, escaravelho_ouro: 1 }, foodRecovery: 35, craftSpeed: 1.9, desc: 'Refeições restauram +35 fome/s e cozinha 90% mais rápido.' },
+      { level: 5, cost: { gold: 8000, steel_ore: 70, linho: 45, cristal_eterno: 1 }, foodRecovery: 55, craftSpeed: 2.2, desc: 'Refeições restauram +55 fome/s e cozinha 120% mais rápido.' },
+      { level: 6, cost: { gold: 18000, steel_ore: 110, linho: 75, nucleo_magma: 1 }, foodRecovery: 80, craftSpeed: 2.5, desc: 'Refeições restauram +80 fome/s e cozinha 150% mais rápido.' },
+      { level: 7, cost: { gold: 35000, steel_ore: 200, linho: 130, pena_sagrada: 1 }, foodRecovery: 110, craftSpeed: 2.8, desc: 'Refeições restauram +110 fome/s e cozinha 180% mais rápido.' }
     ]
   },
   hospital: {
@@ -276,7 +377,11 @@ export const BUILDINGS_CONFIG = {
     upgrades: [
       { level: 1, cost: { gold: 100, wood_rough: 8, iron_ore: 3 }, hpRecovery: 8, desc: 'Tratamento cura +8 HP/s.' },
       { level: 2, cost: { gold: 500, wood_rough: 30, iron_ore: 15 }, hpRecovery: 18, desc: 'Tratamento cura +18 HP/s.' },
-      { level: 3, cost: { gold: 1500, wood_rough: 80, steel_ore: 20 }, hpRecovery: 35, desc: 'Tratamento cura +35 HP/s.' }
+      { level: 3, cost: { gold: 1500, wood_rough: 80, steel_ore: 20 }, hpRecovery: 35, desc: 'Tratamento cura +35 HP/s.' },
+      { level: 4, cost: { gold: 4000, steel_ore: 50, linho: 25, escaravelho_ouro: 1 }, hpRecovery: 60, desc: 'Tratamento cura +60 HP/s.' },
+      { level: 5, cost: { gold: 9000, steel_ore: 90, linho: 50, cristal_eterno: 1 }, hpRecovery: 95, desc: 'Tratamento cura +95 HP/s.' },
+      { level: 6, cost: { gold: 20000, steel_ore: 140, linho: 90, nucleo_magma: 1 }, hpRecovery: 140, desc: 'Tratamento cura +140 HP/s.' },
+      { level: 7, cost: { gold: 40000, steel_ore: 250, linho: 150, pena_sagrada: 1 }, hpRecovery: 200, desc: 'Tratamento cura +200 HP/s.' }
     ]
   },
   tavern: {
@@ -286,7 +391,11 @@ export const BUILDINGS_CONFIG = {
     upgrades: [
       { level: 1, cost: { gold: 120, wood_rough: 10 }, moodRecovery: 6, goldEarned: 8, desc: 'Bebidas recuperam +6 humor/s. Diária: 8 Ouro.' },
       { level: 2, cost: { gold: 600, wood_rough: 35, iron_ore: 12 }, moodRecovery: 12, goldEarned: 18, desc: 'Bebidas recuperam +12 humor/s. Diária: 18 Ouro.' },
-      { level: 3, cost: { gold: 1800, wood_rough: 90, steel_ore: 25 }, moodRecovery: 22, goldEarned: 35, desc: 'Bebidas recuperam +22 humor/s. Diária: 35 Ouro.' }
+      { level: 3, cost: { gold: 1800, wood_rough: 90, steel_ore: 25 }, moodRecovery: 22, goldEarned: 35, desc: 'Bebidas recuperam +22 humor/s. Diária: 35 Ouro.' },
+      { level: 4, cost: { gold: 4500, steel_ore: 50, linho: 30, escaravelho_ouro: 1 }, moodRecovery: 36, goldEarned: 65, desc: 'Bebidas recuperam +36 humor/s. Diária: 65 Ouro.' },
+      { level: 5, cost: { gold: 10000, steel_ore: 80, linho: 55, cristal_eterno: 1 }, moodRecovery: 54, goldEarned: 110, desc: 'Bebidas recuperam +54 humor/s. Diária: 110 Ouro.' },
+      { level: 6, cost: { gold: 22000, steel_ore: 130, linho: 100, nucleo_magma: 1 }, moodRecovery: 76, goldEarned: 180, desc: 'Bebidas recuperam +76 humor/s. Diária: 180 Ouro.' },
+      { level: 7, cost: { gold: 45000, steel_ore: 220, linho: 160, pena_sagrada: 1 }, moodRecovery: 105, goldEarned: 300, desc: 'Bebidas recuperam +105 humor/s. Diária: 300 Ouro.' }
     ]
   },
   forge: {
@@ -296,7 +405,11 @@ export const BUILDINGS_CONFIG = {
     upgrades: [
       { level: 1, cost: { gold: 150, wood_rough: 12, iron_ore: 5 }, tierUnlocked: 1, desc: 'Permite craftar Equipamentos de Grau 1.' },
       { level: 2, cost: { gold: 800, wood_rough: 40, iron_ore: 25, gorro_vermelho: 1 }, tierUnlocked: 2, desc: 'Permite craftar Equipamentos de Grau 2.' },
-      { level: 3, cost: { gold: 2500, wood_rough: 100, steel_ore: 50, cabelo_fogo: 1 }, tierUnlocked: 3, desc: 'Permite craftar Equipamentos de Grau 3.' }
+      { level: 3, cost: { gold: 2500, wood_rough: 100, steel_ore: 50, cabelo_fogo: 1 }, tierUnlocked: 3, desc: 'Permite craftar Equipamentos de Grau 3.' },
+      { level: 4, cost: { gold: 6000, steel_ore: 100, linho: 60, coracao_areia: 1 }, tierUnlocked: 4, desc: 'Permite craftar Equipamentos de Grau 4.' },
+      { level: 5, cost: { gold: 14000, steel_ore: 160, linho: 100, coroa_gelo: 1 }, tierUnlocked: 5, desc: 'Permite craftar Equipamentos de Grau 5.' },
+      { level: 6, cost: { gold: 28000, steel_ore: 240, linho: 150, escama_dragao: 1 }, tierUnlocked: 6, desc: 'Permite craftar Equipamentos de Grau 6.' },
+      { level: 7, cost: { gold: 55000, steel_ore: 400, linho: 220, essencia_divina: 1 }, tierUnlocked: 7, desc: 'Permite craftar Equipamentos de Grau 7.' }
     ]
   },
   market: {
@@ -398,5 +511,77 @@ export const CRAFT_RECIPES = {
   ring_t3: { name: 'Anel de Aço Rúnico', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 5, gold: 450 }, stats: { hp: 100 } },
   necklace_t3: { name: 'Colar de Escamas de Crocodilo', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { crocodile_scale: 4, gold: 450 }, stats: { hp: 120 } },
   belt_t3: { name: 'Cinto de Couro de Serpente', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 4, gold: 300 }, stats: { def: 10 } },
-  boots_t3: { name: 'Botas do Caminhante do Pântano', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 5, gold: 380 }, stats: { def: 10, hp: 80 } }
+  boots_t3: { name: 'Botas do Caminhante do Pântano', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 5, gold: 380 }, stats: { def: 10, hp: 80 } },
+
+  // --- TIER 4 ---
+  meal_cooked_t4: { result: 'meal_cooked_t4', cost: { meat_raw: 5, linho: 2 }, qty: 1, building: 'restaurant' },
+  bandage_basic_t4: { result: 'bandage_basic_t4', cost: { herbs_wild: 4, linho: 4, poison_gland: 2 }, qty: 1, building: 'hospital' },
+  beer_refreshing_t4: { result: 'beer_refreshing_t4', cost: { wood_rough: 4, escaravelho_ouro: 1 }, qty: 1, building: 'tavern' },
+  bed_disposable_t4: { result: 'bed_disposable_t4', cost: { wood_rough: 12, linho: 4 }, qty: 1, building: 'hotel' },
+
+  // --- TIER 5 ---
+  meal_cooked_t5: { result: 'meal_cooked_t5', cost: { meat_raw: 6, herbs_wild: 2 }, qty: 1, building: 'restaurant' },
+  bandage_basic_t5: { result: 'bandage_basic_t5', cost: { herbs_wild: 5, linho: 5, cristal_eterno: 1 }, qty: 1, building: 'hospital' },
+  beer_refreshing_t5: { result: 'beer_refreshing_t5', cost: { wood_rough: 5, wolf_fur: 2 }, qty: 1, building: 'tavern' },
+  bed_disposable_t5: { result: 'bed_disposable_t5', cost: { wood_rough: 15, wolf_fur: 3 }, qty: 1, building: 'hotel' },
+
+  // --- TIER 6 ---
+  meal_cooked_t6: { result: 'meal_cooked_t6', cost: { meat_raw: 7, nucleo_magma: 1 }, qty: 1, building: 'restaurant' },
+  bandage_basic_t6: { result: 'bandage_basic_t6', cost: { herbs_wild: 6, linho: 6, escama_dragao: 1 }, qty: 1, building: 'hospital' },
+  beer_refreshing_t6: { result: 'beer_refreshing_t6', cost: { wood_rough: 6, cabelo_fogo: 1 }, qty: 1, building: 'tavern' },
+  bed_disposable_t6: { result: 'bed_disposable_t6', cost: { wood_rough: 18, steel_ore: 5 }, qty: 1, building: 'hotel' },
+
+  // --- TIER 7 ---
+  meal_cooked_t7: { result: 'meal_cooked_t7', cost: { meat_raw: 8, essencia_divina: 1 }, qty: 1, building: 'restaurant' },
+  bandage_basic_t7: { result: 'bandage_basic_t7', cost: { herbs_wild: 8, linho: 8, pena_sagrada: 1 }, qty: 1, building: 'hospital' },
+  beer_refreshing_t7: { result: 'beer_refreshing_t7', cost: { wood_rough: 8, essencia_divina: 1 }, qty: 1, building: 'tavern' },
+  bed_disposable_t7: { result: 'bed_disposable_t7', cost: { wood_rough: 22, pena_sagrada: 2 }, qty: 1, building: 'hotel' },
+
+  // --- GRAU 4 (Deserto) ---
+  sword_t4: { name: 'Espada de Obsidiana', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 4, cost: { steel_ore: 12, linho: 5, gold: 350 }, stats: { atk: 55 } },
+  bow_t4: { name: 'Arco das Dunas', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 4, cost: { wood_rough: 25, linho: 8, gold: 350 }, stats: { atk: 48 } },
+  staff_t4: { name: 'Cajado de Arenito', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 4, cost: { wood_rough: 20, steel_ore: 5, gold: 350 }, stats: { atk: 45 } },
+  sword_farao_t4: { name: 'Cimitarra do Faraó Sombrio', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 4, cost: { steel_ore: 15, escaravelho_ouro: 1, gold: 500 }, stats: { atk: 75 } },
+  armor_t4_heavy: { name: 'Armadura de Arenito', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 4, cost: { steel_ore: 15, linho: 10, gold: 400 }, stats: { hp: 200, def: 30 } },
+  armor_t4_medium: { name: 'Gibão do Deserto', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 4, cost: { linho: 18, gold: 400 }, stats: { hp: 130, def: 18 } },
+  armor_t4_light: { name: 'Robe do Tecedor', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 4, cost: { linho: 22, gold: 400 }, stats: { hp: 90, def: 12 } },
+  armor_esfinge_t4: { name: 'Manto Real da Esfinge', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 4, cost: { linho: 25, coracao_areia: 1, gold: 600 }, stats: { hp: 180, def: 20 } },
+  gloves_t4: { name: 'Luvas de Obsidiana', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 4, cost: { steel_ore: 8, gold: 200 }, stats: { def: 5, atk: 6 } },
+  boots_t4: { name: 'Sandálias do Deserto', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 4, cost: { linho: 12, gold: 220 }, stats: { def: 5, hp: 50 } },
+
+  // --- GRAU 5 (Tundra) ---
+  sword_t5: { name: 'Espada de Gelo Rúnica', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 5, cost: { steel_ore: 22, linho: 10, gold: 600 }, stats: { atk: 90 } },
+  bow_t5: { name: 'Arco Permafrost', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 5, cost: { wood_rough: 35, linho: 15, gold: 600 }, stats: { atk: 78 } },
+  staff_t5: { name: 'Cajado Criogênico', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 5, cost: { wood_rough: 30, steel_ore: 10, gold: 600 }, stats: { atk: 72 } },
+  staff_gigante_t5: { name: 'Cajado Glacial do Gigante', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 5, cost: { wood_rough: 20, cristal_eterno: 1, gold: 800 }, stats: { atk: 110 } },
+  armor_t5_heavy: { name: 'Couraça de Gelo Negro', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 5, cost: { steel_ore: 25, linho: 15, gold: 700 }, stats: { hp: 380, def: 50 } },
+  armor_t5_medium: { name: 'Gibão do Caçador Polar', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 5, cost: { linho: 25, wolf_fur: 15, gold: 700 }, stats: { hp: 240, def: 30 } },
+  armor_t5_light: { name: 'Manto da Geada', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 5, cost: { linho: 35, gold: 700 }, stats: { hp: 160, def: 18 } },
+  armor_gelo_t5: { name: 'Placa Congelada do Rei do Gelo', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 5, cost: { steel_ore: 30, coroa_gelo: 1, gold: 1000 }, stats: { hp: 550, def: 68 } },
+  gloves_t5: { name: 'Manoplas Congeladas', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 5, cost: { steel_ore: 12, gold: 350 }, stats: { def: 8, atk: 9 } },
+  boots_t5: { name: 'Botas do Rastro de Gelo', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 5, cost: { linho: 18, wolf_fur: 8, gold: 380 }, stats: { def: 8, hp: 90 } },
+
+  // --- GRAU 6 (Vulcão) ---
+  sword_t6: { name: 'Lâmina Vulcânica', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 6, cost: { steel_ore: 35, linho: 15, gold: 1200 }, stats: { atk: 150 } },
+  bow_t6: { name: 'Arco Incinerador', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 6, cost: { wood_rough: 55, linho: 20, gold: 1200 }, stats: { atk: 130 } },
+  staff_t6: { name: 'Cajado de Lava', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 6, cost: { wood_rough: 45, steel_ore: 20, gold: 1200 }, stats: { atk: 120 } },
+  sword_vulcao_t6: { name: 'Lâmina de Magma do General', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 6, cost: { steel_ore: 25, nucleo_magma: 1, gold: 1600 }, stats: { atk: 210 } },
+  armor_t6_heavy: { name: 'Armadura de Obsidianita', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 6, cost: { steel_ore: 45, linho: 20, gold: 1400 }, stats: { hp: 700, def: 85 } },
+  armor_t6_medium: { name: 'Gibão de Escamas Vulcânicas', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 6, cost: { linho: 30, steel_ore: 15, gold: 1400 }, stats: { hp: 450, def: 52 } },
+  armor_t6_light: { name: 'Robe das Cinzas', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 6, cost: { linho: 50, gold: 1400 }, stats: { hp: 300, def: 32 } },
+  armor_dragao_t6: { name: 'Armadura de Escamas de Dragão', slot: 'armor', icon: '🛡️', class: ['WARRIOR', 'MERCENARY'], tier: 6, cost: { steel_ore: 40, escama_dragao: 1, gold: 2000 }, stats: { hp: 950, def: 110 } },
+  gloves_t6: { name: 'Manoplas Vulcânicas', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 6, cost: { steel_ore: 20, gold: 700 }, stats: { def: 15, atk: 18 } },
+  boots_t6: { name: 'Botas de Passos Quentes', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 6, cost: { linho: 25, steel_ore: 10, gold: 750 }, stats: { def: 15, hp: 180 } },
+
+  // --- GRAU 7 (Cidadela Celestial) ---
+  sword_t7: { name: 'Lâmina Sagrada do Infinito', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 7, cost: { steel_ore: 60, linho: 30, gold: 2500 }, stats: { atk: 260 } },
+  bow_t7: { name: 'Arco Rúnico Celestial', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 7, cost: { wood_rough: 90, linho: 40, gold: 2500 }, stats: { atk: 220 } },
+  staff_t7: { name: 'Cetro Divino da Cidadela', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 7, cost: { wood_rough: 80, steel_ore: 40, gold: 2500 }, stats: { atk: 210 } },
+  bow_arcanjo_t7: { name: 'Arco Alado do Arcanjo', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 7, cost: { wood_rough: 50, pena_sagrada: 1, gold: 3500 }, stats: { atk: 330 } },
+  armor_t7_heavy: { name: 'Armadura Estelar do Infinito', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 7, cost: { steel_ore: 75, linho: 35, gold: 3000 }, stats: { hp: 1200, def: 140 } },
+  armor_t7_medium: { name: 'Gibão do Querubim Celestial', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 7, cost: { linho: 50, steel_ore: 30, gold: 3000 }, stats: { hp: 800, def: 90 } },
+  armor_t7_light: { name: 'Túnica da Luz Sagrada', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 7, cost: { linho: 80, gold: 3000 }, stats: { hp: 550, def: 55 } },
+  armor_avatar_t7: { name: 'Armadura Divina do Avatar', slot: 'armor', icon: '🛡️', class: ['WARRIOR', 'ARCHER', 'MERCENARY', 'MAGE', 'PRIEST'], tier: 7, cost: { steel_ore: 50, essencia_divina: 1, gold: 4500 }, stats: { hp: 1600, def: 180 } },
+  gloves_t7: { name: 'Manoplas Celestiais', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 7, cost: { steel_ore: 35, gold: 1500 }, stats: { def: 25, atk: 30 } },
+  boots_t7: { name: 'Passos Celestiais', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 7, cost: { linho: 45, steel_ore: 20, gold: 1600 }, stats: { def: 25, hp: 350 } }
 };

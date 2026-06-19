@@ -98,6 +98,18 @@ export class Game {
     if (biomeId === 2 && this.town.buildings.townhall < 4) {
       return { success: false, reason: 'Requer Prefeitura Nivel 4 para liberar!' };
     }
+    if (biomeId === 3 && this.town.buildings.townhall < 5) {
+      return { success: false, reason: 'Requer Prefeitura Nivel 5 para liberar!' };
+    }
+    if (biomeId === 4 && this.town.buildings.townhall < 6) {
+      return { success: false, reason: 'Requer Prefeitura Nivel 6 para liberar!' };
+    }
+    if (biomeId === 5 && this.town.buildings.townhall < 7) {
+      return { success: false, reason: 'Requer Prefeitura Nivel 7 para liberar!' };
+    }
+    if (biomeId === 6 && this.town.buildings.townhall < 8) {
+      return { success: false, reason: 'Requer Prefeitura Nivel 8 para liberar!' };
+    }
 
     this.spawner.setBiome(biomeId);
     this.heroes.forEach(hero => {

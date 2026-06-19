@@ -171,28 +171,45 @@ export class Monster {
   update(dt, heroes = [], viewport = {}, addFloater) {
     if (this.hp <= 0) return;
 
+    // Decrementa temporizador de stun (atordoamento por congelamento)
+    if (this.stunTimer === undefined) this.stunTimer = 0;
+    if (this.stunTimer > 0) {
+      this.stunTimer -= dt;
+      return; // Monstros atordoados não agem ou se movem!
+    }
+
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
     this.clampToHunt(viewport);
     this.clampHuntTarget(viewport);
 
-    // --- Buscar o herói mais próximo no mapa de caça ---
+    // --- Buscar o herói alvo (Provocação tem prioridade absoluta) ---
     let nearestHero = null;
     let nearestDist = Infinity;
-    if (heroes && Array.isArray(heroes)) {
-      for (const h of heroes) {
-        if (h.currentMap !== 'hunt' || h.hp <= 0 || h.isGhost) continue;
-        const ddx = h.x - this.x;
-        const ddy = h.y - this.y;
-        const d = Math.sqrt(ddx * ddx + ddy * ddy);
-        if (d < nearestDist) {
-          nearestDist = d;
-          nearestHero = h;
+
+    if (this.tauntedBy && this.tauntedBy.currentMap === 'hunt' && this.tauntedBy.hp > 0 && !this.tauntedBy.isGhost) {
+      nearestHero = this.tauntedBy;
+      const ddx = nearestHero.x - this.x;
+      const ddy = nearestHero.y - this.y;
+      nearestDist = Math.sqrt(ddx * ddx + ddy * ddy);
+    } else {
+      this.tauntedBy = null; // Limpa se herói morreu ou saiu
+      
+      if (heroes && Array.isArray(heroes)) {
+        for (const h of heroes) {
+          if (h.currentMap !== 'hunt' || h.hp <= 0 || h.isGhost) continue;
+          const ddx = h.x - this.x;
+          const ddy = h.y - this.y;
+          const d = Math.sqrt(ddx * ddx + ddy * ddy);
+          if (d < nearestDist) {
+            nearestDist = d;
+            nearestHero = h;
+          }
         }
       }
     }
 
     if (nearestHero && nearestDist <= this.aggroRange) {
-      // Perseguir herói mais próximo
+      // Perseguir herói mais próximo ou provocador
       this.targetHero = nearestHero;
       this.targetX = nearestHero.x;
       this.targetY = nearestHero.y;
@@ -204,17 +221,41 @@ export class Monster {
       if (nearestDist <= attackReach && this.attackCooldown <= 0) {
         this.attackCooldown = 1 / this.attackSpeed;
         const monsterDmg = Math.max(1, Math.round(this.atk * 0.5) - (nearestHero.def || 0));
-        nearestHero.hp = Math.max(0, nearestHero.hp - monsterDmg);
+        
+        // Lógica de absorção do Escudo Divino
+        let finalDamage = monsterDmg;
+        if (nearestHero.shieldHp && nearestHero.shieldHp > 0) {
+          if (nearestHero.shieldHp >= finalDamage) {
+            nearestHero.shieldHp -= finalDamage;
+            finalDamage = 0;
+            if (addFloater) {
+              addFloater({
+                x: nearestHero.x,
+                y: nearestHero.y - 25,
+                text: `Absorvido! 🛡️`,
+                color: '#00e5ff',
+                time: 0.9,
+                map: 'hunt'
+              });
+            }
+          } else {
+            finalDamage -= nearestHero.shieldHp;
+            nearestHero.shieldHp = 0;
+          }
+        }
 
-        if (addFloater) {
-          addFloater({
-            x: nearestHero.x,
-            y: nearestHero.y - 15,
-            text: `-${monsterDmg}`,
-            color: '#ff3d3d',
-            time: 0.8,
-            map: 'hunt'
-          });
+        if (finalDamage > 0) {
+          nearestHero.hp = Math.max(0, nearestHero.hp - finalDamage);
+          if (addFloater) {
+            addFloater({
+              x: nearestHero.x,
+              y: nearestHero.y - 15,
+              text: `-${finalDamage}`,
+              color: '#ff3d3d',
+              time: 0.8,
+              map: 'hunt'
+            });
+          }
         }
 
         // Se herói for derrubado pelo monstro
@@ -223,7 +264,6 @@ export class Monster {
           nearestHero.isGhost = true;
           nearestHero.addLog(`Derrubado por ${this.name}! Voltando como fantasma...`);
           if (nearestHero.currentMap === 'hunt') {
-            // Usar window.game.town como fallback seguro (town não existe no escopo de Monster.update)
             const safeTown = (typeof town !== 'undefined' && town) ? town : window.game?.town;
             nearestHero.tempTargetBuilding = (safeTown && safeTown.isBuilt('hospital')) ? 'hospital' : 'townhall';
             nearestHero.state = 'RETURNING_TOWN';
