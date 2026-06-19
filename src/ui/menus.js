@@ -420,12 +420,12 @@ export function setupUI(game) {
         return;
       }
       
-      // 1. Clicar em um caçador visível
+      // 1. Clicar em um caçador visível (aumentado para dist < 35 para melhor usabilidade mobile)
       let clickedHero = null;
       for (const h of game.heroes) {
         if (h.currentMap === activeView) {
           const dist = Math.sqrt((h.x - x) * (h.x - x) + (h.y - y) * (h.y - y));
-          if (dist < 20) {
+          if (dist < 35) {
             clickedHero = h;
             break;
           }
@@ -438,8 +438,9 @@ export function setupUI(game) {
       }
 
       // 2. Clicar em construcoes posicionadas na cidade
+      let clickedBuilding = false;
       if (activeView === 'town' && window.gameRenderer) {
-        let clickedBuilding = null;
+        let clickedB = null;
         for (const placed of game.town.getPlacedBuildings()) {
           const pos = window.gameRenderer.getBuildingScreenPosition(game.town, placed.key);
           if (!pos) continue;
@@ -448,18 +449,32 @@ export function setupUI(game) {
           const rx = pos.x - wSize / 2;
           const ry = pos.y - hSize + 8;
           if (x >= rx && x <= rx + wSize && y >= ry && y <= ry + hSize) {
-            clickedBuilding = placed;
+            clickedB = placed;
             break;
           }
         }
 
-        if (clickedBuilding) {
-          openBuildingActions(clickedBuilding.key);
+        if (clickedB) {
+          openBuildingActions(clickedB.key, game);
+          clickedBuilding = true;
           return;
         }
       }
 
-      // 3. Clicar no Portal da Masmorra (Apenas em Hunt View)
+      // 3. Clicar em lote vazio na cidade para abrir modal de construção rápida
+      if (activeView === 'town' && window.gameRenderer && !clickedBuilding && !pendingBuildingPlacement) {
+        const tile = window.gameRenderer.screenToGrid(x, y, game.town);
+        if (tile) {
+          // Verifica se o lote é livre para um edifício padrão de 2x2
+          const isFree = game.town.isAreaFree(tile.col, tile.row, { w: 2, h: 2 });
+          if (isFree) {
+            openBuildTileModal(tile.col, tile.row, game);
+            return;
+          }
+        }
+      }
+
+      // 4. Clicar no Portal da Masmorra (Apenas em Hunt View)
       if (activeView === 'hunt') {
         const portalX = 480;
         const portalY = 100;
@@ -1687,6 +1702,98 @@ function formatHeroState(state) {
     'SELLING_LOOT': '💰 Vendendo Coletas'
   };
   return states[state] || state;
+}
+
+function openBuildTileModal(col, row, game) {
+  const modal = document.getElementById('build-tile-modal');
+  const optionsContainer = document.getElementById('build-tile-options');
+  if (!modal || !optionsContainer) return;
+
+  optionsContainer.innerHTML = '';
+
+  // Lista de edifícios que podem ser construídos (excluindo Prefeitura que começa colocada)
+  const buildables = ['hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market'];
+
+  buildables.forEach(bKey => {
+    const config = BUILDINGS_CONFIG[bKey];
+    const isBuilt = game.town.isBuilt(bKey);
+
+    // Se já estiver construído, não mostramos na lista (apenas um edifício de cada tipo é permitido)
+    if (isBuilt) return;
+
+    // Verificar se o jogador tem recursos suficientes
+    let canAfford = true;
+    let costTextList = [];
+    const cost = config.cost;
+
+    for (const resKey in cost) {
+      const required = cost[resKey];
+      const owned = resKey === 'gold' ? game.town.gold : (game.town.resources[resKey] || 0);
+      if (owned < required) {
+        canAfford = false;
+        costTextList.push(`<span style="color: #ff5252;">${required} ${resKey === 'gold' ? 'Ouro' : formatResourceName(resKey)}</span>`);
+      } else {
+        costTextList.push(`<span style="color: #4caf50;">${required} ${resKey === 'gold' ? 'Ouro' : formatResourceName(resKey)}</span>`);
+      }
+    }
+
+    const costText = costTextList.join(', ');
+    const optionEl = document.createElement('div');
+    optionEl.className = 'build-option-item';
+    optionEl.style = 'background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;';
+    
+    // Ícones correspondentes
+    const icons = { hotel: '🏨', restaurant: '🍲', hospital: '🏥', tavern: '🍺', forge: '⚒️', market: '⚖️' };
+    const icon = icons[bKey] || '🏠';
+
+    optionEl.innerHTML = `
+      <div style="text-align: left; flex: 1;">
+        <strong style="color: #ffd54f; font-size: 11px;">${icon} ${config.name}</strong>
+        <p style="font-size: 9px; margin: 2px 0 0 0; color: #b0bec5; line-height: 1.3;">Custo: ${costText}</p>
+      </div>
+      <button class="action-btn-retro ${canAfford ? '' : 'disabled'}" style="padding: 4px 8px; font-size: 10px;" ${canAfford ? '' : 'disabled'}>Construir</button>
+    `;
+
+    const buildBtn = optionEl.querySelector('button');
+    if (canAfford) {
+      buildBtn.addEventListener('click', () => {
+        const result = game.town.buildAt(bKey, col, row);
+        if (result.success) {
+          modal.classList.remove('active');
+          game.addFloater({ 
+            x: window.gameRenderer.canvas.width / 2, 
+            y: window.gameRenderer.canvas.height / 2 - 50, 
+            text: 'Construído!', 
+            color: '#3aff7d' 
+          });
+          game.saveGame();
+          renderBuildings(game);
+        } else {
+          alert(result.reason || 'Erro ao construir.');
+        }
+      });
+    }
+
+    optionsContainer.appendChild(optionEl);
+  });
+
+  if (optionsContainer.children.length === 0) {
+    optionsContainer.innerHTML = `<div style="color: #a08c80; font-size: 11px; text-align: center; padding: 10px;">Todos os edifícios já foram construídos na cidade!</div>`;
+  }
+
+  modal.classList.add('active');
+}
+
+function formatResourceName(res) {
+  const names = {
+    wood_rough: 'Mad. Bruta',
+    iron_ore: 'Min. Ferro',
+    steel_ore: 'Min. Aço',
+    herbs_wild: 'Ervas',
+    linho: 'Linho',
+    meat_raw: 'Carne Crua'
+  };
+  return names[res] || res;
 }
 
 

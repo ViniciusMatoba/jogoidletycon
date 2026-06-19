@@ -490,9 +490,19 @@ export class GameRenderer {
           render: () => this.drawBuildingIndividual(game.town, b)
         });
       });
-      // Heróis ativos na cidade
+      // Heróis ativos na cidade (escondidos se estiverem dentro de um prédio construído)
       game.heroes.forEach(h => {
         if (h.currentMap === 'town') {
+          const isInsideHospital = h.state === 'HEALING_HOSP' && game.town.isBuilt('hospital');
+          const isInsideRestaurant = h.state === 'EATING_REST' && game.town.isBuilt('restaurant');
+          const isInsideHotel = h.state === 'RESTING_HOTEL' && game.town.isBuilt('hotel');
+          const isInsideTavern = h.state === 'DRINKING_TAVERN' && game.town.isBuilt('tavern');
+          const isInsideMarket = h.state === 'SELLING_LOOT' && game.town.isBuilt('market');
+
+          if (isInsideHospital || isInsideRestaurant || isInsideHotel || isInsideTavern || isInsideMarket) {
+            return; // Esconde o caçador
+          }
+
           renderList.push({
             y: h.y,
             render: () => this.drawHeroIndividual(h)
@@ -1639,7 +1649,7 @@ export class GameRenderer {
         const sw = 64;
         const sh = 64;
 
-        const size = monster.isBoss ? 96 : (monster.isMiniBoss ? 72 : 56);
+        const size = monster.isBoss ? 134 : (monster.isMiniBoss ? 100 : 78);
         this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
       } else {
         // --- Static 1024x1024 image ---
@@ -1648,7 +1658,7 @@ export class GameRenderer {
           const bounce = Math.abs(Math.sin(time * 0.012)) * 2;
           this.ctx.translate(0, -bounce);
         }
-        const size = monster.isBoss ? 84 : (monster.isMiniBoss ? 64 : 48);
+        const size = monster.isBoss ? 118 : (monster.isMiniBoss ? 90 : 67);
         this.ctx.drawImage(img, -size / 2, -size + 2, size, size);
       }
 
@@ -1659,8 +1669,8 @@ export class GameRenderer {
       this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
       this.ctx.textAlign = 'center';
       const nameOffset = isSpritesheet ? 
-        (monster.isBoss ? 80 : (monster.isMiniBoss ? 60 : 48)) : 
-        (monster.isBoss ? 72 : (monster.isMiniBoss ? 54 : 42));
+        (monster.isBoss ? 112 : (monster.isMiniBoss ? 84 : 67)) : 
+        (monster.isBoss ? 100 : (monster.isMiniBoss ? 76 : 58));
       this.ctx.fillText(monster.name, pos.x, pos.y - nameOffset);
 
       // Barra de HP
@@ -1669,8 +1679,8 @@ export class GameRenderer {
       const barH = 3;
       
       const barOffset = isSpritesheet ? 
-        (monster.isBoss ? 70 : (monster.isMiniBoss ? 52 : 40)) : 
-        (monster.isBoss ? 62 : (monster.isMiniBoss ? 46 : 34));
+        (monster.isBoss ? 98 : (monster.isMiniBoss ? 73 : 56)) : 
+        (monster.isBoss ? 86 : (monster.isMiniBoss ? 64 : 48));
       this.ctx.fillStyle = '#2c2e33';
       this.ctx.fillRect(pos.x - barW / 2, pos.y - barOffset, barW, barH);
       this.ctx.fillStyle = '#ff3d3d';
@@ -2062,8 +2072,8 @@ export class GameRenderer {
       const isSpritesheet = (img.naturalWidth === 832 || img.width === 832 || isSplit);
 
       if (isSpritesheet) {
-        // Escalar herói por 1.8x
-        this.ctx.scale(1.8, 1.8);
+        // Escalar herói por 2.5x (otimização mobile)
+        this.ctx.scale(2.5, 2.5);
 
         // --- LPC Spritesheet Cropping & Animation for Heroes ---
         let rowOffset = 10; // Walk South
@@ -2141,8 +2151,8 @@ export class GameRenderer {
         const size = 28; // Standard size inside scaled context
         this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
       } else {
-        // Escalar herói e equipamentos juntos por 1.8x
-        this.ctx.scale(1.8, 1.8);
+        // Escalar herói e equipamentos juntos por 2.5x (otimização mobile)
+        this.ctx.scale(2.5, 2.5);
 
         // Efeito de caminhada (bounce e inclinação leve)
         if (isWalking) {
@@ -2909,8 +2919,8 @@ export class GameRenderer {
         this.ctx.beginPath();
         this.ctx.moveTo(pos.x, pos.y);
         this.ctx.lineTo(
-          pos.x + Math.cos(angle) * r * 1.8,
-          pos.y + Math.sin(angle) * r * 1.8
+          pos.x + Math.cos(angle) * r * 2.5,
+          pos.y + Math.sin(angle) * r * 2.5
         );
         this.ctx.lineWidth = 2.5;
         this.ctx.strokeStyle = '#fffaaa';

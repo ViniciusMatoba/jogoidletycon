@@ -107,6 +107,12 @@ export class Town {
   }
 
   isAreaFree(col, row, footprint, ignoredBuilding = null) {
+    // Restringe a colocação de edifícios apenas na clareira central (colunas 2 a 11, linhas 2 a 9)
+    // para evitar a construção sobre as árvores e caminhos das bordas do tapete
+    if (col < 2 || row < 2 || (col + footprint.w) > 12 || (row + footprint.h) > 10) {
+      return false;
+    }
+
     if (!this.isInsideGrid(col, row, footprint)) return false;
 
     const test = { col, row, w: footprint.w, h: footprint.h };
