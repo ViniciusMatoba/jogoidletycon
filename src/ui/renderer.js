@@ -1715,21 +1715,18 @@ export class GameRenderer {
 
   // --- PARTÍCULAS DE FUMAÇA DAS CHAMINÉS ---
   getChaminePos(town, bKey) {
-    const buildings = {
-      restaurant: { x: 700, y: 240 },
-      hospital: { x: 200, y: 400 },
-      tavern: { x: 760, y: 400 },
-      forge: { x: 480, y: 430 }
+    if (!town.isBuilt(bKey)) return null;
+    const pos = this.getBuildingScreenPosition(town, bKey);
+    if (!pos) return null;
+    // offsets da chaminé relativo ao centro isométrico do prédio
+    const chimneyOffsets = {
+      restaurant: { dx: 20, dy: -30 },
+      hospital:   { dx: 15, dy: -35 },
+      tavern:     { dx: 22, dy: -28 },
+      forge:      { dx: 18, dy: -25 }
     };
-    
-    const pos = buildings[bKey];
-    if (!pos || !town.isBuilt(bKey)) return null;
-    
-    // A chaminé cartesiana fica na parte superior direita do prédio
-    return {
-      x: pos.x + 14,
-      y: pos.y - 16
-    };
+    const off = chimneyOffsets[bKey] || { dx: 14, dy: -16 };
+    return { x: pos.x + off.dx, y: pos.y + off.dy };
   }
 
   updateAndDrawSmoke(town, dt) {
