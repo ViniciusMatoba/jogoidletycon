@@ -361,12 +361,12 @@ export class GameRenderer {
     return screenToGrid(x, y, town, this.canvas.width, this.canvas.height);
   }
 
-  getBuildingScreenPosition(town, buildingType) {
+  getBuildingScreenPosition(town, buildingType, metrics = null) {
     const placement = town.getBuildingPlacement(buildingType);
     if (!placement) return null;
 
     const footprint = town.getBuildingFootprint(buildingType);
-    const metrics = this.getTownGridMetrics(town);
+    if (!metrics) metrics = this.getTownGridMetrics(town);
     const center = this.gridToScreen(
       placement.col + footprint.w / 2,
       placement.row + footprint.h / 2,
@@ -598,8 +598,9 @@ export class GameRenderer {
         market: { name: 'Mercado da Vila', icon: '⚖️' }
       };
 
+      const townMetrics = this.getTownGridMetrics(game.town, width, height);
       game.town.getPlacedBuildings().forEach(placed => {
-        const pos = this.getBuildingScreenPosition(game.town, placed.key);
+        const pos = this.getBuildingScreenPosition(game.town, placed.key, townMetrics);
         if (!pos) return;
         const meta = buildingLabels[placed.key] || { name: placed.key, icon: '🏠' };
         const b = { key: placed.key, x: pos.x, y: pos.y, name: meta.name, icon: meta.icon };
@@ -612,7 +613,7 @@ export class GameRenderer {
       // Desenhar preview do prédio em posicionamento
       if (this.pendingPlacement && this.hoveredTile) {
         const footprint = game.town.getBuildingFootprint(this.pendingPlacement);
-        const metrics = this.getTownGridMetrics(game.town);
+        const metrics = this.getTownGridMetrics(game.town, width, height);
         const center = this.gridToScreen(
           this.hoveredTile.col + footprint.w / 2,
           this.hoveredTile.row + footprint.h / 2,
