@@ -75,11 +75,16 @@ export class GameRenderer {
       const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
       const data = imageData.data;
 
-      // Cor de fundo padrÃ£o (pixel superior esquerdo)
+      // Cor de fundo padrão (pixel superior esquerdo)
       const bgR = data[0];
       const bgG = data[1];
       const bgB = data[2];
       const bgA = data[3];
+
+      // Se o pixel superior esquerdo já for transparente, assume que a imagem é um PNG limpo e pula o processamento
+      if (bgA < 50) {
+        return tempCanvas;
+      }
 
       // TolerÃ¢ncia para variaÃ§Ã£o de cores
       const tolerance = 45;
