@@ -909,8 +909,17 @@ export class GameRenderer {
     const bx = b.x;
     const by = b.y;
 
-    const wSize = b.key === 'townhall' ? 76 : 60;
-    const hSize = b.key === 'townhall' ? 76 : 60;
+    // Tamanhos baseados nas métricas do grid para evitar distorção
+    // Prefeitura (3x3 tiles) → maior; outros (2x2 tiles) → médio
+    const metrics = this.getTownGridMetrics(town);
+    const tileRef = metrics.tileW; // Largura de referência do tile
+
+    const baseSize = b.key === 'townhall' ?
+      Math.max(140, tileRef * 1.6) :
+      Math.max(100, tileRef * 1.15);
+
+    const wSize = baseSize;
+    const hSize = baseSize;
 
     const rx = bx - wSize / 2;
     const ry = by - hSize + 10;
@@ -934,12 +943,14 @@ export class GameRenderer {
       if (img && img.loaded) {
         this.ctx.save();
         
-        // Variação de escala por nível (Nível 1: 0.85x, Nível 2: 1.0x, Nível 3: 1.15x)
-        const scaleMult = level === 1 ? 0.85 : (level === 2 ? 1.0 : 1.15);
-        const baseW = b.key === 'townhall' ? 116 : 96;
-        const baseH = b.key === 'townhall' ? 116 : 96;
-        const dw = baseW * scaleMult;
-        const dh = baseH * scaleMult;
+        // Variação de escala por nível (Nível 1: 0.88x, Nível 2: 1.0x, Nível 3: 1.14x)
+        const scaleMult = level === 1 ? 0.88 : (level === 2 ? 1.0 : 1.14);
+        // Tamanho de desenho com proporção 1:1 para não distorcer
+        const imgBase = b.key === 'townhall' ?
+          Math.max(160, tileRef * 1.85) :
+          Math.max(120, tileRef * 1.35);
+        const dw = imgBase * scaleMult;
+        const dh = imgBase * scaleMult;
         
         const dx = bx - dw / 2;
         const dy = by - dh + 8;
@@ -983,16 +994,16 @@ export class GameRenderer {
 
       // Desenhar ícone do prédio (fora do flip para não espelhar)
       this.ctx.save();
-      this.ctx.font = '13px Arial';
+      this.ctx.font = '14px Arial';
       this.ctx.textAlign = 'center';
       this.ctx.fillText(b.icon, bx, iconY);
       this.ctx.restore();
 
       // Nível do Prédio
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = '9px monospace';
+      this.ctx.font = '10px monospace';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(`Lvl ${level}`, bx, by + 12);
+      this.ctx.fillText(`Lvl ${level}`, bx, by + 14);
     } else {
       // --- SE TRANCADO: Desenhar estrutura de madeira (scaffolding) ---
       const beamColor = '#5d4037';

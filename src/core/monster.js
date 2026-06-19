@@ -223,7 +223,9 @@ export class Monster {
           nearestHero.isGhost = true;
           nearestHero.addLog(`Derrubado por ${this.name}! Voltando como fantasma...`);
           if (nearestHero.currentMap === 'hunt') {
-            nearestHero.tempTargetBuilding = town.isBuilt('hospital') ? 'hospital' : 'townhall';
+            // Usar window.game.town como fallback seguro (town não existe no escopo de Monster.update)
+            const safeTown = (typeof town !== 'undefined' && town) ? town : window.game?.town;
+            nearestHero.tempTargetBuilding = (safeTown && safeTown.isBuilt('hospital')) ? 'hospital' : 'townhall';
             nearestHero.state = 'RETURNING_TOWN';
             const huntExit = getHuntExitPoint(viewport.width, viewport.height);
             nearestHero.targetX = huntExit.x;

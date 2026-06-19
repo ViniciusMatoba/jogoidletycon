@@ -70,20 +70,25 @@ function bootGame() {
     if (dt > 1.5) dt = 1.5;
     lastTime = currentTime;
 
-    resizeCanvasToContainer();
-    game.update(dt, { width: renderer.canvas.width, height: renderer.canvas.height });
-    renderer.render(game, dt);
+    try {
+      resizeCanvasToContainer();
+      game.update(dt, { width: renderer.canvas.width, height: renderer.canvas.height });
+      renderer.render(game, dt);
 
-    uiUpdateTimer += dt;
-    if (uiUpdateTimer >= 0.15) {
-      updateUI(game);
-      uiUpdateTimer = 0;
-    }
+      uiUpdateTimer += dt;
+      if (uiUpdateTimer >= 0.15) {
+        updateUI(game);
+        uiUpdateTimer = 0;
+      }
 
-    autoSaveTimer += dt;
-    if (autoSaveTimer >= 6.0) {
-      game.saveGame();
-      autoSaveTimer = 0;
+      autoSaveTimer += dt;
+      if (autoSaveTimer >= 6.0) {
+        game.saveGame();
+        autoSaveTimer = 0;
+      }
+    } catch (err) {
+      // Loga o erro mas continua o loop — nunca deixa a tela congelar!
+      console.error('[GameLoop Error]', err);
     }
 
     requestAnimationFrame(gameLoop);

@@ -447,8 +447,8 @@ export function setupUI(game) {
           for (const placed of window.game.town.getPlacedBuildings()) {
             const pos = window.gameRenderer.getBuildingScreenPosition(window.game.town, placed.key);
             if (!pos) continue;
-            const wSize = placed.key === 'townhall' ? 86 : 66;
-            const hSize = placed.key === 'townhall' ? 86 : 66;
+            const wSize = placed.key === 'townhall' ? 150 : 120;
+            const hSize = placed.key === 'townhall' ? 150 : 120;
             if (x >= pos.x - wSize / 2 && x <= pos.x + wSize / 2 && y >= pos.y - hSize + 8 && y <= pos.y + 8) {
               isCursorPointer = true; break;
             }
@@ -590,8 +590,9 @@ export function setupUI(game) {
         for (const placed of game.town.getPlacedBuildings()) {
           const pos = window.gameRenderer.getBuildingScreenPosition(game.town, placed.key);
           if (!pos) continue;
-          const wSize = placed.key === 'townhall' ? 86 : 66;
-          const hSize = placed.key === 'townhall' ? 86 : 66;
+          // Tamanhos compatíveis com os novos tamanhos visuais dos prédios
+          const wSize = placed.key === 'townhall' ? 150 : 120;
+          const hSize = placed.key === 'townhall' ? 150 : 120;
           const rx = pos.x - wSize / 2;
           const ry = pos.y - hSize + 8;
           if (x >= rx && x <= rx + wSize && y >= ry && y <= ry + hSize) {
