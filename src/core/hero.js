@@ -25,12 +25,68 @@ function clampHuntPointLocal(point, width = 960, height = 540) {
   };
 }
 
-const HERO_NAMES = [
-  'Alistair', 'Boran', 'Cedric', 'Dalia', 'Elysia', 
-  'Fiona', 'Garrick', 'Hilda', 'Kaelen', 'Lyra', 
-  'Morrigan', 'Rowan', 'Valerie', 'Zephyr', 'Gwen',
-  'Tristan', 'Eldrin', 'Saria', 'Orion', 'Kael'
+const MALE_NAMES = [
+  'Arthur', 'Bernardo', 'Caio', 'Daniel', 'Erick', 'Felipe', 'Gabriel', 
+  'Heitor', 'Igor', 'Lucas', 'Murilo', 'Rafael', 'Samuel', 'Thiago', 'Victor',
+  'Kaelen', 'Valerius', 'Zephyr', 'Eldrin', 'Tristan', 'Boran', 'Orion', 'Kael'
 ];
+const FEMALE_NAMES = [
+  'Alice', 'Beatriz', 'Camila', 'Diana', 'Elisa', 'Fernanda', 'Gabriela', 
+  'Helena', 'Isadora', 'Julia', 'Larissa', 'Marina', 'Natalia', 'Olivia', 
+  'Rafaela', 'Sofia', 'Yasmin', 'Elysia', 'Lyra', 'Morrigan', 'Valerie', 'Saria'
+];
+
+function generateNickname(gender, rarity, bodyType, hairColor, className) {
+  const isFem = gender === 'female';
+  
+  if (hairColor === 'red') {
+    return isFem ? 'Cabelo de Fogo' : 'o Flamejante';
+  }
+  if (hairColor === 'gold') {
+    return isFem ? 'a Dourada' : 'o Dourado';
+  }
+  if (hairColor === 'pink') {
+    return isFem ? 'a Rosada' : 'o Rosado';
+  }
+  if (hairColor === 'blue') {
+    return isFem ? 'a Gélida' : 'o Gélido';
+  }
+  
+  if (rarity === 'Lendário') {
+    const lendarios = isFem 
+      ? ['a Lendária', 'a Divina', 'a Imortal', 'a Destruidora', 'a Soberana']
+      : ['o Lendário', 'o Divino', 'o Imortal', 'o Destruidor', 'o Soberano'];
+    return lendarios[Math.floor(Math.random() * lendarios.length)];
+  }
+  if (rarity === 'Épico') {
+    const epicos = isFem 
+      ? ['a Épica', 'a Imparável', 'a Corajosa', 'a Invencível', 'a Protetora']
+      : ['o Épico', 'o Imparável', 'o Corajoso', 'o Invencível', 'o Protetor'];
+    return epicos[Math.floor(Math.random() * epicos.length)];
+  }
+  if (rarity === 'Raro') {
+    const raros = isFem
+      ? ['a Audaz', 'a Destemida', 'a Veloz', 'a Caçadora']
+      : ['o Audaz', 'o Destemido', 'o Veloz', 'o Caçador'];
+    return raros[Math.floor(Math.random() * raros.length)];
+  }
+  
+  if (className === 'WARRIOR') return isFem ? 'Escudo de Aço' : 'Escudo de Ferro';
+  if (className === 'MERCENARY') return isFem ? 'Lâmina Silenciosa' : 'Lâmina Rápida';
+  if (className === 'ARCHER') return isFem ? 'Olhos de Águia' : 'Mira Precisa';
+  if (className === 'MAGE') return isFem ? 'a Arcana' : 'o Arcano';
+  if (className === 'PRIEST') return isFem ? 'a Abençoada' : 'o Abençoado';
+  
+  return isFem ? 'a Aventureira' : 'o Aventureiro';
+}
+
+const RARITY_MULTIPLIERS = {
+  'Comum': 1.0,
+  'Normal': 1.1,
+  'Raro': 1.3,
+  'Épico': 1.6,
+  'Lendário': 2.0
+};
 
 export const BUILDING_POSITIONS = {
   townhall: { x: 480, y: 150 },
@@ -45,22 +101,60 @@ export const BUILDING_POSITIONS = {
 export class Hero {
   constructor(id, className) {
     this.id = id;
-    this.name = HERO_NAMES[Math.floor(Math.random() * HERO_NAMES.length)] + ` (${HERO_CLASSES[className].name.substring(0, 3)})`;
     this.className = className;
     this.classConfig = HERO_CLASSES[className];
 
-    // Características Cosméticas Físicas Aleatórias (Wow factor e individualidade)
-    const hairColors = ['#f5d061', '#e65c40', '#7d4d33', '#2b2b2b', '#e0e0e0'];
-    const skinColors = ['#ffd1a9', '#e0a97a', '#8c5835'];
-    const hairStyles = ['short', 'long', 'spiky', 'bald'];
-    const clothesColors = ['#e06666', '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6fa8dc', '#8e7cc3', '#c27ba0'];
+    // 1. Gênero (50/50)
+    const gender = Math.random() < 0.5 ? 'male' : 'female';
+
+    // 2. Raridade
+    const roll = Math.random() * 100;
+    let rarity = 'Comum';
+    if (roll < 2) rarity = 'Lendário';
+    else if (roll < 12) rarity = 'Épico';
+    else if (roll < 30) rarity = 'Raro';
+    else if (roll < 60) rarity = 'Normal';
+    else rarity = 'Comum';
+
+    this.rarity = rarity;
+
+    // 3. Brilho da Raridade (Glow)
+    this.rarityGlow = {
+      enabled: rarity === 'Raro' || rarity === 'Épico' || rarity === 'Lendário',
+      color: rarity === 'Lendário' ? '#ffea3a' : (rarity === 'Épico' ? '#d500f9' : '#00e5ff'),
+      intensity: rarity === 'Lendário' ? 1.0 : (rarity === 'Épico' ? 0.7 : 0.4),
+      pulseSpeed: rarity === 'Lendário' ? 2.5 : (rarity === 'Épico' ? 1.8 : 1.0)
+    };
+
+    // 4. Tipo de Corpo (Humano Padrão)
+    let bodyType = gender === 'male' ? 'male' : 'female';
+
+    // 5. Cabelo (Corte e Cor)
+    let hairStyle = 'none';
+    let hairColor = 'none';
+    const styles = ['plain', 'messy', 'loose', 'braid', 'mohawk'];
+    hairStyle = styles[Math.floor(Math.random() * styles.length)];
+
+    let colors = ['black', 'brown', 'blonde', 'red', 'white'];
+    if (rarity === 'Raro') {
+      colors.push('blue', 'green');
+    } else if (rarity === 'Épico' || rarity === 'Lendário') {
+      colors.push('blue', 'green', 'purple', 'gold', 'pink');
+    }
+    hairColor = colors[Math.floor(Math.random() * colors.length)];
 
     this.cosmetics = {
-      hairColor: hairColors[Math.floor(Math.random() * hairColors.length)],
-      skinColor: skinColors[Math.floor(Math.random() * skinColors.length)],
-      hairStyle: hairStyles[Math.floor(Math.random() * hairStyles.length)],
-      clothesColor: clothesColors[Math.floor(Math.random() * clothesColors.length)]
+      gender,
+      bodyType,
+      hairStyle,
+      hairColor
     };
+
+    // 6. Nome e Apelido
+    const nameList = gender === 'male' ? MALE_NAMES : FEMALE_NAMES;
+    const baseName = nameList[Math.floor(Math.random() * nameList.length)];
+    const nickname = generateNickname(gender, rarity, bodyType, hairColor, className);
+    this.name = `${baseName} ${nickname} (${HERO_CLASSES[className].name.substring(0, 3)})`;
 
     // Status de Progressão
     this.level = 1;
@@ -73,6 +167,7 @@ export class Hero {
       weapon: null,
       armor: null,
       helmet: null,
+      shield: null, // Novo slot para escudo visual
       necklace: null,
       gloves: null,
       ring: null,
@@ -135,9 +230,12 @@ export class Hero {
     // Crescimento de status por nível (ex: +10% por nível)
     const levelMult = 1 + (this.level - 1) * 0.12;
 
-    this.maxHp = Math.round(classBase.baseHp * levelMult);
-    this.atk = Math.round(classBase.baseAtk * levelMult);
-    this.def = Math.round(classBase.baseDef * levelMult);
+    // Multiplicador de Raridade
+    const rarityMult = RARITY_MULTIPLIERS[this.rarity] || 1.0;
+
+    this.maxHp = Math.round(classBase.baseHp * levelMult * rarityMult);
+    this.atk = Math.round(classBase.baseAtk * levelMult * rarityMult);
+    this.def = Math.round(classBase.baseDef * levelMult * rarityMult);
     this.spd = classBase.baseSpd; // Ataques por segundo
 
     // Somar bônus de todos os equipamentos equipados

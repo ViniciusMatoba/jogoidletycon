@@ -18,3 +18,7 @@ Thumbs.db
 
 # Dependências
 node_modules/
+
+# Claude CLI
+.claude/
+

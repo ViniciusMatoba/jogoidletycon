@@ -264,7 +264,7 @@ export class GameRenderer {
       'hero_warrior_hurt': 'assets/sprites/guerreiro_hurt.png',
       'hero_warrior_idle': 'assets/sprites/guerreiro_idle.png',
       'hero_warrior_islash': 'assets/sprites/guerreiro_islash.png',
-      'hero_mercenary': 'assets/sprites/mercenario_universal.png',
+      'hero_mercenary': 'assets/sprites/hero_mercenary_universal.png',
       'hero_mage': 'assets/sprites/mago_universal.png',
       'hero_priest_walk': 'assets/sprites/sacer_walk.png',
       'hero_priest_slash': 'assets/sprites/sacer_slash.png',
@@ -302,8 +302,55 @@ export class GameRenderer {
       'monster_ipupiara': 'assets/sprites/ipupiara_universal.png',
       'monster_teju_jagua': 'assets/sprites/teju_jagua_universal.png',
       'monster_boto_sedutor': 'assets/sprites/boto_sedutor_universal.png',
-      'monster_mapinguari': 'assets/sprites/mapinguari_universal.png'
+      'monster_mapinguari': 'assets/sprites/mapinguari_universal.png',
+      // Monstros LPC gerados programaticamente
+      'monster_goblin':             'assets/sprites/monster_goblin_universal.png',
+      'monster_esqueleto':          'assets/sprites/monster_esqueleto_universal.png',
+      'monster_orc':                'assets/sprites/monster_orc_universal.png',
+      'monster_cavaleiro_sombrio':  'assets/sprites/monster_cavaleiro_sombrio_universal.png',
+      'monster_feiticeira':         'assets/sprites/monster_feiticeira_universal.png',
+      'monster_capitao_orc':        'assets/sprites/monster_capitao_orc_universal.png',
+      'monster_lich':               'assets/sprites/monster_lich_universal.png',
+      'monster_rei_demonios':       'assets/sprites/monster_rei_demonios_universal.png',
+      'monster_dragonborn_boss':    'assets/sprites/monster_dragonborn_boss_universal.png'
     };
+
+    // -----------------------------------------------------------------
+    // CARREGAMENTO DINÂMICO DE CAMADAS UNIVERSAIS DO HERÓI (LPC)
+    // -----------------------------------------------------------------
+    const bodies = ['male', 'female', 'muscular', 'skeleton', 'zombie', 'male_green', 'female_green', 'male_blue', 'female_blue'];
+    for (const b of bodies) {
+      assetsList[`body_${b}`] = `assets/sprites/body_${b}_universal.png`;
+    }
+
+    const hairStyles = ['plain', 'messy', 'loose', 'braid', 'mohawk'];
+    const hairColors = ['black', 'brown', 'blonde', 'red', 'white', 'blue', 'green', 'purple', 'gold', 'pink'];
+    for (const style of hairStyles) {
+      for (const color of hairColors) {
+        assetsList[`hair_${style}_${color}`] = `assets/sprites/hair_${style}_${color}_universal.png`;
+      }
+    }
+
+    const armorTypes = ['heavy', 'medium', 'light'];
+    const armorGenders = ['male', 'female'];
+    for (const type of armorTypes) {
+      for (let tier = 1; tier <= 3; tier++) {
+        for (const gender of armorGenders) {
+          assetsList[`armor_${type}_t${tier}_${gender}`] = `assets/sprites/armor_${type}_t${tier}_${gender}_universal.png`;
+        }
+      }
+    }
+
+    const helmets = ['armet', 'barbarian', 'magic_hat', 'headband'];
+    for (const h of helmets) {
+      assetsList[`helmet_${h}`] = `assets/sprites/helmet_${h}_universal.png`;
+    }
+
+    assetsList['weapon_longsword'] = 'assets/sprites/weapon_longsword_universal.png';
+    assetsList['weapon_dagger']    = 'assets/sprites/weapon_dagger_universal.png';
+    assetsList['weapon_bow']       = 'assets/sprites/weapon_bow_universal.png';
+    assetsList['weapon_staff']     = 'assets/sprites/weapon_staff_universal.png';
+    assetsList['weapon_shield']    = 'assets/sprites/weapon_shield_universal.png';
 
     for (const key in assetsList) {
       const img = new Image();
@@ -2286,6 +2333,33 @@ export class GameRenderer {
       }
     }
 
+    // --- DESENHAR BRILHO DE RARIDADE (Aura sob os pés) ---
+    if (hero.rarityGlow && hero.rarityGlow.enabled) {
+      this.ctx.save();
+      const pulse = 1 + Math.sin(time * 0.005 * hero.rarityGlow.pulseSpeed) * 0.15 * hero.rarityGlow.intensity;
+      const radius = 22 * pulse;
+      
+      const grad = this.ctx.createRadialGradient(hx, hy + 2, 2, hx, hy + 2, radius);
+      const colorHex = hero.rarityGlow.color;
+      grad.addColorStop(0, colorHex + 'b0');
+      grad.addColorStop(0.5, colorHex + '40');
+      grad.addColorStop(1, colorHex + '00');
+      
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.ellipse(hx, hy + 2, radius, radius * 0.35, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      if (hero.rarity === 'Lendário') {
+        this.ctx.strokeStyle = '#ffea3a70';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(hx, hy + 2, radius * 0.8, radius * 0.8 * 0.35, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
+    }
+
     if (img && img.loaded) {
       // --- DESENHAR HERÓI COM SPRITE DE PIXEL ART ---
       this.ctx.save();
@@ -2299,9 +2373,155 @@ export class GameRenderer {
       // Transladar para o ponto de base dos pés no chão
       this.ctx.translate(hx, hy);
 
+      const hasLayeredCosmetics = (hero.cosmetics && hero.cosmetics.bodyType);
       const isSpritesheet = (img.naturalWidth === 832 || img.width === 832 || isSplit);
 
-      if (isSpritesheet) {
+      if (hasLayeredCosmetics) {
+        // Escalar por 2.5x (otimização mobile)
+        this.ctx.scale(2.5, 2.5);
+
+        // --- LPC Spritesheet Cropping & Animation for Layered Heroes ---
+        let action = 'walk';
+        let colCount = 9;
+        let rowOffset = 10; // Walk South por padrão
+        const isFighting = hero.state === 'FIGHTING';
+
+        const dx = hero.targetX - hero.x;
+        const dy = hero.targetY - hero.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!hero.facingDir) {
+          hero.facingDir = 'S';
+        }
+
+        if (dist > 2) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            hero.facingDir = dx > 0 ? 'E' : 'W';
+          } else {
+            hero.facingDir = dy > 0 ? 'S' : 'N';
+          }
+        } else if (isFighting && hero.targetMonster) {
+          const mx = hero.targetMonster.x - hero.x;
+          const my = hero.targetMonster.y - hero.y;
+          if (Math.abs(mx) > Math.abs(my)) {
+            hero.facingDir = mx > 0 ? 'E' : 'W';
+          } else {
+            hero.facingDir = my > 0 ? 'S' : 'N';
+          }
+        }
+
+        // Configuração de animação com base no estado e classe
+        if (isFighting) {
+          if (hero.className === 'ARCHER') {
+            action = 'shoot';
+            colCount = 13;
+            if (hero.facingDir === 'N') rowOffset = 16;
+            else if (hero.facingDir === 'W') rowOffset = 17;
+            else if (hero.facingDir === 'S') rowOffset = 18;
+            else if (hero.facingDir === 'E') rowOffset = 19;
+          } else if (hero.className === 'MAGE' || hero.className === 'PRIEST') {
+            action = 'cast';
+            colCount = 7;
+            if (hero.facingDir === 'N') rowOffset = 0;
+            else if (hero.facingDir === 'W') rowOffset = 1;
+            else if (hero.facingDir === 'S') rowOffset = 2;
+            else if (hero.facingDir === 'E') rowOffset = 3;
+          } else {
+            action = 'slash';
+            colCount = 6;
+            if (hero.facingDir === 'N') rowOffset = 12;
+            else if (hero.facingDir === 'W') rowOffset = 13;
+            else if (hero.facingDir === 'S') rowOffset = 14;
+            else if (hero.facingDir === 'E') rowOffset = 15;
+          }
+        } else {
+          action = 'walk';
+          colCount = 9;
+          if (hero.facingDir === 'N') rowOffset = 8;
+          else if (hero.facingDir === 'W') rowOffset = 9;
+          else if (hero.facingDir === 'S') rowOffset = 10;
+          else if (hero.facingDir === 'E') rowOffset = 11;
+        }
+
+        // Frame index
+        let frameIndex = 0;
+        if (isFighting) {
+          frameIndex = Math.floor(time * 0.008) % colCount;
+        } else if (dist > 2) {
+          frameIndex = Math.floor(time * 0.012) % colCount;
+        } else {
+          frameIndex = 0;
+        }
+
+        const sx = frameIndex * 64;
+        const sy = rowOffset * 64;
+        const sw = 64;
+        const sh = 64;
+        const size = 28;
+
+        // Desenhar as Camadas
+        // 1. Corpo
+        const bodyImg = this.images[`body_${hero.cosmetics.bodyType}`];
+        if (bodyImg && bodyImg.loaded) {
+          this.ctx.drawImage(bodyImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+
+          // 2. Cabelo (se houver)
+          if (hero.cosmetics.hairStyle !== 'none') {
+            const hairImg = this.images[`hair_${hero.cosmetics.hairStyle}_${hero.cosmetics.hairColor}`];
+            if (hairImg && hairImg.loaded) {
+              this.ctx.drawImage(hairImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+            }
+          }
+
+          // 3. Armadura (se equipada)
+          if (hero.equipment.armor) {
+            let armorType = 'heavy';
+            if (hero.className === 'MERCENARY' || hero.className === 'ARCHER') armorType = 'medium';
+            else if (hero.className === 'MAGE' || hero.className === 'PRIEST') armorType = 'light';
+
+            const armorImg = this.images[`armor_${armorType}_t${hero.equipment.armor.tier}_${hero.cosmetics.gender}`];
+            if (armorImg && armorImg.loaded) {
+              this.ctx.drawImage(armorImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+            }
+          }
+
+          // 4. Capacete (se equipado)
+          if (hero.equipment.helmet) {
+            let helmetType = 'armet';
+            if (hero.className === 'MERCENARY') helmetType = 'barbarian';
+            else if (hero.className === 'ARCHER') helmetType = 'headband';
+            else if (hero.className === 'MAGE') helmetType = 'magic_hat';
+            else if (hero.className === 'PRIEST') helmetType = 'headband';
+
+            const helmetImg = this.images[`helmet_${helmetType}`];
+            if (helmetImg && helmetImg.loaded) {
+              this.ctx.drawImage(helmetImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+            }
+          }
+
+          // 5. Escudo (se Guerreiro com arma equipada)
+          if (hero.className === 'WARRIOR' && hero.equipment.weapon) {
+            const shieldImg = this.images['weapon_shield'];
+            if (shieldImg && shieldImg.loaded) {
+              this.ctx.drawImage(shieldImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+            }
+          }
+
+          // 6. Arma (se equipada)
+          if (hero.equipment.weapon) {
+            let weaponType = 'longsword';
+            if (hero.className === 'MERCENARY') weaponType = 'dagger';
+            else if (hero.className === 'ARCHER') weaponType = 'bow';
+            else if (hero.className === 'MAGE' || hero.className === 'PRIEST') weaponType = 'staff';
+
+            const weaponImg = this.images[`weapon_${weaponType}`];
+            if (weaponImg && weaponImg.loaded) {
+              this.ctx.drawImage(weaponImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+            }
+          }
+        }
+      }
+      else if (isSpritesheet) {
         // Escalar herói por 2.5x (otimização mobile)
         this.ctx.scale(2.5, 2.5);
 
