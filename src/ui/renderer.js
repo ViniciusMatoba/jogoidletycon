@@ -51,6 +51,7 @@ export class GameRenderer {
     this.patterns = {};
     this.activeView = 'town';
     this.pendingPlacement = null;
+    this.pendingPlacementFlipped = false;
     this.hoveredTile = null;
     this.cameraX = 0;
     this.cameraY = 0;
