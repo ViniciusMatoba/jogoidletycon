@@ -6,6 +6,8 @@ import {
   screenToGrid
 } from '../core/navigation.js';
 
+const BUILDING_LEVEL_SCALE = [1.0, 1.12, 1.26]; // escala visual por nível (índice = level - 1)
+
 const BUILDING_VISUAL_STAGES = [
   { key: 'straw', name: 'Palha', wall: '#8f6b38', wallDark: '#5d4428', roof: '#d0a84f', roofDark: '#8c6428', trim: '#4a301a', foundation: '#5c4938' },
   { key: 'wood', name: 'Madeira', wall: '#8a5632', wallDark: '#55321f', roof: '#7d3326', roofDark: '#4e2018', trim: '#2c1a12', foundation: '#6d5b48' },
@@ -1009,7 +1011,7 @@ export class GameRenderer {
         this.ctx.save();
         
         // Variação de escala por nível (Nível 1: 1.0x, Nível 2: 1.12x, Nível 3: 1.26x)
-        const scaleMult = level === 1 ? 1.0 : (level === 2 ? 1.12 : 1.26);
+        const scaleMult = BUILDING_LEVEL_SCALE[Math.min(level - 1, 2)];
         const imgBase = isoFootprintW * 1.5;
         const dw = imgBase * scaleMult;
         const dh = imgBase * scaleMult;
