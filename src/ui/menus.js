@@ -1778,8 +1778,8 @@ function openBuildTileModal(col, row, game) {
 
   optionsContainer.innerHTML = '';
 
-  // Lista de edifícios que podem ser construídos (excluindo Prefeitura que começa colocada)
-  const buildables = ['hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market'];
+  // Lista de edifícios que podem ser construídos
+  const buildables = ['townhall', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market'];
 
   buildables.forEach(bKey => {
     const config = BUILDINGS_CONFIG[bKey];
@@ -1810,7 +1810,7 @@ function openBuildTileModal(col, row, game) {
     optionEl.style = 'background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;';
     
     // Ícones correspondentes
-    const icons = { hotel: '🏨', restaurant: '🍲', hospital: '🏥', tavern: '🍺', forge: '⚒️', market: '⚖️' };
+    const icons = { townhall: '🏛️', hotel: '🏨', restaurant: '🍲', hospital: '🏥', tavern: '🍺', forge: '⚒️', market: '⚖️' };
     const icon = icons[bKey] || '🏠';
 
     optionEl.innerHTML = `

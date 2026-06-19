@@ -264,7 +264,7 @@ export const BUILDINGS_CONFIG = {
     icon: '🏨',
     description: 'Onde os heróis dormem para recuperar energia. Gera ouro por hospedagem.',
     upgrades: [
-      { level: 1, cost: { gold: 80, wood_rough: 5 }, energyRecovery: 5, goldEarned: 5, desc: 'Recupera +5 energia/s. Diária: 5 Ouro.' },
+      { level: 1, cost: { gold: 50, wood_rough: 5 }, energyRecovery: 5, goldEarned: 5, desc: 'Recupera +5 energia/s. Diária: 5 Ouro.' },
       { level: 2, cost: { gold: 300, wood_rough: 15, iron_ore: 5 }, energyRecovery: 10, goldEarned: 12, desc: 'Recupera +10 energia/s. Diária: 12 Ouro.' },
       { level: 3, cost: { gold: 1000, wood_rough: 40, iron_ore: 20 }, energyRecovery: 18, goldEarned: 25, desc: 'Recupera +18 energia/s. Diária: 25 Ouro.' }
     ]
@@ -274,7 +274,7 @@ export const BUILDINGS_CONFIG = {
     icon: '🍴',
     description: 'Prepara refeições a partir de Carne Crua vendida pelos heróis.',
     upgrades: [
-      { level: 1, cost: { gold: 120, wood_rough: 10 }, foodRecovery: 5, craftSpeed: 1.0, desc: 'Refeições restauram +5 fome/s.' },
+      { level: 1, cost: { gold: 80, wood_rough: 8 }, foodRecovery: 5, craftSpeed: 1.0, desc: 'Refeições restauram +5 fome/s.' },
       { level: 2, cost: { gold: 400, wood_rough: 25, iron_ore: 10 }, foodRecovery: 10, craftSpeed: 1.3, desc: 'Refeições restauram +10 fome/s e cozinha 30% mais rápido.' },
       { level: 3, cost: { gold: 1200, wood_rough: 60, steel_ore: 15 }, foodRecovery: 20, craftSpeed: 1.6, desc: 'Refeições restauram +20 fome/s e cozinha 60% mais rápido.' }
     ]
@@ -284,7 +284,7 @@ export const BUILDINGS_CONFIG = {
     icon: '🏥',
     description: 'Cria curativos e cura ferimentos dos heróis em troca de Ouro.',
     upgrades: [
-      { level: 1, cost: { gold: 150, wood_rough: 10, iron_ore: 5 }, hpRecovery: 8, desc: 'Tratamento cura +8 HP/s.' },
+      { level: 1, cost: { gold: 100, wood_rough: 8, iron_ore: 3 }, hpRecovery: 8, desc: 'Tratamento cura +8 HP/s.' },
       { level: 2, cost: { gold: 500, wood_rough: 30, iron_ore: 15 }, hpRecovery: 18, desc: 'Tratamento cura +18 HP/s.' },
       { level: 3, cost: { gold: 1500, wood_rough: 80, steel_ore: 20 }, hpRecovery: 35, desc: 'Tratamento cura +35 HP/s.' }
     ]
@@ -294,7 +294,7 @@ export const BUILDINGS_CONFIG = {
     icon: '🍺',
     description: 'Serve bebidas refrescantes para os heróis manterem o humor alto.',
     upgrades: [
-      { level: 1, cost: { gold: 180, wood_rough: 12 }, moodRecovery: 6, goldEarned: 8, desc: 'Bebidas recuperam +6 humor/s. Diária: 8 Ouro.' },
+      { level: 1, cost: { gold: 120, wood_rough: 10 }, moodRecovery: 6, goldEarned: 8, desc: 'Bebidas recuperam +6 humor/s. Diária: 8 Ouro.' },
       { level: 2, cost: { gold: 600, wood_rough: 35, iron_ore: 12 }, moodRecovery: 12, goldEarned: 18, desc: 'Bebidas recuperam +12 humor/s. Diária: 18 Ouro.' },
       { level: 3, cost: { gold: 1800, wood_rough: 90, steel_ore: 25 }, moodRecovery: 22, goldEarned: 35, desc: 'Bebidas recuperam +22 humor/s. Diária: 35 Ouro.' }
     ]
@@ -304,7 +304,7 @@ export const BUILDINGS_CONFIG = {
     icon: '⚒️',
     description: 'Onde o jogador fabrica armas e armaduras para vender para os heróis.',
     upgrades: [
-      { level: 1, cost: { gold: 200, wood_rough: 15, iron_ore: 10 }, tierUnlocked: 1, desc: 'Permite craftar Equipamentos de Grau 1.' },
+      { level: 1, cost: { gold: 150, wood_rough: 12, iron_ore: 5 }, tierUnlocked: 1, desc: 'Permite craftar Equipamentos de Grau 1.' },
       { level: 2, cost: { gold: 800, wood_rough: 40, iron_ore: 25, gorro_vermelho: 1 }, tierUnlocked: 2, desc: 'Permite craftar Equipamentos de Grau 2.' },
       { level: 3, cost: { gold: 2500, wood_rough: 100, steel_ore: 50, cabelo_fogo: 1 }, tierUnlocked: 3, desc: 'Permite craftar Equipamentos de Grau 3.' }
     ]
@@ -314,7 +314,7 @@ export const BUILDINGS_CONFIG = {
     icon: '⚖️',
     description: 'O centro do comércio local. Onde os heróis vendem o loot obtido na caça por ouro.',
     upgrades: [
-      { level: 1, cost: { gold: 200, wood_rough: 15, iron_ore: 5 }, sellTax: 0.1, desc: 'Permite que heróis vendam loot. Taxa alfandegária municipal: 10%.' },
+      { level: 1, cost: { gold: 100, wood_rough: 10, iron_ore: 4 }, sellTax: 0.1, desc: 'Permite que heróis vendam loot. Taxa alfandegária municipal: 10%.' },
       { level: 2, cost: { gold: 600, wood_rough: 45, iron_ore: 20 }, sellTax: 0.05, desc: 'Melhora a eficiência comercial. Taxa reduzida para 5%.' },
       { level: 3, cost: { gold: 1800, wood_rough: 90, steel_ore: 30, gorro_vermelho: 1 }, sellTax: 0, desc: 'Isenção fiscal municipal total (0% de taxa).' }
     ]
