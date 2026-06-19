@@ -315,19 +315,25 @@ export class GameRenderer {
 
       img.onload = () => {
         if (isBackground) {
-          // Usar imagem direta sem processamento
           img.loaded = true;
           this.images[key] = img;
+          if (key.startsWith('tile_')) {
+            this.patterns[key] = this.ctx.createPattern(img, 'repeat');
+          }
         } else {
-          const cleanCanvas = this.makeImageTransparent(img);
-          cleanCanvas.loaded = true;
-          this.images[key] = cleanCanvas;
-        }
-        
-        // Se for um tile de solo, cria o padrão de repetição do Canvas
-        if (key.startsWith('tile_')) {
-          const src = this.images[key];
-          this.patterns[key] = this.ctx.createPattern(src, 'repeat');
+          const process = () => {
+            const cleanCanvas = this.makeImageTransparent(img);
+            cleanCanvas.loaded = true;
+            this.images[key] = cleanCanvas;
+            if (key.startsWith('tile_')) {
+              this.patterns[key] = this.ctx.createPattern(cleanCanvas, 'repeat');
+            }
+          };
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(process);
+          } else {
+            setTimeout(process, 0);
+          }
         }
       };
       img.onerror = () => {
