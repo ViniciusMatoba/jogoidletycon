@@ -107,20 +107,17 @@ export const BIOMES = [
     targetKillsForBoss: 30,
     color: '#4a4f54',
     bgClass: 'shallow-caves',
-    // Monstros normais mistos (originais + folclore brasileiro)
+    // Monstros normais mistos (LPC + originais)
     monsters: [
       { name: 'Rato', hp: 50, atk: 6, def: 1, xp: 12, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'rat_tail', chance: 0.5 }, { item: 'wood_rough', chance: 0.2 }] },
       { name: 'Zoio', hp: 45, atk: 7, def: 0, xp: 10, drops: [{ item: 'bat_wing', chance: 0.6 }, { item: 'guano', chance: 0.4 }] },
-      { name: 'Caveira', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'os_seco', chance: 0.5 }, { item: 'iron_ore', chance: 0.25 }] },
-      { name: 'Caveira 2', hp: 40, atk: 9, def: 0, xp: 14, drops: [{ item: 'unha_pisadeira', chance: 0.6 }] },
-      { name: 'Porco', hp: 55, atk: 7, def: 2, xp: 13, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'wood_rough', chance: 0.3 }] },
-      { name: 'Et', hp: 65, atk: 8, def: 1, xp: 15, drops: [{ item: 'iron_ore', chance: 0.4 }, { item: 'bat_wing', chance: 0.3 }] },
-      { name: 'Et Varginha', hp: 70, atk: 10, def: 2, xp: 18, drops: [{ item: 'iron_ore', chance: 0.45 }, { item: 'rat_fang', chance: 0.1 }] }
+      { name: 'Goblin', hp: 52, atk: 7, def: 1, xp: 13, drops: [{ item: 'wood_rough', chance: 0.25 }, { item: 'rat_tail', chance: 0.4 }] },
+      { name: 'Esqueleto', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'os_seco', chance: 0.5 }, { item: 'iron_ore', chance: 0.3 }] }
     ],
     // Arrays de chefes para o spawner sortear
     miniBosses: [
-      { name: 'Et Verde', hp: 200, atk: 15, def: 4, xp: 60, drops: [{ item: 'rat_fang', chance: 1.0 }, { item: 'iron_ore', chance: 0.5 }] },
-      { name: 'Ciclops Mulher', hp: 190, atk: 17, def: 3, xp: 60, drops: [{ item: 'bananier_leaf', chance: 1.0 }, { item: 'wood_rough', chance: 0.6 }] }
+      { name: 'Capitão Orc', hp: 220, atk: 15, def: 4, xp: 70, drops: [{ item: 'iron_ore', chance: 0.75 }, { item: 'rat_fang', chance: 0.4 }] },
+      { name: 'Et Verde', hp: 200, atk: 15, def: 4, xp: 60, drops: [{ item: 'rat_fang', chance: 1.0 }, { item: 'iron_ore', chance: 0.5 }] }
     ],
     bosses: [
       { name: 'Home do Saco', hp: 600, atk: 25, def: 8, xp: 200, drops: [{ item: 'king_crown_fragment', chance: 1.0 }, { item: 'iron_ore', chance: 1.0 }] },
@@ -138,20 +135,16 @@ export const BIOMES = [
     monsters: [
       { name: 'Lobisomen', hp: 160, atk: 18, def: 5, xp: 35, drops: [{ item: 'wolf_fur', chance: 0.6 }, { item: 'goblin_ear', chance: 0.5 }, { item: 'wood_rough', chance: 0.25 }] },
       { name: 'Vampiro', hp: 180, atk: 22, def: 4, xp: 40, drops: [{ item: 'wolf_fur', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }, { item: 'iron_ore', chance: 0.25 }] },
-      { name: 'Lagarto', hp: 150, atk: 20, def: 3, xp: 38, drops: [{ item: 'spider_silk', chance: 0.55 }, { item: 'poison_gland', chance: 0.35 }] },
-      { name: 'Capelobo', hp: 200, atk: 24, def: 6, xp: 48, drops: [{ item: 'garra_capelobo', chance: 0.5 }, { item: 'wood_rough', chance: 0.3 }] },
-      { name: 'Caipora', hp: 170, atk: 21, def: 5, xp: 45, drops: [{ item: 'dente_queixada', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }] },
-      { name: 'Quibungo', hp: 220, atk: 26, def: 8, xp: 50, drops: [{ item: 'couro_rigido', chance: 0.55 }, { item: 'poison_gland', chance: 0.35 }] },
-      { name: 'Lobisomen', hp: 190, atk: 25, def: 5, xp: 44, drops: [{ item: 'wolf_fur', chance: 0.6 }, { item: 'meat_raw', chance: 0.5 }] },
-      { name: 'Vampiro', hp: 175, atk: 23, def: 4, xp: 42, drops: [{ item: 'poison_gland', chance: 0.4 }, { item: 'couro_rigido', chance: 0.3 }] }
+      { name: 'Orc', hp: 170, atk: 21, def: 6, xp: 44, drops: [{ item: 'couro_rigido', chance: 0.4 }, { item: 'wood_rough', chance: 0.3 }] },
+      { name: 'Feiticeira', hp: 155, atk: 24, def: 3, xp: 42, drops: [{ item: 'poison_gland', chance: 0.5 }, { item: 'herbs_wild', chance: 0.4 }] },
+      { name: 'Capelobo', hp: 200, atk: 24, def: 6, xp: 48, drops: [{ item: 'garra_capelobo', chance: 0.5 }, { item: 'wood_rough', chance: 0.3 }] }
     ],
     miniBosses: [
-      { name: 'Coelho Pascoa', hp: 700, atk: 45, def: 12, xp: 180, drops: [{ item: 'goblin_dagger', chance: 1.0 }, { item: 'wood_rough', chance: 0.8 }] },
-      { name: 'Mula sem Cabeça', hp: 750, atk: 48, def: 10, xp: 180, drops: [{ item: 'ferradura_fogo', chance: 1.0 }, { item: 'iron_ore', chance: 0.8 }] },
-      { name: 'Coelho Pascoa', hp: 800, atk: 50, def: 14, xp: 200, drops: [{ item: 'ferradura_fogo', chance: 0.8 }, { item: 'wood_rough', chance: 1.0 }] }
+      { name: 'Cavaleiro Sombrio', hp: 760, atk: 46, def: 11, xp: 190, drops: [{ item: 'iron_ore', chance: 0.9 }, { item: 'goblin_dagger', chance: 0.8 }] },
+      { name: 'Mula sem Cabeça', hp: 750, atk: 48, def: 10, xp: 180, drops: [{ item: 'ferradura_fogo', chance: 1.0 }, { item: 'iron_ore', chance: 0.8 }] }
     ],
     bosses: [
-      { name: 'Boi Brabo', hp: 2000, atk: 75, def: 20, xp: 600, drops: [{ item: 'queen_venom', chance: 1.0 }, { item: 'spider_silk', chance: 1.0 }] },
+      { name: 'Lich', hp: 1900, atk: 80, def: 16, xp: 620, drops: [{ item: 'cabelo_fogo', chance: 0.8 }, { item: 'queen_venom', chance: 0.8 }] },
       { name: 'Curupira', hp: 1800, atk: 82, def: 18, xp: 600, drops: [{ item: 'cabelo_fogo', chance: 1.0 }, { item: 'wood_rough', chance: 1.0 }] }
     ]
   },
@@ -165,20 +158,17 @@ export const BIOMES = [
     bgClass: 'shadow-swamp',
     monsters: [
       { name: 'Lagarto', hp: 450, atk: 40, def: 12, xp: 90, drops: [{ item: 'slime_bubble', chance: 0.6 }, { item: 'herbs_wild', chance: 0.4 }] },
-      { name: 'Lobisomen', hp: 400, atk: 45, def: 10, xp: 85, drops: [{ item: 'serpent_skin', chance: 0.6 }, { item: 'poison_gland', chance: 0.4 }] },
-      { name: 'Vampiro', hp: 550, atk: 52, def: 18, xp: 110, drops: [{ item: 'crocodile_scale', chance: 0.6 }, { item: 'meat_raw', chance: 0.5 }] },
       { name: 'Ipupiara', hp: 480, atk: 46, def: 14, xp: 95, drops: [{ item: 'escama_ipupiara', chance: 0.5 }, { item: 'herbs_wild', chance: 0.3 }] },
       { name: 'Teju Jagua', hp: 600, atk: 50, def: 20, xp: 115, drops: [{ item: 'presa_teju', chance: 0.5 }, { item: 'steel_ore', chance: 0.35 }] },
-      { name: 'Boto Sedutor', hp: 420, atk: 48, def: 8, xp: 92, drops: [{ item: 'chapeu_boto', chance: 0.5 }, { item: 'meat_raw', chance: 0.4 }] },
-      { name: 'Caveira', hp: 460, atk: 42, def: 13, xp: 95, drops: [{ item: 'slime_bubble', chance: 0.5 }, { item: 'couro_rigido', chance: 0.4 }] }
+      { name: 'Boto Sedutor', hp: 420, atk: 48, def: 8, xp: 92, drops: [{ item: 'chapeu_boto', chance: 0.5 }, { item: 'meat_raw', chance: 0.4 }] }
     ],
     miniBosses: [
-      { name: 'Ciclops Mulher', hp: 2200, atk: 95, def: 25, xp: 450, drops: [{ item: 'leech_tooth', chance: 1.0 }, { item: 'steel_ore', chance: 0.6 }] },
+      { name: 'Rei Demônios', hp: 2500, atk: 96, def: 24, xp: 480, drops: [{ item: 'steel_ore', chance: 0.8 }, { item: 'leech_tooth', chance: 0.75 }] },
       { name: 'Mapinguari', hp: 2400, atk: 98, def: 22, xp: 450, drops: [{ item: 'garra_mapinguari', chance: 1.0 }, { item: 'steel_ore', chance: 0.7 }] }
     ],
     bosses: [
-      { name: 'Boi Tata', hp: 6000, atk: 140, def: 40, xp: 1500, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] },
-      { name: 'Boi Tata', hp: 5800, atk: 150, def: 35, xp: 1500, drops: [{ item: 'olho_boitata', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
+      { name: 'Dragonborn Boss', hp: 6200, atk: 150, def: 36, xp: 1600, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }, { item: 'olho_boitata', chance: 0.8 }] },
+      { name: 'Boi Tata', hp: 6000, atk: 140, def: 40, xp: 1500, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] }
     ]
   }
 ];
