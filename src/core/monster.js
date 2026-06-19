@@ -186,9 +186,20 @@ export class Monster {
 
     // Parar se já está no alcance de ataque do alvo (para não ficar sobreposto ao herói)
     const stopDist = this.targetHero ? (this.isBoss ? 50 : (this.isMiniBoss ? 40 : 30)) : 5;
-    if (dist > stopDist) {
+    if (dist > stopDist && dist > 0.01) {
       this.x += (dx / dist) * this.speed * dt;
       this.y += (dy / dist) * this.speed * dt;
+    }
+
+    if (isNaN(this.x) || isNaN(this.y)) {
+      const minX = 48;
+      const maxX = (viewport.width || 960) - 48;
+      const minY = 76;
+      const maxY = (viewport.height || 540) - 58;
+      this.x = (minX + maxX) * 0.5;
+      this.y = (minY + maxY) * 0.5;
+      this.targetX = this.x;
+      this.targetY = this.y;
     }
   }
 }

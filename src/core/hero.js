@@ -248,6 +248,23 @@ export class Hero {
       this.wanderTown(town, viewport);
     }
 
+    if (this.currentMap === 'hunt') {
+      const minX = 48;
+      const maxX = (viewport.width || 960) - 48;
+      const minY = 76;
+      const maxY = (viewport.height || 540) - 58;
+
+      if (this.x < minX || this.x > maxX || this.y < minY || this.y > maxY || isNaN(this.x) || isNaN(this.y)) {
+        this.x = Math.max(minX, Math.min(maxX, this.x));
+        this.y = Math.max(minY, Math.min(maxY, this.y));
+        if (isNaN(this.x) || isNaN(this.y)) {
+          this.x = (minX + maxX) * 0.5;
+          this.y = (minY + maxY) * 0.5;
+        }
+        this.wanderForest(viewport);
+      }
+    }
+
     // Necessidades decaem de forma lenta
     const decayRate = this.state === 'FIGHTING' || this.state === 'SEARCHING_MONSTER' ? 0.6 : 0.15;
     this.hunger = Math.max(0, this.hunger - decayRate * dt);
@@ -344,7 +361,7 @@ export class Hero {
         {
           const mdx = this.targetMonster.x - this.x;
           const mdy = this.targetMonster.y - this.y;
-          const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+          const mdist = Math.sqrt(mdx * mdx + mdy * mdy) || 0.01;
 
           if (this.keepAwayRange > 0) {
             // === ATAQUE A DISTÂNCIA ===
