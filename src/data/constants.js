@@ -109,18 +109,18 @@ export const BIOMES = [
     bgClass: 'shallow-caves',
     // Monstros normais mistos (originais + folclore brasileiro)
     monsters: [
-      { name: 'Rato', hp: 50, atk: 6, def: 1, xp: 12, drops: [{ item: 'meat_raw', chance: 0.5 }, { item: 'rat_tail', chance: 0.4 }] },
-      { name: 'Zoio', hp: 45, atk: 7, def: 0, xp: 10, drops: [{ item: 'bat_wing', chance: 0.5 }, { item: 'guano', chance: 0.3 }] },
-      { name: 'Caveira', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'meat_raw', chance: 0.4 }, { item: 'os_seco', chance: 0.5 }] },
+      { name: 'Rato', hp: 50, atk: 6, def: 1, xp: 12, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'rat_tail', chance: 0.5 }, { item: 'wood_rough', chance: 0.2 }] },
+      { name: 'Zoio', hp: 45, atk: 7, def: 0, xp: 10, drops: [{ item: 'bat_wing', chance: 0.6 }, { item: 'guano', chance: 0.4 }] },
+      { name: 'Caveira', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'os_seco', chance: 0.5 }, { item: 'iron_ore', chance: 0.25 }] },
       { name: 'Caveira 2', hp: 40, atk: 9, def: 0, xp: 14, drops: [{ item: 'unha_pisadeira', chance: 0.6 }] },
-      { name: 'Porco', hp: 55, atk: 7, def: 2, xp: 13, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'guano', chance: 0.3 }] },
-      { name: 'Et', hp: 65, atk: 8, def: 1, xp: 15, drops: [{ item: 'bat_wing', chance: 0.4 }, { item: 'iron_ore', chance: 0.3 }] },
-      { name: 'Et Varginha', hp: 70, atk: 10, def: 2, xp: 18, drops: [{ item: 'rat_fang', chance: 0.2 }, { item: 'iron_ore', chance: 0.4 }] }
+      { name: 'Porco', hp: 55, atk: 7, def: 2, xp: 13, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'wood_rough', chance: 0.3 }] },
+      { name: 'Et', hp: 65, atk: 8, def: 1, xp: 15, drops: [{ item: 'iron_ore', chance: 0.4 }, { item: 'bat_wing', chance: 0.3 }] },
+      { name: 'Et Varginha', hp: 70, atk: 10, def: 2, xp: 18, drops: [{ item: 'iron_ore', chance: 0.45 }, { item: 'rat_fang', chance: 0.1 }] }
     ],
     // Arrays de chefes para o spawner sortear
     miniBosses: [
       { name: 'Et Verde', hp: 200, atk: 15, def: 4, xp: 60, drops: [{ item: 'rat_fang', chance: 1.0 }, { item: 'iron_ore', chance: 0.5 }] },
-      { name: 'Ciclops Mulher', hp: 190, atk: 17, def: 3, xp: 60, drops: [{ item: 'bananier_leaf', chance: 1.0 }, { item: 'wood_rough', chance: 0.5 }] }
+      { name: 'Ciclops Mulher', hp: 190, atk: 17, def: 3, xp: 60, drops: [{ item: 'bananier_leaf', chance: 1.0 }, { item: 'wood_rough', chance: 0.6 }] }
     ],
     bosses: [
       { name: 'Home do Saco', hp: 600, atk: 25, def: 8, xp: 200, drops: [{ item: 'king_crown_fragment', chance: 1.0 }, { item: 'iron_ore', chance: 1.0 }] },
@@ -136,18 +136,18 @@ export const BIOMES = [
     color: '#1d3b1e',
     bgClass: 'dark-forest',
     monsters: [
-      { name: 'Lobisomen', hp: 160, atk: 18, def: 5, xp: 35, drops: [{ item: 'goblin_ear', chance: 0.5 }, { item: 'wood_rough', chance: 0.4 }] },
-      { name: 'Vampiro', hp: 180, atk: 22, def: 4, xp: 40, drops: [{ item: 'wolf_fur', chance: 0.5 }, { item: 'meat_raw', chance: 0.4 }] },
-      { name: 'Lagarto', hp: 150, atk: 20, def: 3, xp: 38, drops: [{ item: 'spider_silk', chance: 0.5 }, { item: 'poison_gland', chance: 0.3 }] },
-      { name: 'Capelobo', hp: 200, atk: 24, def: 6, xp: 48, drops: [{ item: 'garra_capelobo', chance: 0.6 }, { item: 'wood_rough', chance: 0.3 }] },
-      { name: 'Caipora', hp: 170, atk: 21, def: 5, xp: 45, drops: [{ item: 'dente_queixada', chance: 0.5 }, { item: 'meat_raw', chance: 0.4 }] },
-      { name: 'Quibungo', hp: 220, atk: 26, def: 8, xp: 50, drops: [{ item: 'couro_rigido', chance: 0.5 }, { item: 'poison_gland', chance: 0.3 }] },
+      { name: 'Lobisomen', hp: 160, atk: 18, def: 5, xp: 35, drops: [{ item: 'wolf_fur', chance: 0.6 }, { item: 'goblin_ear', chance: 0.5 }, { item: 'wood_rough', chance: 0.25 }] },
+      { name: 'Vampiro', hp: 180, atk: 22, def: 4, xp: 40, drops: [{ item: 'wolf_fur', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }, { item: 'iron_ore', chance: 0.25 }] },
+      { name: 'Lagarto', hp: 150, atk: 20, def: 3, xp: 38, drops: [{ item: 'spider_silk', chance: 0.55 }, { item: 'poison_gland', chance: 0.35 }] },
+      { name: 'Capelobo', hp: 200, atk: 24, def: 6, xp: 48, drops: [{ item: 'garra_capelobo', chance: 0.5 }, { item: 'wood_rough', chance: 0.3 }] },
+      { name: 'Caipora', hp: 170, atk: 21, def: 5, xp: 45, drops: [{ item: 'dente_queixada', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }] },
+      { name: 'Quibungo', hp: 220, atk: 26, def: 8, xp: 50, drops: [{ item: 'couro_rigido', chance: 0.55 }, { item: 'poison_gland', chance: 0.35 }] },
       { name: 'Lobisomen', hp: 190, atk: 25, def: 5, xp: 44, drops: [{ item: 'wolf_fur', chance: 0.6 }, { item: 'meat_raw', chance: 0.5 }] },
       { name: 'Vampiro', hp: 175, atk: 23, def: 4, xp: 42, drops: [{ item: 'poison_gland', chance: 0.4 }, { item: 'couro_rigido', chance: 0.3 }] }
     ],
     miniBosses: [
-      { name: 'Coelho Pascoa', hp: 700, atk: 45, def: 12, xp: 180, drops: [{ item: 'goblin_dagger', chance: 1.0 }, { item: 'wood_rough', chance: 1.0 }] },
-      { name: 'Mula sem Cabeça', hp: 750, atk: 48, def: 10, xp: 180, drops: [{ item: 'ferradura_fogo', chance: 1.0 }, { item: 'iron_ore', chance: 1.0 }] },
+      { name: 'Coelho Pascoa', hp: 700, atk: 45, def: 12, xp: 180, drops: [{ item: 'goblin_dagger', chance: 1.0 }, { item: 'wood_rough', chance: 0.8 }] },
+      { name: 'Mula sem Cabeça', hp: 750, atk: 48, def: 10, xp: 180, drops: [{ item: 'ferradura_fogo', chance: 1.0 }, { item: 'iron_ore', chance: 0.8 }] },
       { name: 'Coelho Pascoa', hp: 800, atk: 50, def: 14, xp: 200, drops: [{ item: 'ferradura_fogo', chance: 0.8 }, { item: 'wood_rough', chance: 1.0 }] }
     ],
     bosses: [
@@ -164,17 +164,17 @@ export const BIOMES = [
     color: '#2e3a35',
     bgClass: 'shadow-swamp',
     monsters: [
-      { name: 'Lagarto', hp: 450, atk: 40, def: 12, xp: 90, drops: [{ item: 'slime_bubble', chance: 0.5 }, { item: 'herbs_wild', chance: 0.4 }] },
-      { name: 'Lobisomen', hp: 400, atk: 45, def: 10, xp: 85, drops: [{ item: 'serpent_skin', chance: 0.5 }, { item: 'poison_gland', chance: 0.4 }] },
-      { name: 'Vampiro', hp: 550, atk: 52, def: 18, xp: 110, drops: [{ item: 'crocodile_scale', chance: 0.5 }, { item: 'meat_raw', chance: 0.5 }] },
-      { name: 'Ipupiara', hp: 480, atk: 46, def: 14, xp: 95, drops: [{ item: 'escama_ipupiara', chance: 0.6 }, { item: 'herbs_wild', chance: 0.3 }] },
-      { name: 'Teju Jagua', hp: 600, atk: 50, def: 20, xp: 115, drops: [{ item: 'presa_teju', chance: 0.5 }, { item: 'steel_ore', chance: 0.3 }] },
-      { name: 'Boto Sedutor', hp: 420, atk: 48, def: 8, xp: 92, drops: [{ item: 'chapeu_boto', chance: 0.6 }, { item: 'meat_raw', chance: 0.4 }] },
+      { name: 'Lagarto', hp: 450, atk: 40, def: 12, xp: 90, drops: [{ item: 'slime_bubble', chance: 0.6 }, { item: 'herbs_wild', chance: 0.4 }] },
+      { name: 'Lobisomen', hp: 400, atk: 45, def: 10, xp: 85, drops: [{ item: 'serpent_skin', chance: 0.6 }, { item: 'poison_gland', chance: 0.4 }] },
+      { name: 'Vampiro', hp: 550, atk: 52, def: 18, xp: 110, drops: [{ item: 'crocodile_scale', chance: 0.6 }, { item: 'meat_raw', chance: 0.5 }] },
+      { name: 'Ipupiara', hp: 480, atk: 46, def: 14, xp: 95, drops: [{ item: 'escama_ipupiara', chance: 0.5 }, { item: 'herbs_wild', chance: 0.3 }] },
+      { name: 'Teju Jagua', hp: 600, atk: 50, def: 20, xp: 115, drops: [{ item: 'presa_teju', chance: 0.5 }, { item: 'steel_ore', chance: 0.35 }] },
+      { name: 'Boto Sedutor', hp: 420, atk: 48, def: 8, xp: 92, drops: [{ item: 'chapeu_boto', chance: 0.5 }, { item: 'meat_raw', chance: 0.4 }] },
       { name: 'Caveira', hp: 460, atk: 42, def: 13, xp: 95, drops: [{ item: 'slime_bubble', chance: 0.5 }, { item: 'couro_rigido', chance: 0.4 }] }
     ],
     miniBosses: [
       { name: 'Ciclops Mulher', hp: 2200, atk: 95, def: 25, xp: 450, drops: [{ item: 'leech_tooth', chance: 1.0 }, { item: 'steel_ore', chance: 0.6 }] },
-      { name: 'Mapinguari', hp: 2400, atk: 98, def: 22, xp: 450, drops: [{ item: 'garra_mapinguari', chance: 1.0 }, { item: 'steel_ore', chance: 0.6 }] }
+      { name: 'Mapinguari', hp: 2400, atk: 98, def: 22, xp: 450, drops: [{ item: 'garra_mapinguari', chance: 1.0 }, { item: 'steel_ore', chance: 0.7 }] }
     ],
     bosses: [
       { name: 'Boi Tata', hp: 6000, atk: 140, def: 40, xp: 1500, drops: [{ item: 'hydra_scale', chance: 1.0 }, { item: 'steel_ore', chance: 1.0 }] },
@@ -185,66 +185,66 @@ export const BIOMES = [
 
 export const ITEMS_INFO = {
   // Loots Básicos Originais
-  meat_raw: { name: 'Carne Crua', price: 2, icon: '🥩', type: 'loot', source: 'Todos os Biomas' },
-  rat_tail: { name: 'Cauda de Rato', price: 1, icon: '🐀', type: 'loot', source: 'Cavernas Rasas' },
-  bat_wing: { name: 'Asa de Morcego', price: 1, icon: '🦇', type: 'loot', source: 'Cavernas Rasas' },
-  guano: { name: 'Guano', price: 2, icon: '💩', type: 'loot', source: 'Cavernas Rasas' },
-  rat_fang: { name: 'Presa de Rato', price: 10, icon: '🦷', type: 'loot', source: 'Cavernas Rasas (MiniBoss)' },
-  king_crown_fragment: { name: 'Fragmento de Coroa', price: 50, icon: '👑', type: 'rare', source: 'Cavernas Rasas (Boss)' },
+  meat_raw: { name: 'Carne Crua', price: 2, icon: '🥩', type: 'loot', source: 'Todos os Biomas', rarity: 'common' },
+  rat_tail: { name: 'Cauda de Rato', price: 1, icon: '🐀', type: 'loot', source: 'Cavernas Rasas', rarity: 'common' },
+  bat_wing: { name: 'Asa de Morcego', price: 1, icon: '🦇', type: 'loot', source: 'Cavernas Rasas', rarity: 'common' },
+  guano: { name: 'Guano', price: 2, icon: '💩', type: 'loot', source: 'Cavernas Rasas', rarity: 'common' },
+  rat_fang: { name: 'Presa de Rato', price: 10, icon: '🦷', type: 'loot', source: 'Cavernas Rasas (MiniBoss)', rarity: 'rare' },
+  king_crown_fragment: { name: 'Fragmento de Coroa', price: 50, icon: '👑', type: 'rare', source: 'Cavernas Rasas (Boss)', rarity: 'legendary' },
 
-  goblin_ear: { name: 'Orelha de Goblin', price: 3, icon: '👂', type: 'loot', source: 'Floresta Escura' },
-  wolf_fur: { name: 'Pele de Lobo', price: 4, icon: '🐺', type: 'loot', source: 'Floresta Escura' },
-  spider_silk: { name: 'Teia de Aranha', price: 4, icon: '🕸️', type: 'loot', source: 'Floresta Escura' },
-  poison_gland: { name: 'Glândula de Veneno', price: 6, icon: '🧪', type: 'loot', source: 'Floresta Escura / Pântano' },
-  goblin_dagger: { name: 'Adaga Quebrada', price: 25, icon: '🗡️', type: 'loot', source: 'Floresta Escura (MiniBoss)' },
-  queen_venom: { name: 'Veneno da Rainha', price: 100, icon: '☣️', type: 'rare', source: 'Floresta Escura (Boss)' },
+  goblin_ear: { name: 'Orelha de Goblin', price: 3, icon: '👂', type: 'loot', source: 'Floresta Escura', rarity: 'common' },
+  wolf_fur: { name: 'Pele de Lobo', price: 4, icon: '🐺', type: 'loot', source: 'Floresta Escura', rarity: 'common' },
+  spider_silk: { name: 'Teia de Aranha', price: 4, icon: '🕸️', type: 'loot', source: 'Floresta Escura', rarity: 'common' },
+  poison_gland: { name: 'Glândula de Veneno', price: 6, icon: '🧪', type: 'loot', source: 'Floresta Escura / Pântano', rarity: 'common' },
+  goblin_dagger: { name: 'Adaga Quebrada', price: 25, icon: '🗡️', type: 'loot', source: 'Floresta Escura (MiniBoss)', rarity: 'rare' },
+  queen_venom: { name: 'Veneno da Rainha', price: 100, icon: '☣️', type: 'rare', source: 'Floresta Escura (Boss)', rarity: 'legendary' },
 
-  slime_bubble: { name: 'Bolha de Slime', price: 8, icon: '🟢', type: 'loot', source: 'Pântano Sombrio' },
-  serpent_skin: { name: 'Couro de Serpente', price: 9, icon: '🐍', type: 'loot', source: 'Pântano Sombrio' },
-  crocodile_scale: { name: 'Escama de Crocodilo', price: 11, icon: '🐊', type: 'loot', source: 'Pântano Sombrio' },
-  leech_tooth: { name: 'Dente de Sanguessuga', price: 50, icon: '🦷', type: 'loot', source: 'Pântano Sombrio (MiniBoss)' },
-  hydra_scale: { name: 'Escama de Hidra', price: 200, icon: '🐉', type: 'rare', source: 'Pântano Sombrio (Boss)' },
+  slime_bubble: { name: 'Bolha de Slime', price: 8, icon: '🟢', type: 'loot', source: 'Pântano Sombrio', rarity: 'common' },
+  serpent_skin: { name: 'Couro de Serpente', price: 9, icon: '🐍', type: 'loot', source: 'Pântano Sombrio', rarity: 'common' },
+  crocodile_scale: { name: 'Escama de Crocodilo', price: 11, icon: '🐊', type: 'loot', source: 'Pântano Sombrio', rarity: 'common' },
+  leech_tooth: { name: 'Dente de Sanguessuga', price: 50, icon: '🦷', type: 'loot', source: 'Pântano Sombrio (MiniBoss)', rarity: 'rare' },
+  hydra_scale: { name: 'Escama de Hidra', price: 200, icon: '🐉', type: 'rare', source: 'Pântano Sombrio (Boss)', rarity: 'legendary' },
 
   // Loots do Folclore Brasileiro (Novos)
-  os_seco: { name: 'Osso Ressecado', price: 2, icon: '💀', type: 'loot', source: 'Corpo-Seco' },
-  unha_pisadeira: { name: 'Unha da Pisadeira', price: 2, icon: '💅', type: 'loot', source: 'Pisadeira' },
-  bananier_leaf: { name: 'Folha de Bananeira', price: 10, icon: '🍃', type: 'loot', source: 'Chibamba' },
-  gorro_vermelho: { name: 'Gorro do Saci', price: 65, icon: '🧢', type: 'rare', source: 'Saci-Pererê' },
+  os_seco: { name: 'Osso Ressecado', price: 2, icon: '💀', type: 'loot', source: 'Corpo-Seco', rarity: 'common' },
+  unha_pisadeira: { name: 'Unha da Pisadeira', price: 2, icon: '💅', type: 'loot', source: 'Pisadeira', rarity: 'common' },
+  bananier_leaf: { name: 'Folha de Bananeira', price: 10, icon: '🍃', type: 'loot', source: 'Chibamba', rarity: 'rare' },
+  gorro_vermelho: { name: 'Gorro do Saci', price: 65, icon: '🧢', type: 'rare', source: 'Saci-Pererê', rarity: 'legendary' },
 
-  garra_capelobo: { name: 'Garra de Capelobo', price: 5, icon: '🐾', type: 'loot', source: 'Capelobo' },
-  dente_queixada: { name: 'Dente de Queixada', price: 5, icon: '🦷', type: 'loot', source: 'Caipora' },
-  couro_rigido: { name: 'Couro Rígido', price: 6, icon: '🧥', type: 'loot', source: 'Quibungo' },
-  ferradura_fogo: { name: 'Ferradura de Fogo', price: 30, icon: '🐴', type: 'loot', source: 'Mula sem Cabeça' },
-  cabelo_fogo: { name: 'Cabelo de Fogo', price: 120, icon: '🔥', type: 'rare', source: 'Curupira' },
+  garra_capelobo: { name: 'Garra de Capelobo', price: 5, icon: '🐾', type: 'loot', source: 'Capelobo', rarity: 'rare' },
+  dente_queixada: { name: 'Dente de Queixada', price: 5, icon: '🦷', type: 'loot', source: 'Caipora', rarity: 'rare' },
+  couro_rigido: { name: 'Couro Rígido', price: 6, icon: '🧥', type: 'loot', source: 'Quibungo', rarity: 'common' },
+  ferradura_fogo: { name: 'Ferradura de Fogo', price: 30, icon: '🐴', type: 'loot', source: 'Mula sem Cabeça', rarity: 'rare' },
+  cabelo_fogo: { name: 'Cabelo de Fogo', price: 120, icon: '🔥', type: 'rare', source: 'Curupira', rarity: 'legendary' },
 
-  escama_ipupiara: { name: 'Escama de Ipupiara', price: 12, icon: '🧜‍♂️', type: 'loot', source: 'Ipupiara' },
-  presa_teju: { name: 'Presa de Teju', price: 12, icon: '🦷', type: 'loot', source: 'Teju Jagua' },
-  chapeu_boto: { name: 'Chapéu de Boto', price: 14, icon: '🎩', type: 'loot', source: 'Boto Sedutor' },
-  garra_mapinguari: { name: 'Garra de Mapinguari', price: 60, icon: '🐾', type: 'loot', source: 'Mapinguari' },
-  olho_boitata: { name: 'Olho do Boitatá', price: 250, icon: '👁️', type: 'rare', source: 'Boitatá' },
+  escama_ipupiara: { name: 'Escama de Ipupiara', price: 12, icon: '🧜‍♂️', type: 'loot', source: 'Ipupiara', rarity: 'rare' },
+  presa_teju: { name: 'Presa de Teju', price: 12, icon: '🦷', type: 'loot', source: 'Teju Jagua', rarity: 'rare' },
+  chapeu_boto: { name: 'Chapéu de Boto', price: 14, icon: '🎩', type: 'loot', source: 'Boto Sedutor', rarity: 'rare' },
+  garra_mapinguari: { name: 'Garra de Mapinguari', price: 60, icon: '🐾', type: 'loot', source: 'Mapinguari', rarity: 'rare' },
+  olho_boitata: { name: 'Olho do Boitatá', price: 250, icon: '👁️', type: 'rare', source: 'Boitatá', rarity: 'legendary' },
 
   // Matérias-Primas
-  wood_rough: { name: 'Madeira Bruta', price: 3, icon: '🪵', type: 'material', source: 'Coleta' },
-  iron_ore: { name: 'Minério de Ferro', price: 5, icon: '🪨', type: 'material', source: 'Coleta' },
-  steel_ore: { name: 'Minério de Aço', price: 12, icon: '⛓️', type: 'material', source: 'Coleta' },
-  herbs_wild: { name: 'Ervas Selvagens', price: 4, icon: '🌿', type: 'material', source: 'Coleta' },
-  linho: { name: 'Tecido de Linho', price: 4, icon: '🧵', type: 'material', source: 'Coleta' },
+  wood_rough: { name: 'Madeira Bruta', price: 3, icon: '🪵', type: 'material', source: 'Coleta', rarity: 'uncommon' },
+  iron_ore: { name: 'Minério de Ferro', price: 5, icon: '🪨', type: 'material', source: 'Coleta', rarity: 'uncommon' },
+  steel_ore: { name: 'Minério de Aço', price: 12, icon: '⛓️', type: 'material', source: 'Coleta', rarity: 'uncommon' },
+  herbs_wild: { name: 'Ervas Selvagens', price: 4, icon: '🌿', type: 'material', source: 'Coleta', rarity: 'uncommon' },
+  linho: { name: 'Tecido de Linho', price: 4, icon: '🧵', type: 'material', source: 'Coleta', rarity: 'uncommon' },
 
   // Consumíveis
-  meal_cooked: { name: 'Ensopado Simples (T1)', price: 8, icon: '🍲', type: 'consumable' },
-  bandage_basic: { name: 'Curativo Simples (T1)', price: 8, icon: '🩹', type: 'consumable' },
-  beer_refreshing: { name: 'Cerveja Rústica (T1)', price: 8, icon: '🍺', type: 'consumable' },
-  bed_disposable: { name: 'Cama de Palha (T1)', price: 8, icon: '🛏️', type: 'consumable' },
+  meal_cooked: { name: 'Ensopado Simples (T1)', price: 8, icon: '🍲', type: 'consumable', rarity: 'common' },
+  bandage_basic: { name: 'Curativo Simples (T1)', price: 8, icon: '🩹', type: 'consumable', rarity: 'common' },
+  beer_refreshing: { name: 'Cerveja Rústica (T1)', price: 8, icon: '🍺', type: 'consumable', rarity: 'common' },
+  bed_disposable: { name: 'Cama de Palha (T1)', price: 8, icon: '🛏️', type: 'consumable', rarity: 'common' },
 
-  meal_cooked_t2: { name: 'Churrasco de Lobo (T2)', price: 20, icon: '🍖', type: 'consumable' },
-  bandage_basic_t2: { name: 'Atadura Reforçada (T2)', price: 20, icon: '🧻', type: 'consumable' },
-  beer_refreshing_t2: { name: 'Suco de Caipora (T2)', price: 20, icon: '🍹', type: 'consumable' },
-  bed_disposable_t2: { name: 'Cama de Madeira (T2)', price: 20, icon: '🛌', type: 'consumable' },
+  meal_cooked_t2: { name: 'Churrasco de Lobo (T2)', price: 20, icon: '🍖', type: 'consumable', rarity: 'uncommon' },
+  bandage_basic_t2: { name: 'Atadura Reforçada (T2)', price: 20, icon: '🧻', type: 'consumable', rarity: 'uncommon' },
+  beer_refreshing_t2: { name: 'Suco de Caipora (T2)', price: 20, icon: '🍹', type: 'consumable', rarity: 'uncommon' },
+  bed_disposable_t2: { name: 'Cama de Madeira (T2)', price: 20, icon: '🛌', type: 'consumable', rarity: 'uncommon' },
 
-  meal_cooked_t3: { name: 'Banquete Real (T3)', price: 50, icon: '🍛', type: 'consumable' },
-  bandage_basic_t3: { name: 'Gaze Esterilizada (T3)', price: 50, icon: '📦', type: 'consumable' },
-  beer_refreshing_t3: { name: 'Hidromel Lendário (T3)', price: 50, icon: '🥂', type: 'consumable' },
-  bed_disposable_t3: { name: 'Cama de Pena (T3)', price: 50, icon: '👑', type: 'consumable' }
+  meal_cooked_t3: { name: 'Banquete Real (T3)', price: 50, icon: '🍛', type: 'consumable', rarity: 'rare' },
+  bandage_basic_t3: { name: 'Gaze Esterilizada (T3)', price: 50, icon: '📦', type: 'consumable', rarity: 'rare' },
+  beer_refreshing_t3: { name: 'Hidromel Lendário (T3)', price: 50, icon: '🥂', type: 'consumable', rarity: 'rare' },
+  bed_disposable_t3: { name: 'Cama de Pena (T3)', price: 50, icon: '👑', type: 'consumable', rarity: 'rare' }
 };
 
 export const BUILDINGS_CONFIG = {
@@ -351,20 +351,20 @@ export const CRAFT_RECIPES = {
   cajado_saci_t1: { name: 'Cajado de Saci', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 3, gorro_vermelho: 1, gold: 80 }, stats: { atk: 18 } },
   
   armor_t1_heavy: { name: 'Armadura de Placas Rústica', slot: 'armor', icon: '🛡️', class: ['WARRIOR'], tier: 1, cost: { iron_ore: 8, gold: 60 }, stats: { hp: 40, def: 8 } },
-  armor_t1_medium: { name: 'Gibão de Couro Cru', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 1, cost: { wolf_fur: 4, gold: 60 }, stats: { hp: 25, def: 4 } },
+  armor_t1_medium: { name: 'Gibão de Couro Cru', slot: 'armor', icon: '🧥', class: ['ARCHER', 'MERCENARY'], tier: 1, cost: { rat_tail: 6, gold: 60 }, stats: { hp: 25, def: 4 } },
   armor_t1_light: { name: 'Toga de Tecido Rústica', slot: 'armor', icon: '👗', class: ['MAGE', 'PRIEST'], tier: 1, cost: { linho: 6, gold: 60 }, stats: { hp: 15, def: 2 } },
 
   // Novos itens Grau 1
   helmet_t1_heavy: { name: 'Elmo de Ferro Rústico', slot: 'helmet', icon: '🪖', class: ['WARRIOR'], tier: 1, cost: { iron_ore: 4, gold: 40 }, stats: { def: 3 } },
-  helmet_t1_medium: { name: 'Gorro de Lobo Selvagem', slot: 'helmet', icon: '👒', class: ['ARCHER', 'MERCENARY'], tier: 1, cost: { wolf_fur: 3, gold: 40 }, stats: { def: 2 } },
+  helmet_t1_medium: { name: 'Capuz de Caçador Rústico', slot: 'helmet', icon: '👒', class: ['ARCHER', 'MERCENARY'], tier: 1, cost: { rat_tail: 4, gold: 40 }, stats: { def: 2 } },
   helmet_t1_light: { name: 'Tiara de Linho Rúnica', slot: 'helmet', icon: '👑', class: ['MAGE', 'PRIEST'], tier: 1, cost: { linho: 4, gold: 40 }, stats: { def: 1 } },
-  gloves_t1: { name: 'Luvas de Couro', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 2, gold: 30 }, stats: { def: 1, atk: 1 } },
+  gloves_t1: { name: 'Luvas de Couro', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { rat_tail: 3, gold: 30 }, stats: { def: 1, atk: 1 } },
   ring_t1: { name: 'Anel de Cobre', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { iron_ore: 2, gold: 30 }, stats: { hp: 10 } },
   necklace_t1: { name: 'Colar de Dente de Rato', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { rat_tail: 3, gold: 30 }, stats: { hp: 15 } },
-  belt_t1: { name: 'Cinto de Couro Simples', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 2, gold: 30 }, stats: { def: 1 } },
-  boots_t1: { name: 'Botas de Couro Rústicas', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 3, gold: 35 }, stats: { def: 1, hp: 10 } },
+  belt_t1: { name: 'Cinto de Couro Simples', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { rat_tail: 3, gold: 30 }, stats: { def: 1 } },
+  boots_t1: { name: 'Botas de Couro Rústicas', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bat_wing: 4, gold: 35 }, stats: { def: 1, hp: 10 } },
   pants_t1: { name: 'Perneiras de Ferro Rústicas', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { iron_ore: 4, gold: 40 }, stats: { def: 2 } },
-  pet_t1: { name: 'Mascote Lobo Cinzento', slot: 'pet', icon: '🐾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { wolf_fur: 5, meat_raw: 5, gold: 120 }, stats: { atk: 5 } },
+  pet_t1: { name: 'Mascote Morcego da Caverna', slot: 'pet', icon: '🐾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bat_wing: 5, meat_raw: 5, gold: 120 }, stats: { atk: 5 } },
 
   // --- GRAU 2 ---
   sword_t2: { name: 'Espada de Aço Afiada', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 15, goblin_dagger: 1, gold: 200 }, stats: { atk: 35 } },
@@ -393,7 +393,7 @@ export const CRAFT_RECIPES = {
 
   // --- GRAU 3 ---
   sword_t3: { name: 'Lâmina do Flagelo Dracônico', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { steel_ore: 20, leech_tooth: 2, hydra_scale: 1, gold: 800 }, stats: { atk: 95 } },
-  bow_t3: { name: 'Arco do Vento Sombrio', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 3, cost: { steel_ore: 10, spider_silk: 10, hydra_scale: 1, gold: 800 }, stats: { atk: 82 } },
+  bow_t3: { name: 'Arco do Vento Sombrio', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 3, cost: { steel_ore: 10, serpent_skin: 8, hydra_scale: 1, gold: 800 }, stats: { atk: 82 } },
   staff_t3: { name: 'Cetro do Pântano Eterno', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 10, queen_venom: 1, gold: 800 }, stats: { atk: 78 } },
   
   // Equipamento Lendário Tier 3 do Folclore (Boitatá e Mapinguari)
@@ -409,8 +409,8 @@ export const CRAFT_RECIPES = {
   helmet_t3_medium: { name: 'Capuz das Sombras do Pântano', slot: 'helmet', icon: '👒', class: ['ARCHER', 'MERCENARY'], tier: 3, cost: { serpent_skin: 8, gold: 400 }, stats: { def: 12 } },
   helmet_t3_light: { name: 'Diadema de Boitatá Celestial', slot: 'helmet', icon: '👑', class: ['MAGE', 'PRIEST'], tier: 3, cost: { linho: 20, slime_bubble: 6, gold: 400 }, stats: { def: 8 } },
   gloves_t3: { name: 'Manoplas Dracônicas', slot: 'gloves', icon: '🧤', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 10, gold: 350 }, stats: { def: 8, atk: 12 } },
-  ring_t3: { name: 'Anel do Olho do Boitatá', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 5, gold: 450 }, stats: { hp: 100 } },
-  necklace_t3: { name: 'Colar de Escamas de Hidra', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { crocodile_scale: 4, gold: 450 }, stats: { hp: 120 } },
+  ring_t3: { name: 'Anel de Aço Rúnico', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 5, gold: 450 }, stats: { hp: 100 } },
+  necklace_t3: { name: 'Colar de Escamas de Crocodilo', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { crocodile_scale: 4, gold: 450 }, stats: { hp: 120 } },
   belt_t3: { name: 'Cinto de Couro de Serpente', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 4, gold: 300 }, stats: { def: 10 } },
   boots_t3: { name: 'Botas do Caminhante do Pântano', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 5, gold: 380 }, stats: { def: 10, hp: 80 } },
   pants_t3: { name: 'Perneiras de Aço Reforçadas', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 12, gold: 400 }, stats: { def: 15 } }

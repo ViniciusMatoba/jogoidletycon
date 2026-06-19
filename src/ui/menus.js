@@ -1174,8 +1174,21 @@ function updateTownInventory(game) {
     const qty = game.town.resources[key];
     const info = ITEMS_INFO[key] || CRAFT_RECIPES[key];
     if (info && qty > 0) {
+      let rarity = 'common';
+      if (info.rarity) {
+        rarity = info.rarity;
+      } else if (info.stats) {
+        if (info.name.includes('Saci') || info.name.includes('Mula') || info.name.includes('Curupira') || info.name.includes('Boitatá') || info.name.includes('Mapinguari')) {
+          rarity = 'legendary';
+        } else if (info.tier === 3) {
+          rarity = 'rare';
+        } else if (info.tier === 2) {
+          rarity = 'uncommon';
+        }
+      }
+
       const card = document.createElement('div');
-      card.className = 'inventory-item-card';
+      card.className = `inventory-item-card item-rarity-${rarity}`;
       card.title = `${info.name} (Origem: ${info.source || 'Cidade'})`;
       card.innerHTML = `
         <span class="inv-icon">${info.icon || '📦'}</span>
@@ -1253,7 +1266,21 @@ function refreshHeroProfile(hero, game) {
     if (slotEl) {
       const item = hero.equipment[slot];
       if (item) {
-        slotEl.classList.add('equipped');
+        let rarity = 'common';
+        if (item.rarity) {
+          rarity = item.rarity;
+        } else if (item.stats) {
+          if (item.name.includes('Saci') || item.name.includes('Mula') || item.name.includes('Curupira') || item.name.includes('Boitatá') || item.name.includes('Mapinguari')) {
+            rarity = 'legendary';
+          } else if (item.tier === 3) {
+            rarity = 'rare';
+          } else if (item.tier === 2) {
+            rarity = 'uncommon';
+          }
+        }
+
+        const isOuter = ['accessory1', 'pet', 'weapon_skin', 'armor_skin', 'wings', 'accessory2'].includes(slot);
+        slotEl.className = `equip-slot slot-${slot.replace('_', '-')} equipped item-rarity-${rarity} ${isOuter ? 'outer-slot' : ''}`;
         const starsCount = Math.min(5, item.tier + 2);
         const starsHtml = '<span>✦</span>'.repeat(starsCount);
 
@@ -1263,12 +1290,13 @@ function refreshHeroProfile(hero, game) {
         `;
         slotEl.title = `${item.name} (Grau ${item.tier})`;
       } else {
-        slotEl.classList.remove('equipped');
+        const isOuter = ['accessory1', 'pet', 'weapon_skin', 'armor_skin', 'wings', 'accessory2'].includes(slot);
+        slotEl.className = `equip-slot slot-${slot.replace('_', '-')} ${isOuter ? 'outer-slot' : ''}`;
         
         const placeholders = {
           helmet: '🪖', necklace: '📿', armor: '🥋', weapon: '⚔️', gloves: '🧤',
-          ring: 'ðŸ’', belt: '🥋', boots: '🥾', pants: '👖',
-          accessory1: 'G', pet: 'ðŸ¾', weapon_skin: '⚔️', armor_skin: '🥋', wings: '🪶', accessory2: '◊'
+          ring: '💍', belt: '🥋', boots: '🥾', pants: '👖',
+          accessory1: 'G', pet: '🐾', weapon_skin: '⚔️', armor_skin: '🥋', wings: '🪶', accessory2: '◊'
         };
         slotEl.innerHTML = `<span class="slot-placeholder">${placeholders[slot]}</span>`;
         slotEl.title = `Slot Vazio: ${slot.toUpperCase()}`;
@@ -1372,7 +1400,24 @@ function refreshHeroProfile(hero, game) {
       const invItems = [];
       for (const key in hero.inventory) {
         if (hero.inventory[key] > 0) {
-          invItems.push(`<span style="background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 2px; border: 1px solid #3d2b1f; display: inline-block; margin: 2px;">${ITEMS_INFO[key]?.icon || 'ðŸ“¦'} ${ITEMS_INFO[key]?.name || key} x${hero.inventory[key]}</span>`);
+          const info = ITEMS_INFO[key] || CRAFT_RECIPES[key];
+          let rarity = 'common';
+          if (info) {
+            if (info.rarity) {
+              rarity = info.rarity;
+            } else if (info.stats) {
+              if (info.name.includes('Saci') || info.name.includes('Mula') || info.name.includes('Curupira') || info.name.includes('Boitatá') || info.name.includes('Mapinguari')) {
+                rarity = 'legendary';
+              } else if (info.tier === 3) {
+                rarity = 'rare';
+              } else if (info.tier === 2) {
+                rarity = 'uncommon';
+              }
+            }
+          }
+          const icon = info?.icon || '📦';
+          const name = info?.name || key;
+          invItems.push(`<span class="item-rarity-${rarity}" style="padding: 2px 5px; border-radius: 2px; display: inline-block; margin: 2px;">${icon} ${name} x${hero.inventory[key]}</span>`);
         }
       }
       const invHtml = invItems.length > 0 ? invItems.join(' ') : '<span style="color: #a08c80;">Mochila vazia</span>';
