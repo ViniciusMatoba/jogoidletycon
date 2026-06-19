@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "bodyType": "male",
+  "selections": {
+    "body": {
+      "itemId": "body",
+      "subId": null,
+      "variant": "",
+      "recolor": "bright_green",
+      "name": "Body Color (bright_green)"
+    },
+    "head": {
+      "itemId": "heads_goblin",
+      "subId": null,
+      "variant": "",
+      "recolor": "bright_green",
+      "name": "Goblin (bright_green)"
+    },
+    "weapon": {
+      "itemId": "weapon_blunt_club",
+      "subId": null,
+      "variant": "club",
+      "recolor": "",
+      "name": "Club"
+    }
+  }
+}

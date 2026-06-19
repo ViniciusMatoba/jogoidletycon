@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "bodyType": "male",
+  "selections": {
+    "body": {
+      "itemId": "body_skeleton",
+      "subId": null,
+      "variant": "skeleton",
+      "recolor": "",
+      "name": "Skeleton"
+    },
+    "head": {
+      "itemId": "heads_skeleton",
+      "subId": null,
+      "variant": "skeleton",
+      "recolor": "",
+      "name": "Skeleton Head"
+    },
+    "weapon": {
+      "itemId": "weapon_sword_longsword",
+      "subId": null,
+      "variant": "longsword",
+      "recolor": "",
+      "name": "Longsword"
+    },
+    "offhand": {
+      "itemId": "shield_round",
+      "subId": null,
+      "variant": "round",
+      "recolor": "",
+      "name": "Round Shield"
+    }
+  }
+}

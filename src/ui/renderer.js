@@ -187,43 +187,45 @@ export class GameRenderer {
         }
       }
 
-      // Segunda passada — despeckle global: qualquer pixel isolado (sem vizinhos opacos
-      // suficientes) que ainda seja claro/acromático e não tenha sido alcançado pelo
-      // flood-fill (preso em "ilhas" cercadas por linhas do sprite) também é removido.
-      // Isso elimina o resíduo de antialiasing do quadriculado que sobrava como halo.
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const idx = y * width + x;
-          if (data[idx * 4 + 3] === 0) continue;
+      // Segunda passada — despeckle global: remove resíduo de antialiasing de fundo branco/quadriculado.
+      // Só executa quando a imagem NÃO tem transparência prévia (alreadyTransparent=false),
+      // pois sprites LPC já têm alpha correto e o despeckle removeria pixels claros do sprite
+      // (ex.: ossos brancos do Esqueleto).
+      if (!alreadyTransparent) {
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            if (data[idx * 4 + 3] === 0) continue;
 
-          const r = data[idx * 4];
-          const g = data[idx * 4 + 1];
-          const b = data[idx * 4 + 2];
-          const maxC = Math.max(r, g, b);
-          const minC = Math.min(r, g, b);
-          const isLightAchromatic = maxC > 165 && (maxC - minC) < 18;
+            const r = data[idx * 4];
+            const g = data[idx * 4 + 1];
+            const b = data[idx * 4 + 2];
+            const maxC = Math.max(r, g, b);
+            const minC = Math.min(r, g, b);
+            const isLightAchromatic = maxC > 165 && (maxC - minC) < 18;
 
-          if (!isLightAchromatic) continue;
+            if (!isLightAchromatic) continue;
 
-          // Conta vizinhos opacos e "coloridos" (não-fundo) num raio de 1
-          let solidNeighbors = 0;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              if (dx === 0 && dy === 0) continue;
-              const nx = x + dx, ny = y + dy;
-              if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-              const nidx = ny * width + nx;
-              if (data[nidx * 4 + 3] === 0) continue;
-              const nr = data[nidx * 4], ng = data[nidx * 4 + 1], nb = data[nidx * 4 + 2];
-              const nMax = Math.max(nr, ng, nb), nMin = Math.min(nr, ng, nb);
-              const nIsLight = nMax > 165 && (nMax - nMin) < 18;
-              if (!nIsLight) solidNeighbors++;
+            // Conta vizinhos opacos e "coloridos" (não-fundo) num raio de 1
+            let solidNeighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const nx = x + dx, ny = y + dy;
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                const nidx = ny * width + nx;
+                if (data[nidx * 4 + 3] === 0) continue;
+                const nr = data[nidx * 4], ng = data[nidx * 4 + 1], nb = data[nidx * 4 + 2];
+                const nMax = Math.max(nr, ng, nb), nMin = Math.min(nr, ng, nb);
+                const nIsLight = nMax > 165 && (nMax - nMin) < 18;
+                if (!nIsLight) solidNeighbors++;
+              }
             }
-          }
 
-          // Pixel claro isolado sem vizinhança sólida real ao redor: é resíduo de fundo
-          if (solidNeighbors < 2) {
-            data[idx * 4 + 3] = 0;
+            // Pixel claro isolado sem vizinhança sólida real ao redor: é resíduo de fundo
+            if (solidNeighbors < 2) {
+              data[idx * 4 + 3] = 0;
+            }
           }
         }
       }
@@ -260,7 +262,8 @@ export class GameRenderer {
       'hospital': 'assets/buildings/hospital.png',
       'tavern': 'assets/buildings/tavern.png',
       'forge': 'assets/buildings/forge.png',
-      'market': 'assets/buildings/market.png',      // Heróis
+      'market': 'assets/buildings/market.png',
+      // Heróis
       'hero_warrior_walk': 'assets/sprites/guerreiro_walk.png',
       'hero_warrior_slash': 'assets/sprites/guerreiro_slash.png',
       'hero_warrior_thrust': 'assets/sprites/guerreiro_thrust.png',
@@ -293,10 +296,10 @@ export class GameRenderer {
       'monster_et_verde': 'assets/sprites/et verde_universal.png',
       'monster_et': 'assets/sprites/et_universal.png',
       'monster_lagarto': 'assets/sprites/lagarto_universal.png',
-      'monster_lobisomen': 'assets/sprites/lobisomen_universal.png',
+      'monster_lobisomen': 'assets/sprites/monster_lobisomen_universal.png',
       'monster_porco': 'assets/sprites/porco_universal.png',
       'monster_rato': 'assets/sprites/rato_universal.png',
-      'monster_vampiro': 'assets/sprites/vampiro_universal.png',
+      'monster_vampiro': 'assets/sprites/monster_vampiro_universal.png',
       'monster_zoio': 'assets/sprites/zoio_universal.png',
       'monster_saci_perere': 'assets/sprites/saci_perere_universal.png',
       'monster_curupira': 'assets/sprites/curupira_universal.png',
@@ -308,7 +311,7 @@ export class GameRenderer {
       'monster_teju_jagua': 'assets/sprites/teju_jagua_universal.png',
       'monster_boto_sedutor': 'assets/sprites/boto_sedutor_universal.png',
       'monster_mapinguari': 'assets/sprites/mapinguari_universal.png',
-      // Monstros LPC gerados programaticamente
+      // Monstros LPC gerados programaticamente — variante normal
       'monster_goblin':             'assets/sprites/monster_goblin_universal.png',
       'monster_esqueleto':          'assets/sprites/monster_esqueleto_universal.png',
       'monster_orc':                'assets/sprites/monster_orc_universal.png',
@@ -317,8 +320,25 @@ export class GameRenderer {
       'monster_capitao_orc':        'assets/sprites/monster_capitao_orc_universal.png',
       'monster_lich':               'assets/sprites/monster_lich_universal.png',
       'monster_rei_demonios':       'assets/sprites/monster_rei_demonios_universal.png',
-      'monster_dragonborn_boss':    'assets/sprites/monster_dragonborn_boss_universal.png'
+      'monster_dragonborn_boss':    'assets/sprites/monster_dragonborn_boss_universal.png',
+      // Variações por raridade
+      'monster_esqueleto_raro':     'assets/sprites/monster_esqueleto_raro_universal.png',
+      'monster_esqueleto_elite':    'assets/sprites/monster_esqueleto_elite_universal.png',
+      'monster_goblin_raro':        'assets/sprites/monster_goblin_raro_universal.png',
+      'monster_goblin_elite':       'assets/sprites/monster_goblin_elite_universal.png',
+      'monster_orc_raro':           'assets/sprites/monster_orc_raro_universal.png',
+      'monster_lobisomen_raro':     'assets/sprites/monster_lobisomen_raro_universal.png',
+      'monster_vampiro_raro':       'assets/sprites/monster_vampiro_raro_universal.png',
+      'monster_feiticeira_raro':    'assets/sprites/monster_feiticeira_raro_universal.png',
     };
+
+    // Adicionar as 5 variações para cada um dos 7 prédios no pré-carregamento
+    const buildingsToPreload = ['townhall', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market'];
+    for (const key of buildingsToPreload) {
+      for (let s = 1; s <= 5; s++) {
+        assetsList[`${key}_${s}`] = `assets/buildings/${key}_${s}.png`;
+      }
+    }
 
     // -----------------------------------------------------------------
     // CARREGAMENTO DINÂMICO DE CAMADAS UNIVERSAIS DO HERÓI (LPC)
@@ -433,9 +453,18 @@ export class GameRenderer {
       metrics
     );
 
+    // Vértice sul do footprint: ponto mais baixo da projeção isométrica do edifício.
+    // Usado como chave de Y-sort para garantir Z-order correto entre edifícios adjacentes.
+    const south = this.gridToScreen(
+      placement.col + footprint.w,
+      placement.row + footprint.h,
+      metrics
+    );
+
     return {
       x: center.x,
-      y: center.y + metrics.tileH * footprint.h * 0.34
+      y: center.y + metrics.tileH * footprint.h * 0.34,
+      sortY: south.y
     };
   }
 
@@ -594,31 +623,20 @@ export class GameRenderer {
     // Limpar tela
     this.ctx.clearRect(0, 0, width, height);
 
-    // 1. Desenhar Background da Tela Ativa (Estático/sem translação)
+    // 1. Fallback de cor sólida para cidade (fora da translação de zoom)
     if (this.activeView === 'town') {
       this.drawTownGridBg(game.town, width, height);
-    } else {
-      let bgKey = 'bg_forest';
+    }
+
+    // Pré-calcular bgKey do bioma para usar dentro do zoom
+    let bgKey = 'bg_forest';
+    if (this.activeView !== 'town') {
       if (biome.id === 0) bgKey = 'bg_cave';
       else if (biome.id === 2) bgKey = 'bg_swamp';
       else if (biome.id === 3) bgKey = 'bg_desert';
       else if (biome.id === 4) bgKey = 'bg_tundra';
       else if (biome.id === 5) bgKey = 'bg_volcano';
       else if (biome.id === 6) bgKey = 'bg_citadel';
-
-      const bg = this.images[bgKey];
-      if (bg && bg.loaded) {
-        this.ctx.drawImage(bg, 0, 0, width, height);
-      } else {
-        this.ctx.fillStyle = biome.id === 0 ? '#222326' : (biome.id === 2 ? '#1b231e' : '#102210');
-        this.ctx.fillRect(0, 0, width, height);
-      }
-
-      // Filtro de tom verde pantanoso para o pântano
-      if (biome.id === 2) {
-        this.ctx.fillStyle = 'rgba(46, 125, 50, 0.15)';
-        this.ctx.fillRect(0, 0, width, height);
-      }
     }
 
     // === INICIALIZAR MUNDO (Salvar, aplicar zoom centrado, e translação da câmera) ===
@@ -650,6 +668,19 @@ export class GameRenderer {
         this.ctx.fillRect(-this.maxCameraX, -this.maxCameraY, width + this.maxCameraX * 2, height + this.maxCameraY * 2);
       }
       this.drawTownGridTiles(game.town, width, height, time);
+    } else {
+      // Background de caça desenhado DENTRO do zoom — escala junto com os sprites
+      const huntBg = this.images[bgKey];
+      if (huntBg && huntBg.loaded) {
+        this.ctx.drawImage(huntBg, 0, 0, width, height);
+      } else {
+        this.ctx.fillStyle = biome.id === 0 ? '#222326' : (biome.id === 2 ? '#1b231e' : '#102210');
+        this.ctx.fillRect(0, 0, width, height);
+      }
+      if (biome.id === 2) {
+        this.ctx.fillStyle = 'rgba(46, 125, 50, 0.15)';
+        this.ctx.fillRect(0, 0, width, height);
+      }
     }
 
     // 2. Criar a lista de objetos para ordenação por profundidade (Y-sorting)
@@ -673,7 +704,7 @@ export class GameRenderer {
         const meta = buildingLabels[placed.key] || { name: placed.key, icon: '🏠' };
         const b = { key: placed.key, x: pos.x, y: pos.y, name: meta.name, icon: meta.icon };
         renderList.push({
-          y: b.y,
+          y: pos.sortY ?? pos.y,  // vértice sul do footprint para Z-order correto
           render: () => this.drawBuildingIndividual(game.town, b, time)
         });
       });
@@ -687,12 +718,17 @@ export class GameRenderer {
           this.hoveredTile.row + footprint.h / 2,
           metrics
         );
+        const south = this.gridToScreen(
+          this.hoveredTile.col + footprint.w,
+          this.hoveredTile.row + footprint.h,
+          metrics
+        );
         const bx = center.x;
         const by = center.y + metrics.tileH * footprint.h * 0.34;
         const meta = buildingLabels[this.pendingPlacement] || { name: this.pendingPlacement, icon: '🏠' };
         const b = { key: this.pendingPlacement, x: bx, y: by, name: meta.name, icon: meta.icon, isPreview: true };
         renderList.push({
-          y: b.y,
+          y: south.y,
           render: () => {
             this.ctx.save();
             this.ctx.globalAlpha = 0.6;
@@ -1122,7 +1158,27 @@ export class GameRenderer {
     const isFlipped = b.isPreview ? !!this.pendingPlacementFlipped : !!(town.getBuildingPlacement(b.key)?.flipped);
 
     if (isBuilt) {
-      const img = this.images[b.key];
+      // Mapeamento do nível do prédio para um dos 5 estágios visuais
+      let stage = 1;
+      if (b.key === 'market') {
+        if (level === 1) stage = 1;
+        else if (level === 2) stage = 3;
+        else stage = 5;
+      } else {
+        if (level === 1) stage = 1;
+        else if (level === 2) stage = 2;
+        else if (level === 3 || level === 4) stage = 3;
+        else if (level === 5 || level === 6) stage = 4;
+        else stage = 5; // level >= 7
+      }
+
+      // Tentar usar o estágio específico, com fallback para o original e depois geométrico
+      const stageKey = `${b.key}_${stage}`;
+      let img = this.images[stageKey];
+      if (!img || !img.loaded) {
+        img = this.images[b.key];
+      }
+
       let iconY = by - hSize + 5; // caso: preview/sem imagem ainda carregada
 
       if (img && img.loaded) {
@@ -1130,7 +1186,8 @@ export class GameRenderer {
         
         // Variação de escala por nível (Nível 1: 1.0x, Nível 2: 1.12x, Nível 3: 1.26x)
         const scaleMult = BUILDING_LEVEL_SCALE[Math.min(level - 1, 2)];
-        const imgBase = isoFootprintW * 1.5;
+        // Aumentamos o tamanho de renderização (de 1.5 para 1.75) para destacar as novas imagens!
+        const imgBase = isoFootprintW * 1.75;
         const dw = imgBase * scaleMult;
         const dh = imgBase * scaleMult;
         
@@ -2155,6 +2212,14 @@ export class GameRenderer {
     } else if (name.includes('Avatar Celestial')) {
       imgKey = 'monster_dragonborn_boss';
       filterString = 'brightness(1.55) sepia(0.5) hue-rotate(20deg) drop-shadow(0 0 15px rgba(255,234,58,0.98))';
+    }
+
+    // Variação por raridade: tenta carregar sprite _raro ou _elite se existir
+    if (imgKey && monster.variant && monster.variant !== 'normal') {
+      const variantKey = `${imgKey}_${monster.variant}`;
+      if (this.images[variantKey] && this.images[variantKey].loaded) {
+        imgKey = variantKey;
+      }
     }
 
     const img = imgKey ? this.images[imgKey] : null;

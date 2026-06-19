@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "bodyType": "muscular",
+  "selections": {
+    "body": {
+      "itemId": "body",
+      "subId": null,
+      "variant": "",
+      "recolor": "bronze",
+      "name": "Body Color (bronze)"
+    },
+    "head": {
+      "itemId": "heads_orc_male",
+      "subId": null,
+      "variant": "",
+      "recolor": "bronze",
+      "name": "Orc Male (bronze)"
+    },
+    "horns": {
+      "itemId": "head_horns_backwards",
+      "subId": null,
+      "variant": "backwards",
+      "recolor": "",
+      "name": "Backwards Horns"
+    },
+    "wings": {
+      "itemId": "wings_lizard_alt",
+      "subId": null,
+      "variant": "lizard_alt",
+      "recolor": "",
+      "name": "Lizard Wings"
+    },
+    "torso": {
+      "itemId": "torso_armour_plate",
+      "subId": null,
+      "variant": "plate",
+      "recolor": "",
+      "name": "Plate Armour"
+    },
+    "helmet": {
+      "itemId": "hat_helmet_horned",
+      "subId": null,
+      "variant": "horned",
+      "recolor": "",
+      "name": "Horned Helmet"
+    },
+    "weapon": {
+      "itemId": "weapon_blunt_waraxe",
+      "subId": null,
+      "variant": "waraxe",
+      "recolor": "",
+      "name": "War Axe"
+    }
+  }
+}

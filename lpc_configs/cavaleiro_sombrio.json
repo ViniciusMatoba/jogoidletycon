@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "bodyType": "male",
+  "selections": {
+    "body": {
+      "itemId": "body",
+      "subId": null,
+      "variant": "",
+      "recolor": "black",
+      "name": "Body Color (black)"
+    },
+    "head": {
+      "itemId": "heads_human_male",
+      "subId": null,
+      "variant": "",
+      "recolor": "black",
+      "name": "Human Male (black)"
+    },
+    "torso": {
+      "itemId": "torso_armour_plate",
+      "subId": null,
+      "variant": "plate",
+      "recolor": "",
+      "name": "Plate Armour"
+    },
+    "helmet": {
+      "itemId": "hat_helmet_close",
+      "subId": null,
+      "variant": "close",
+      "recolor": "",
+      "name": "Close Helmet"
+    },
+    "cape": {
+      "itemId": "cape_solid",
+      "subId": null,
+      "variant": "solid",
+      "recolor": "black",
+      "name": "Solid Cape (black)"
+    },
+    "weapon": {
+      "itemId": "weapon_sword_longsword",
+      "subId": null,
+      "variant": "longsword",
+      "recolor": "",
+      "name": "Longsword"
+    },
+    "offhand": {
+      "itemId": "shield_heater",
+      "subId": null,
+      "variant": "heater",
+      "recolor": "",
+      "name": "Heater Shield"
+    }
+  }
+}

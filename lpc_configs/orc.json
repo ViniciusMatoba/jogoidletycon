@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "bodyType": "muscular",
+  "selections": {
+    "body": {
+      "itemId": "body",
+      "subId": null,
+      "variant": "",
+      "recolor": "dark_green",
+      "name": "Body Color (dark_green)"
+    },
+    "head": {
+      "itemId": "heads_orc_male",
+      "subId": null,
+      "variant": "",
+      "recolor": "dark_green",
+      "name": "Orc Male (dark_green)"
+    },
+    "torso": {
+      "itemId": "torso_armour_leather",
+      "subId": null,
+      "variant": "leather",
+      "recolor": "",
+      "name": "Leather Armour"
+    },
+    "weapon": {
+      "itemId": "weapon_blunt_waraxe",
+      "subId": null,
+      "variant": "waraxe",
+      "recolor": "",
+      "name": "War Axe"
+    }
+  }
+}

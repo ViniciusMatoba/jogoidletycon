@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "bodyType": "male",
+  "selections": {
+    "body": {
+      "itemId": "body_skeleton",
+      "subId": null,
+      "variant": "skeleton",
+      "recolor": "",
+      "name": "Skeleton"
+    },
+    "head": {
+      "itemId": "heads_skeleton",
+      "subId": null,
+      "variant": "skeleton",
+      "recolor": "",
+      "name": "Skeleton Head"
+    },
+    "cape": {
+      "itemId": "cape_tattered",
+      "subId": null,
+      "variant": "tattered",
+      "recolor": "black",
+      "name": "Tattered Cape (black)"
+    },
+    "weapon": {
+      "itemId": "weapon_magic_gnarled",
+      "subId": null,
+      "variant": "gnarled",
+      "recolor": "",
+      "name": "Gnarled Staff"
+    }
+  }
+}

@@ -43,6 +43,21 @@ export class Monster {
     this.isMiniBoss = isMiniBoss;
     this.isBoss = isBoss;
 
+    // Raridade visual: determina qual variação de sprite usar
+    // miniBoss e boss sempre usam 'normal' (sprites base)
+    if (!isMiniBoss && !isBoss) {
+      const roll = Math.random();
+      if (roll < 0.05) {
+        this.variant = 'elite';   // 5% — variação elite (maior, diferente)
+      } else if (roll < 0.20) {
+        this.variant = 'raro';    // 15% — variação rara
+      } else {
+        this.variant = 'normal';  // 80% — padrão
+      }
+    } else {
+      this.variant = 'normal';
+    }
+
     // Posição no canvas (Tela cheia para campo de caça)
     const point = getRandomHuntPoint(viewport.width, viewport.height);
     this.x = point.x;

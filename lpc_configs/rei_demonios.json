@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "bodyType": "muscular",
+  "selections": {
+    "body": {
+      "itemId": "body",
+      "subId": null,
+      "variant": "",
+      "recolor": "brown",
+      "name": "Body Color (brown)"
+    },
+    "head": {
+      "itemId": "heads_orc_male",
+      "subId": null,
+      "variant": "",
+      "recolor": "brown",
+      "name": "Orc Male (brown)"
+    },
+    "horns": {
+      "itemId": "head_horns_curled",
+      "subId": null,
+      "variant": "curled",
+      "recolor": "",
+      "name": "Curled Horns"
+    },
+    "wings": {
+      "itemId": "wings_bat",
+      "subId": null,
+      "variant": "bat",
+      "recolor": "",
+      "name": "Bat Wings"
+    },
+    "torso": {
+      "itemId": "torso_armour_plate",
+      "subId": null,
+      "variant": "plate",
+      "recolor": "",
+      "name": "Plate Armour"
+    },
+    "weapon": {
+      "itemId": "weapon_sword_longsword",
+      "subId": null,
+      "variant": "longsword",
+      "recolor": "",
+      "name": "Longsword"
+    }
+  }
+}

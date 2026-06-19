@@ -88,7 +88,7 @@ export class Town {
     };
 
     this.autoBuyHeroLoot = false;
-    this.grid = { cols: 14, rows: 12 };
+    this.grid = { cols: 16, rows: 14 };
     this.buildingFootprints = {
       townhall: { w: 3, h: 3 },
       hotel: { w: 2, h: 2 },

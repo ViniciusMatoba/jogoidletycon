@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "bodyType": "muscular",
+  "selections": {
+    "body": {
+      "itemId": "body",
+      "subId": null,
+      "variant": "",
+      "recolor": "dark_green",
+      "name": "Body Color (dark_green)"
+    },
+    "head": {
+      "itemId": "heads_orc_male",
+      "subId": null,
+      "variant": "",
+      "recolor": "dark_green",
+      "name": "Orc Male (dark_green)"
+    },
+    "torso": {
+      "itemId": "torso_armour_plate",
+      "subId": null,
+      "variant": "plate",
+      "recolor": "",
+      "name": "Plate Armour"
+    },
+    "helmet": {
+      "itemId": "hat_helmet_barbarian",
+      "subId": null,
+      "variant": "barbarian",
+      "recolor": "",
+      "name": "Barbarian Helmet"
+    },
+    "weapon": {
+      "itemId": "weapon_blunt_waraxe",
+      "subId": null,
+      "variant": "waraxe",
+      "recolor": "",
+      "name": "War Axe"
+    },
+    "offhand": {
+      "itemId": "shield_kite",
+      "subId": null,
+      "variant": "kite",
+      "recolor": "",
+      "name": "Kite Shield"
+    }
+  }
+}

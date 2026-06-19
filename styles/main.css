@@ -639,6 +639,90 @@ body {
 .state-drinking_tavern { background-color: #ebcb8b; color: #2e3440; }
 .state-selling_loot { background-color: #b48ead; color: #fff; }
 
+/* Grid 5x2 de heróis */
+.heroes-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 4px 2px;
+  overflow-y: auto;
+  flex: 1;
+}
+.hero-grid-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+  padding-bottom: 6px;
+}
+.hero-grid-card:hover {
+  border-color: var(--border-gold);
+  background: #1e2430;
+}
+.hero-grid-card .hero-class-bar {
+  width: 100%;
+  height: 3px;
+  flex-shrink: 0;
+}
+.hero-grid-card canvas {
+  display: block;
+  image-rendering: pixelated;
+  margin-top: 4px;
+}
+.hero-grid-info {
+  width: 100%;
+  padding: 0 5px;
+  text-align: center;
+  margin-top: 2px;
+}
+.hero-grid-name {
+  font-size: 9px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-pixel);
+  display: block;
+}
+.hero-grid-class {
+  font-size: 7px;
+  color: var(--text-muted);
+  font-family: var(--font-pixel);
+  display: block;
+  margin-top: 1px;
+}
+.hero-grid-hp {
+  width: calc(100% - 10px);
+  margin: 3px auto 0;
+  height: 3px;
+  background: #101217;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hero-grid-hp-fill {
+  height: 100%;
+  background: var(--color-hp);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.hero-grid-state {
+  font-size: 6px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  font-family: var(--font-pixel);
+  text-align: center;
+  padding: 0 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
 .hero-details-drawer {
   background-color: rgba(0, 0, 0, 0.4);
   border-top: 1px solid rgba(255,255,255,0.04);

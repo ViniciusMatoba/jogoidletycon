@@ -1,6 +1,6 @@
 import { Game } from './core/game.js';
-import { GameRenderer } from './ui/renderer.js';
-import { setupUI, updateUI } from './ui/menus.js';
+import { GameRenderer } from './ui/renderer.js?v=2';
+import { setupUI, updateUI } from './ui/menus.js?v=3';
 
 let booted = false;
 

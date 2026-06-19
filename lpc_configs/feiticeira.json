@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "bodyType": "female",
+  "selections": {
+    "body": {
+      "itemId": "body",
+      "subId": null,
+      "variant": "",
+      "recolor": "light",
+      "name": "Body Color (light)"
+    },
+    "head": {
+      "itemId": "heads_human_female",
+      "subId": null,
+      "variant": "",
+      "recolor": "light",
+      "name": "Human Female (light)"
+    },
+    "hair": {
+      "itemId": "hair_natural",
+      "subId": null,
+      "variant": "black",
+      "recolor": "",
+      "name": "Natural (black)"
+    },
+    "torso": {
+      "itemId": "torso_armour_leather",
+      "subId": null,
+      "variant": "leather",
+      "recolor": "",
+      "name": "Leather Armour"
+    },
+    "cape": {
+      "itemId": "cape_tattered",
+      "subId": null,
+      "variant": "tattered",
+      "recolor": "black",
+      "name": "Tattered Cape (black)"
+    },
+    "hat": {
+      "itemId": "hat_helmet_pointed",
+      "subId": null,
+      "variant": "pointed",
+      "recolor": "",
+      "name": "Pointed Hat"
+    },
+    "weapon": {
+      "itemId": "weapon_magic_gnarled",
+      "subId": null,
+      "variant": "gnarled",
+      "recolor": "",
+      "name": "Gnarled Staff"
+    }
+  }
+}

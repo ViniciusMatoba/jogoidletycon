@@ -1,6 +1,6 @@
 import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
 
-import { getBuildingVisualStage } from './renderer.js';
+import { getBuildingVisualStage } from './renderer.js?v=2';
 
 let activeProfileHero = null;
 let activeProfileTab = 'stats';
@@ -778,6 +778,54 @@ const BIOME_VISUAL = [
     description: 'Pântano sombrio e pestilento com os monstros mais temidos do folclore. Apenas heróis experientes sobrevivem.',
     unlockReq: 'Prefeitura Nív. 4',
     monsterIcons: { normal: '🦎🐺🧛🧜🐊', miniboss: '👁️🐾', boss: '🔥👁️' }
+  },
+  {
+    emoji: '🏜️',
+    theme: 'biome-desert',
+    gradient: 'linear-gradient(135deg, #2d1e10 0%, #4e351a 100%)',
+    border: '#a1784d',
+    levelRange: 'Nív. 45 — 60',
+    diffStars: 3,
+    diffLabel: 'Perigoso',
+    description: 'Deserto causticante repleto de múmias, escorpiões gigantes e segredos das pirâmides.',
+    unlockReq: 'Prefeitura Nív. 5',
+    monsterIcons: { normal: '💀🦂🌵', miniboss: '👑', boss: '🦁' }
+  },
+  {
+    emoji: '❄️',
+    theme: 'biome-tundra',
+    gradient: 'linear-gradient(135deg, #0f2c3a 0%, #1c4e66 100%)',
+    border: '#4da1a9',
+    levelRange: 'Nív. 60 — 75',
+    diffStars: 3,
+    diffLabel: 'Gélido',
+    description: 'Planície congelada onde ventos cortantes e monstros das neves desafiam a sobrevivência dos caçadores.',
+    unlockReq: 'Prefeitura Nív. 6',
+    monsterIcons: { normal: '❄️🐺🧣', miniboss: '👹', boss: '👑' }
+  },
+  {
+    emoji: '🌋',
+    theme: 'biome-volcano',
+    gradient: 'linear-gradient(135deg, #2e0805 0%, #581610 100%)',
+    border: '#a94d45',
+    levelRange: 'Nív. 75 — 90',
+    diffStars: 3,
+    diffLabel: 'Extremo',
+    description: 'Solo de lava fervente e demônios. O calor extremo consome a vida de quem ousar entrar.',
+    unlockReq: 'Prefeitura Nív. 7',
+    monsterIcons: { normal: '🔥👹👿', miniboss: '🛡️', boss: '🐉' }
+  },
+  {
+    emoji: '✨',
+    theme: 'biome-citadel',
+    gradient: 'linear-gradient(135deg, #1c263c 0%, #35476a 100%)',
+    border: '#cca93d',
+    levelRange: 'Nív. 90+',
+    diffStars: 3,
+    diffLabel: 'Lendário',
+    description: 'Cidadela flutuante habitada por guerreiros alados e querubins sombrios. O desafio final da guilda.',
+    unlockReq: 'Prefeitura Nív. 8',
+    monsterIcons: { normal: '👼🛡️⚡', miniboss: '🪶', boss: '✨' }
   }
 ];
 
@@ -796,6 +844,10 @@ function renderBiomeCards(game) {
     let isLocked = false;
     if (idx === 1 && townhallLevel < 3) isLocked = true;
     if (idx === 2 && townhallLevel < 4) isLocked = true;
+    if (idx === 3 && townhallLevel < 5) isLocked = true;
+    if (idx === 4 && townhallLevel < 6) isLocked = true;
+    if (idx === 5 && townhallLevel < 7) isLocked = true;
+    if (idx === 6 && townhallLevel < 8) isLocked = true;
 
     // Estrelas de dificuldade
     const stars = '⭐'.repeat(visual.diffStars) + '☆'.repeat(3 - visual.diffStars);
@@ -1540,7 +1592,7 @@ export function openHeroProfile(hero, game) {
     let isLocked = false;
     lockBtn.onclick = () => {
       isLocked = !isLocked;
-      lockBtn.innerText = isLocked ? 'ðŸ”’' : 'ðŸ”“';
+      lockBtn.innerText = isLocked ? '🔒' : '🔓';
     };
   }
 
@@ -1665,11 +1717,11 @@ function refreshHeroProfile(hero, game) {
             <span class="value">${hero.atk}</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">ðŸ›¡ï¸ DEF</span>
+            <span class="label">🛡️ DEF</span>
             <span class="value">${hero.def}</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">ðŸ’¥ CRIT</span>
+            <span class="label">💥 CRIT</span>
             <span class="value">${hero.className === 'ARCHER' ? '30%' : '8%'}</span>
           </div>
           <div class="combat-stat-line">
@@ -1677,7 +1729,7 @@ function refreshHeroProfile(hero, game) {
             <span class="value">${hero.spd.toFixed(2)}/s</span>
           </div>
           <div class="combat-stat-line">
-            <span class="label">ðŸ‘¤ Evasion</span>
+            <span class="label">👤 Evasion</span>
             <span class="value">${hero.className === 'MERCENARY' ? '15%' : '5%'}</span>
           </div>
         </div>
@@ -1750,6 +1802,96 @@ function refreshHeroProfile(hero, game) {
   drawHeroOnProfileCanvas(hero);
 }
 
+function drawHeroLPC(hero, ctx, destWidth, destHeight) {
+  if (!window.gameRenderer || !window.gameRenderer.images) return false;
+  const images = window.gameRenderer.images;
+  
+  const sx = 0;
+  const sy = 10 * 64; 
+  const sw = 64;
+  const sh = 64;
+  
+  const scale = destHeight / 64;
+  const dw = 64 * scale;
+  const dh = destHeight;
+  const dx = (destWidth - dw) / 2;
+  const dy = 0;
+
+  const bodyImg = images[`body_${hero.cosmetics.bodyType}`];
+  if (!bodyImg || !bodyImg.loaded) return false;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+
+  // 1. Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  ctx.beginPath();
+  const feetY = dy + 54 * scale;
+  ctx.ellipse(destWidth / 2, feetY, 10 * scale, 3 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Body
+  ctx.drawImage(bodyImg, sx, sy, sw, sh, dx, dy, dw, dh);
+
+  // 3. Hair
+  if (hero.cosmetics.hairStyle !== 'none') {
+    const hairImg = images[`hair_${hero.cosmetics.hairStyle}_${hero.cosmetics.hairColor}`];
+    if (hairImg && hairImg.loaded) {
+      ctx.drawImage(hairImg, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+  }
+
+  // 4. Armor
+  if (hero.equipment.armor) {
+    let armorType = 'heavy';
+    if (hero.className === 'MERCENARY' || hero.className === 'ARCHER') armorType = 'medium';
+    else if (hero.className === 'MAGE' || hero.className === 'PRIEST') armorType = 'light';
+
+    const armorImg = images[`armor_${armorType}_t${hero.equipment.armor.tier}_${hero.cosmetics.gender}`];
+    if (armorImg && armorImg.loaded) {
+      ctx.drawImage(armorImg, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+  }
+
+  // 5. Helmet
+  if (hero.equipment.helmet) {
+    let helmetType = 'armet';
+    if (hero.className === 'MERCENARY') helmetType = 'barbarian';
+    else if (hero.className === 'ARCHER') helmetType = 'headband';
+    else if (hero.className === 'MAGE') helmetType = 'magic_hat';
+    else if (hero.className === 'PRIEST') helmetType = 'headband';
+
+    const helmetImg = images[`helmet_${helmetType}`];
+    if (helmetImg && helmetImg.loaded) {
+      ctx.drawImage(helmetImg, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+  }
+
+  // 6. Shield (Warrior with weapon equipped)
+  if (hero.className === 'WARRIOR' && hero.equipment.weapon) {
+    const shieldImg = images['weapon_shield'];
+    if (shieldImg && shieldImg.loaded) {
+      ctx.drawImage(shieldImg, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+  }
+
+  // 7. Weapon
+  if (hero.equipment.weapon) {
+    let weaponType = 'longsword';
+    if (hero.className === 'MERCENARY') weaponType = 'dagger';
+    else if (hero.className === 'ARCHER') weaponType = 'bow';
+    else if (hero.className === 'MAGE' || hero.className === 'PRIEST') weaponType = 'staff';
+
+    const weaponImg = images[`weapon_${weaponType}`];
+    if (weaponImg && weaponImg.loaded) {
+      ctx.drawImage(weaponImg, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+  }
+
+  ctx.restore();
+  return true;
+}
+
 // Desenha o sprite ampliado e nítido do herói no canvas da ficha de perfil
 function drawHeroOnProfileCanvas(hero) {
   const canvas = document.getElementById('hero-profile-canvas');
@@ -1757,6 +1899,10 @@ function drawHeroOnProfileCanvas(hero) {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  if (drawHeroLPC(hero, ctx, canvas.width, canvas.height)) {
+    return;
+  }
+
   ctx.save();
   ctx.imageSmoothingEnabled = false;
 
@@ -1935,59 +2081,235 @@ function drawHeroOnProfileCanvas(hero) {
   ctx.restore();
 }
 
-// Renderiza a lista de heróis simplificada (clicar abre a ficha detalhada)
+// Renderiza o grid 5x2 de heróis com miniatura canvas
 function updateHeroesTab(game) {
   const listEl = document.getElementById('heroes-list-container');
   if (!listEl) return;
 
   listEl.innerHTML = '';
+  listEl.className = 'heroes-grid';
 
   game.heroes.forEach(hero => {
     const card = document.createElement('div');
-    card.className = `hero-row-card`;
-    
-    const hpPct = (hero.hp / hero.maxHp) * 100;
-    const hungerPct = hero.hunger;
-    const energyPct = hero.energy;
+    card.className = 'hero-grid-card';
 
-    card.innerHTML = `
-      <div class="hero-summary-line" style="border-left: 5px solid ${hero.classConfig.color}">
-        <div class="hero-name-lvl">
-          <strong>${hero.name}</strong>
-          <span class="hero-lvl-label">Lvl ${hero.level}</span>
-        </div>
-        <div class="hero-needs-bars">
-          <div class="need-bar-mini" title="Vida">
-            <span class="need-icon">â¤ï¸</span>
-            <div class="bar"><div class="fill hp" style="width: ${hpPct}%"></div></div>
-            <span class="val">${Math.round(hero.hp)}/${hero.maxHp}</span>
-          </div>
-          <div class="need-bar-mini" title="Fome">
-            <span class="need-icon">🍲</span>
-            <div class="bar"><div class="fill hunger" style="width: ${hungerPct}%"></div></div>
-            <span class="val">${Math.round(hero.hunger)}/100</span>
-          </div>
-          <div class="need-bar-mini" title="Energia">
-            <span class="need-icon">⚡</span>
-            <div class="bar"><div class="fill energy" style="width: ${energyPct}%"></div></div>
-            <span class="val">${Math.round(hero.energy)}/100</span>
-          </div>
-        </div>
-        <div class="hero-action-label">
-          <span class="state-badge state-${hero.state.toLowerCase()}">${formatHeroState(hero.state)}</span>
-        </div>
+    const hpPct = Math.max(0, Math.min(100, (hero.hp / hero.maxHp) * 100));
+    const stateLabel = formatHeroStateShort(hero.state);
+    const classLabel = (hero.classConfig?.label || hero.className || '').substring(0, 8);
+
+    // Barra colorida no topo com a cor da classe
+    const classBar = document.createElement('div');
+    classBar.className = 'hero-class-bar';
+    classBar.style.background = hero.classConfig?.color || '#888';
+    card.appendChild(classBar);
+
+    // Mini canvas do sprite
+    const canvas = document.createElement('canvas');
+    canvas.width = 72;
+    canvas.height = 88;
+    card.appendChild(canvas);
+
+    // Info textual
+    card.insertAdjacentHTML('beforeend', `
+      <div class="hero-grid-info">
+        <span class="hero-grid-name">${hero.name}</span>
+        <span class="hero-grid-class">Lv.${hero.level} ${classLabel}</span>
       </div>
-    `;
+      <div class="hero-grid-hp"><div class="hero-grid-hp-fill" style="width:${hpPct}%"></div></div>
+      <div class="hero-grid-state">${stateLabel}</div>
+    `);
 
-    // Clicar no card abre o modal detalhado
-    card.addEventListener('click', () => {
-      openHeroProfile(hero, game);
-    });
-
+    card.addEventListener('click', () => openHeroProfile(hero, game));
     listEl.appendChild(card);
+
+    drawHeroMini(hero, canvas);
   });
 }
 
+function drawHeroMini(hero, canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (drawHeroLPC(hero, ctx, canvas.width, canvas.height)) {
+    return;
+  }
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+
+  const scale = 3;
+  ctx.scale(scale, scale);
+
+  const hx = (canvas.width / 2) / scale;
+  const hy = ((canvas.height / 2) / scale) + 4;
+
+  // Sombra
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(hx, hy + 11, 8, 2.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pernas
+  ctx.fillStyle = hero.cosmetics.skinColor;
+  ctx.fillRect(hx - 3.5, hy + 5, 2, 6);
+  ctx.fillRect(hx + 1.5, hy + 5, 2, 6);
+
+  let bootsColor = '#4a2c11';
+  if (hero.equipment.boots) bootsColor = '#1a1a1a';
+  ctx.fillStyle = bootsColor;
+  ctx.fillRect(hx - 4.5, hy + 10, 3, 1.5);
+  ctx.fillRect(hx + 0.5, hy + 10, 3, 1.5);
+
+  // Corpo
+  let bodyColor = hero.cosmetics.clothesColor;
+  let isLendaria = false;
+  if (hero.equipment.armor) {
+    const tier = hero.equipment.armor.tier;
+    if (tier === 1) bodyColor = hero.className === 'WARRIOR' ? '#818b96' : '#634731';
+    else if (tier === 2) bodyColor = '#4e5a66';
+    else if (tier === 3) {
+      bodyColor = (hero.equipment.armor.key && hero.equipment.armor.key.includes('mapinguari')) ? '#ab5522' : '#cca93d';
+      isLendaria = true;
+    }
+  }
+  ctx.fillStyle = bodyColor;
+  ctx.fillRect(hx - 5, hy - 4, 10, 10);
+
+  if (isLendaria) {
+    ctx.strokeStyle = '#ffea3a';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(hx - 5.5, hy - 4.5, 11, 11);
+  }
+
+  if (hero.className === 'WARRIOR' && !isLendaria) {
+    ctx.fillStyle = '#656e78';
+    ctx.strokeStyle = '#32373c';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(hx - 4, hy + 1, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#261c11';
+  ctx.fillRect(hx - 5, hy + 3, 10, 1.5);
+
+  // Rosto
+  ctx.fillStyle = hero.cosmetics.skinColor;
+  ctx.fillRect(hx - 4, hy - 11, 8, 7);
+
+  ctx.fillStyle = '#111';
+  ctx.fillRect(hx - 2, hy - 9, 1, 1.5);
+  ctx.fillRect(hx + 1, hy - 9, 1, 1.5);
+
+  // Cabelo / Elmo / Chapeu de Classe
+  ctx.fillStyle = hero.cosmetics.hairColor;
+  if (hero.equipment.helmet) {
+    ctx.fillStyle = '#8e8e8e';
+    ctx.fillRect(hx - 4.5, hy - 13, 9, 3);
+  } else if (hero.className === 'MAGE') {
+    ctx.fillStyle = '#511b85';
+    ctx.fillRect(hx - 7, hy - 12, 14, 2);
+    ctx.beginPath();
+    ctx.moveTo(hx - 4, hy - 12);
+    ctx.lineTo(hx + 4, hy - 12);
+    ctx.lineTo(hx, hy - 20);
+    ctx.closePath();
+    ctx.fill();
+  } else if (hero.className === 'WARRIOR') {
+    ctx.fillStyle = '#818b96';
+    ctx.fillRect(hx - 4.5, hy - 13, 9, 3);
+    ctx.fillStyle = '#ff3d3d';
+    ctx.fillRect(hx - 1, hy - 16, 3, 3);
+  } else {
+    const hairStyle = hero.cosmetics.hairStyle;
+    if (hairStyle === 'short') {
+      ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+      ctx.fillRect(hx - 4.5, hy - 11, 1.5, 4);
+      ctx.fillRect(hx + 3, hy - 11, 1.5, 4);
+    } else if (hairStyle === 'long') {
+      ctx.fillRect(hx - 4.5, hy - 12.5, 9, 2);
+      ctx.fillRect(hx - 4.5, hy - 11, 1.5, 9);
+      ctx.fillRect(hx + 3, hy - 11, 1.5, 9);
+    } else {
+      ctx.fillRect(hx - 4, hy - 12.5, 8, 2);
+      ctx.fillRect(hx - 3, hy - 14.5, 1.5, 2);
+      ctx.fillRect(hx + 1.5, hy - 14.5, 1.5, 2);
+    }
+  }
+
+  if (hero.className === 'PRIEST') {
+    ctx.strokeStyle = '#ffea3a';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(hx, hy - 14, 2.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (hero.equipment.wings) {
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillRect(hx - 12, hy - 6, 7, 10);
+    ctx.fillRect(hx + 5, hy - 6, 7, 10);
+  }
+
+  // Arma
+  const wx = hx - 6.5;
+  const wy = hy + 2;
+  let weaponColor = '#bf9b30';
+  if (hero.equipment.weapon) {
+    const tier = hero.equipment.weapon.tier;
+    if (tier === 1) weaponColor = '#818b96';
+    if (tier === 2) weaponColor = '#4e5b66';
+    if (tier === 3) weaponColor = '#ffea3a';
+  }
+
+  if (hero.equipment.weapon) {
+    if (hero.className === 'ARCHER') {
+      ctx.strokeStyle = weaponColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(wx, wy, 5, Math.PI / 2, -Math.PI / 2, true);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(wx, wy - 5);
+      ctx.lineTo(wx, wy + 5);
+      ctx.stroke();
+    } else if (hero.className === 'MAGE' || hero.className === 'PRIEST') {
+      ctx.fillStyle = '#6b4724';
+      ctx.fillRect(wx + 1, wy - 8, 1.5, 12);
+      ctx.fillStyle = hero.className === 'PRIEST' ? '#ffea3a' : '#c23aff';
+      ctx.fillRect(wx, wy - 11, 3.5, 3.5);
+    } else {
+      ctx.fillStyle = weaponColor;
+      ctx.fillRect(wx + 1, wy - 8, 1.5, 10);
+      ctx.fillStyle = '#4a2c11';
+      ctx.fillRect(wx - 1, wy - 1, 5.5, 1.5);
+      ctx.fillRect(wx + 1, wy + 2, 1.5, 2);
+    }
+  } else {
+    ctx.fillStyle = hero.cosmetics.skinColor;
+    ctx.fillRect(wx, wy, 2, 2.5);
+  }
+
+  ctx.restore();
+}
+
+function formatHeroStateShort(state) {
+  const states = {
+    'IDLE_TOWN':         'Na cidade',
+    'SEARCHING_MONSTER': 'Cacando',
+    'FIGHTING':          'Combate',
+    'RETURNING_TOWN':    'Voltando',
+    'RESTING_HOTEL':     'Hotel',
+    'EATING_REST':       'Comendo',
+    'HEALING_HOSP':      'Hospital',
+    'DRINKING_TAVERN':   'Taverna',
+    'SELLING_LOOT':      'Vendendo',
+  };
+  return states[state] || state;
+}
 function formatHeroState(state) {
   const states = {
     'IDLE_TOWN': 'Vagando na Cidade',
