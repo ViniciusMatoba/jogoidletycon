@@ -155,7 +155,9 @@ export class GameRenderer {
       'tavern': 'assets/buildings/tavern.png',
       'forge': 'assets/buildings/forge.png',      // HerÃ³is
       'hero_warrior': 'assets/sprites/hero_warrior.png',
+      'hero_mercenary': 'assets/sprites/hero_mercenary.png',
       'hero_mage': 'assets/sprites/hero_mage.png',
+      'hero_priest': 'assets/sprites/hero_priest.png',
       'hero_archer': 'assets/sprites/hero_archer.png',
       // Monstros
       'monster_saci': 'assets/sprites/monster_saci.png',
@@ -1889,8 +1891,13 @@ export class GameRenderer {
     const isWalking = hero.state === 'SEARCHING_MONSTER' || hero.state === 'RETURNING_TOWN' || hero.state === 'IDLE_TOWN';
     const step = isWalking ? Math.sin(time * 0.015) * 3 : 0;
 
-    const imgKey = (hero.className === 'WARRIOR' || hero.className === 'MERCENARY') ? 'hero_warrior' : 
-                   (hero.className === 'MAGE' || hero.className === 'PRIEST') ? 'hero_mage' : 'hero_archer';
+    let imgKey = 'hero_warrior';
+    if (hero.className === 'WARRIOR') imgKey = 'hero_warrior';
+    else if (hero.className === 'MERCENARY') imgKey = 'hero_mercenary';
+    else if (hero.className === 'MAGE') imgKey = 'hero_mage';
+    else if (hero.className === 'PRIEST') imgKey = 'hero_priest';
+    else if (hero.className === 'ARCHER') imgKey = 'hero_archer';
+
     const img = this.images[imgKey];
 
     if (img && img.loaded) {

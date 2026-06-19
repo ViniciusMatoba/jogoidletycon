@@ -72,7 +72,7 @@ export class Game {
     if (this.isPaused) return;
 
     const actualDt = dt * this.speed;
-    this.spawner.update(actualDt, this.town, viewport);
+    this.spawner.update(actualDt, this.town, this.heroes, viewport);
 
     this.heroes.forEach(hero => {
       hero.update(actualDt, this.town, this.spawner.activeMonsters, this.addFloater.bind(this), viewport);
@@ -217,7 +217,7 @@ export class Game {
     const slices = Math.floor(simTime / tickSlice);
 
     for (let i = 0; i < slices; i++) {
-      this.spawner.update(tickSlice, this.town);
+      this.spawner.update(tickSlice, this.town, this.heroes);
       this.heroes.forEach(hero => {
         hero.x = hero.targetX;
         hero.y = hero.targetY;

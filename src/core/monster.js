@@ -103,16 +103,27 @@ export class Monster {
     }
   }
 
-  update(dt, viewport = {}) {
+  update(dt, heroes = [], viewport = {}) {
     if (this.hp <= 0) return;
 
-    // Vagueia devagar se não estiver lutando
-    this.wanderTimer -= dt;
-    if (this.wanderTimer <= 0) {
-      const point = getRandomHuntPoint(viewport.width, viewport.height);
-      this.targetX = point.x;
-      this.targetY = point.y;
-      this.wanderTimer = 3 + Math.random() * 4;
+    // Scan if any hero is attacking this monster
+    const attacker = (heroes && Array.isArray(heroes)) ? heroes.find(h => h.currentMap === 'hunt' && h.targetMonster === this) : null;
+
+    if (attacker) {
+      // If being attacked, do NOT wander!
+      // Move directly towards the attacking hero so we stay in combat!
+      this.targetX = attacker.x;
+      this.targetY = attacker.y;
+      this.wanderTimer = 1.0; // Reset wander timer
+    } else {
+      // Vagueia devagar se não estiver lutando
+      this.wanderTimer -= dt;
+      if (this.wanderTimer <= 0) {
+        const point = getRandomHuntPoint(viewport.width, viewport.height);
+        this.targetX = point.x;
+        this.targetY = point.y;
+        this.wanderTimer = 3 + Math.random() * 4;
+      }
     }
 
     // Movimentação simples
@@ -156,13 +167,20 @@ export class MonsterSpawner {
     this.logs.unshift(`Bioma alterado para: ${BIOMES[biomeId].name}`);
   }
 
-  update(dt, town, viewport = {}) {
+  update(dt, town, heroes = [], viewport = {}) {
+    // Se heroes vier como viewport (compatibilidade se chamada antiga passar 3 args)
+    let actualViewport = viewport;
+    let actualHeroes = heroes;
+    if (heroes && !Array.isArray(heroes)) {
+      actualViewport = heroes;
+      actualHeroes = [];
+    }
+
     // 1. Limpar monstros mortos e acumular mortes
-    
     for (let i = this.activeMonsters.length - 1; i >= 0; i--) {
       const monster = this.activeMonsters[i];
       if (!monster) continue;
-      monster.update(dt, viewport);
+      monster.update(dt, actualHeroes, actualViewport);
       
       if (monster.hp <= 0) {
         // Monstro morreu
@@ -171,7 +189,7 @@ export class MonsterSpawner {
         // Só conta como morte se for monstro normal
         if (!monster.isMiniBoss && !monster.isBoss) {
           this.killsCount++;
-          this.checkSpecialSpawns(viewport);
+          this.checkSpecialSpawns(actualViewport);
         } else if (monster.isBoss) {
           this.bossSpawned = false;
           this.bossKillsCount++;
@@ -187,9 +205,10 @@ export class MonsterSpawner {
       }
     }
 
-    // 2. Spawnar monstros normais se necessário
-    if (!this.bossSpawned && this.activeMonsters.length < this.maxNormalMonsters) {
-      this.spawnNormalMonster(viewport);
+    // 2. Spawnar monstros normais se necessário (mantém maxNormalMonsters normais ativos)
+    const normalCount = this.activeMonsters.filter(m => !m.isBoss && !m.isMiniBoss).length;
+    if (normalCount < this.maxNormalMonsters) {
+      this.spawnNormalMonster(actualViewport);
     }
   }
 
@@ -226,8 +245,7 @@ export class MonsterSpawner {
   spawnBoss(viewport = {}) {
     const biome = this.getBiomeConfig();
     
-    // Limpar monstros normais para focar no Boss
-    this.activeMonsters = [];
+    // Do NOT clear normal monsters! Let them exist together
     
     // Escolhe aleatoriamente da lista de bosses
     const config = biome.bosses[Math.floor(Math.random() * biome.bosses.length)];
