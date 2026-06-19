@@ -91,43 +91,39 @@ export class GameRenderer {
       const bgB = data[2];
       const bgA = data[3];
 
-      // Se o pixel superior esquerdo já for transparente, assume que a imagem é um PNG limpo e pula o processamento
-      if (bgA < 50) {
-        return tempCanvas;
-      }
+      // Se o pixel superior esquerdo já for transparente, assume que a imagem é um PNG limpo,
+      // mas ainda assim roda a passada global de despeckle (alguns PNGs "limpos" trazem halo residual)
+      const alreadyTransparent = bgA < 50;
 
-      // Usando Flood-Fill a partir das bordas para remover o fundo quadriculado/sólido
-      const visited = new Uint8Array(width * height);
-      const queue = [];
-
-      // Função para verificar se a cor do pixel é considerada fundo (branco, cinza quadriculado ou igual à cor do canto)
+      // Função para verificar se a cor do pixel é considerada fundo (branco, cinza quadriculado,
+      // ou qualquer tom acromático claro — cobre também o antialiasing entre branco e cinza)
       const isBackground = (r, g, b, a) => {
         if (a < 50) return true; // Já transparente
-        
-        // Canto / Fundo original
-        const distFromBg = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
-        if (distFromBg < 35) return true;
-        
-        // Branco (fake png)
-        if (r > 230 && g > 230 && b > 230) return true;
-        
-        // Cinza quadriculado (fake png)
-        if (r > 175 && r < 215 && g > 175 && g < 215 && b > 175 && b < 215) {
-          // Garante que é cinza neutro
-          if (Math.abs(r - g) < 8 && Math.abs(g - b) < 8 && Math.abs(r - b) < 8) {
-            return true;
-          }
+
+        if (!alreadyTransparent) {
+          // Canto / Fundo original
+          const distFromBg = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+          if (distFromBg < 40) return true;
         }
-        
+
+        // Acromático claro (branco puro ao cinza quadriculado, incluindo antialiasing
+        // intermediário entre os dois tons — faixa ampliada de 150 a 256)
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        if (maxC > 150 && (maxC - minC) < 14) return true;
+
         return false;
       };
 
       // Adicionar bordas na fila como sementes
+      const visited = new Uint8Array(width * height);
+      const queue = [];
+
       // Linha superior e inferior
       for (let x = 0; x < width; x++) {
         const idxTop = x;
         const idxBot = (height - 1) * width + x;
-        
+
         if (isBackground(data[idxTop * 4], data[idxTop * 4 + 1], data[idxTop * 4 + 2], data[idxTop * 4 + 3])) {
           queue.push(x, 0);
           visited[idxTop] = 1;
@@ -142,7 +138,7 @@ export class GameRenderer {
       for (let y = 0; y < height; y++) {
         const idxLeft = y * width;
         const idxRight = y * width + (width - 1);
-        
+
         if (!visited[idxLeft] && isBackground(data[idxLeft * 4], data[idxLeft * 4 + 1], data[idxLeft * 4 + 2], data[idxLeft * 4 + 3])) {
           queue.push(0, y);
           visited[idxLeft] = 1;
@@ -153,22 +149,18 @@ export class GameRenderer {
         }
       }
 
-      // Loop do Flood Fill
+      // Loop do Flood Fill (8-direções para alcançar diagonais e não travar em corredores finos de antialiasing)
       let head = 0;
       while (head < queue.length) {
         const cx = queue[head++];
         const cy = queue[head++];
         const idx = cy * width + cx;
-        
-        // Zera a opacidade (torna transparente)
+
         data[idx * 4 + 3] = 0;
 
-        // Vizinhos (4-direções)
         const dirs = [
-          [cx + 1, cy],
-          [cx - 1, cy],
-          [cx, cy + 1],
-          [cx, cy - 1]
+          [cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1],
+          [cx + 1, cy + 1], [cx - 1, cy - 1], [cx + 1, cy - 1], [cx - 1, cy + 1]
         ];
 
         for (const [nx, ny] of dirs) {
@@ -179,7 +171,7 @@ export class GameRenderer {
               const ng = data[nidx * 4 + 1];
               const nb = data[nidx * 4 + 2];
               const na = data[nidx * 4 + 3];
-              
+
               if (isBackground(nr, ng, nb, na)) {
                 visited[nidx] = 1;
                 queue.push(nx, ny);
@@ -189,25 +181,43 @@ export class GameRenderer {
         }
       }
 
-      // Segunda passada: despeckle — remove pixels claros isolados (resíduo de antialiasing do fundo quadriculado)
-      const LIGHT_THRESHOLD = 180;
-      for (let py = 0; py < height; py++) {
-        for (let px = 0; px < width; px++) {
-          const pidx = (py * width + px) * 4;
-          if (data[pidx + 3] === 0) continue;
-          const r = data[pidx], g = data[pidx + 1], b = data[pidx + 2];
-          if (r > LIGHT_THRESHOLD && g > LIGHT_THRESHOLD && b > LIGHT_THRESHOLD) {
-            let opaqueNeighbors = 0;
-            for (let dy = -1; dy <= 1; dy++) {
-              for (let dx = -1; dx <= 1; dx++) {
-                if (dx === 0 && dy === 0) continue;
-                const nx = px + dx, ny = py + dy;
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                  if (data[(ny * width + nx) * 4 + 3] > 0) opaqueNeighbors++;
-                }
-              }
+      // Segunda passada — despeckle global: qualquer pixel isolado (sem vizinhos opacos
+      // suficientes) que ainda seja claro/acromático e não tenha sido alcançado pelo
+      // flood-fill (preso em "ilhas" cercadas por linhas do sprite) também é removido.
+      // Isso elimina o resíduo de antialiasing do quadriculado que sobrava como halo.
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          if (data[idx * 4 + 3] === 0) continue;
+
+          const r = data[idx * 4];
+          const g = data[idx * 4 + 1];
+          const b = data[idx * 4 + 2];
+          const maxC = Math.max(r, g, b);
+          const minC = Math.min(r, g, b);
+          const isLightAchromatic = maxC > 165 && (maxC - minC) < 18;
+
+          if (!isLightAchromatic) continue;
+
+          // Conta vizinhos opacos e "coloridos" (não-fundo) num raio de 1
+          let solidNeighbors = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              const nx = x + dx, ny = y + dy;
+              if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+              const nidx = ny * width + nx;
+              if (data[nidx * 4 + 3] === 0) continue;
+              const nr = data[nidx * 4], ng = data[nidx * 4 + 1], nb = data[nidx * 4 + 2];
+              const nMax = Math.max(nr, ng, nb), nMin = Math.min(nr, ng, nb);
+              const nIsLight = nMax > 165 && (nMax - nMin) < 18;
+              if (!nIsLight) solidNeighbors++;
             }
-            if (opaqueNeighbors <= 2) data[pidx + 3] = 0;
+          }
+
+          // Pixel claro isolado sem vizinhança sólida real ao redor: é resíduo de fundo
+          if (solidNeighbors < 2) {
+            data[idx * 4 + 3] = 0;
           }
         }
       }
@@ -399,9 +409,10 @@ export class GameRenderer {
     const metrics = this.getTownGridMetrics(town, width, height);
     const now = performance.now();
 
-    // Zona permitida: margem de 1 tile nas bordas (sincronizado com town.js)
-    const BUILD_COL_MIN = 1, BUILD_COL_MAX = 13; // grid.cols - 1
-    const BUILD_ROW_MIN = 1, BUILD_ROW_MAX = 11; // grid.rows - 1
+    // Zona permitida para construção: margem de 1 tile nas bordas (evita árvores/caminhos do tapete)
+    // Mantida em sincronia com Town.isAreaFree() em src/core/town.js
+    const BUILD_COL_MIN = 1, BUILD_COL_MAX = town.grid.cols - 1;
+    const BUILD_ROW_MIN = 1, BUILD_ROW_MAX = town.grid.rows - 1;
 
     // Calcular quais células estão ocupadas por edifícios construídos
     const occupiedCells = new Set();
