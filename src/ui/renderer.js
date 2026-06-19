@@ -232,10 +232,16 @@ export class GameRenderer {
       'monster_rato': 'assets/sprites/rato_universal.png',
       'monster_vampiro': 'assets/sprites/vampiro_universal.png',
       'monster_zoio': 'assets/sprites/zoio_universal.png',
-      // Folclore opcional (Carregado se existirem as imagens LPC, caso contrário usa fallback procedural)
       'monster_saci_perere': 'assets/sprites/saci_perere_universal.png',
       'monster_curupira': 'assets/sprites/curupira_universal.png',
-      'monster_mula_sem_cabeca': 'assets/sprites/mula_sem_cabeca_universal.png'
+      'monster_mula_sem_cabeca': 'assets/sprites/mula_sem_cabeca_universal.png',
+      'monster_capelobo': 'assets/sprites/capelobo_universal.png',
+      'monster_caipora': 'assets/sprites/caipora_universal.png',
+      'monster_quibungo': 'assets/sprites/quibungo_universal.png',
+      'monster_ipupiara': 'assets/sprites/ipupiara_universal.png',
+      'monster_teju_jagua': 'assets/sprites/teju_jagua_universal.png',
+      'monster_boto_sedutor': 'assets/sprites/boto_sedutor_universal.png',
+      'monster_mapinguari': 'assets/sprites/mapinguari_universal.png'
     };
 
     for (const key in assetsList) {
@@ -1566,7 +1572,7 @@ export class GameRenderer {
         const sw = 64;
         const sh = 64;
 
-        const size = monster.isBoss ? 72 : (monster.isMiniBoss ? 56 : 42);
+        const size = monster.isBoss ? 96 : (monster.isMiniBoss ? 72 : 56);
         this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
       } else {
         // --- Static 1024x1024 image ---
@@ -1575,7 +1581,7 @@ export class GameRenderer {
           const bounce = Math.abs(Math.sin(time * 0.012)) * 2;
           this.ctx.translate(0, -bounce);
         }
-        const size = monster.isBoss ? 64 : (monster.isMiniBoss ? 50 : 36);
+        const size = monster.isBoss ? 84 : (monster.isMiniBoss ? 64 : 48);
         this.ctx.drawImage(img, -size / 2, -size + 2, size, size);
       }
 
@@ -1586,8 +1592,8 @@ export class GameRenderer {
       this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
       this.ctx.textAlign = 'center';
       const nameOffset = isSpritesheet ? 
-        (monster.isBoss ? 54 : (monster.isMiniBoss ? 42 : 30)) : 
-        (monster.isBoss ? 48 : (monster.isMiniBoss ? 38 : 28));
+        (monster.isBoss ? 80 : (monster.isMiniBoss ? 60 : 48)) : 
+        (monster.isBoss ? 72 : (monster.isMiniBoss ? 54 : 42));
       this.ctx.fillText(monster.name, pos.x, pos.y - nameOffset);
 
       // Barra de HP
@@ -1596,8 +1602,8 @@ export class GameRenderer {
       const barH = 3;
       
       const barOffset = isSpritesheet ? 
-        (monster.isBoss ? 48 : (monster.isMiniBoss ? 36 : 24)) : 
-        (monster.isBoss ? 42 : (monster.isMiniBoss ? 32 : 22));
+        (monster.isBoss ? 70 : (monster.isMiniBoss ? 52 : 40)) : 
+        (monster.isBoss ? 62 : (monster.isMiniBoss ? 46 : 34));
       this.ctx.fillStyle = '#2c2e33';
       this.ctx.fillRect(pos.x - barW / 2, pos.y - barOffset, barW, barH);
       this.ctx.fillStyle = '#ff3d3d';
@@ -1953,8 +1959,8 @@ export class GameRenderer {
       const isSpritesheet = (img.naturalWidth === 832 || img.width === 832);
 
       if (isSpritesheet) {
-        // Escalar herói por 1.4x
-        this.ctx.scale(1.4, 1.4);
+        // Escalar herói por 1.8x
+        this.ctx.scale(1.8, 1.8);
 
         // --- LPC Spritesheet Cropping & Animation for Heroes ---
         let rowOffset = 10; // Walk South
@@ -2018,8 +2024,8 @@ export class GameRenderer {
         const size = 28; // Standard size inside scaled context
         this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
       } else {
-        // Escalar herói e equipamentos juntos por 1.4x
-        this.ctx.scale(1.4, 1.4);
+        // Escalar herói e equipamentos juntos por 1.8x
+        this.ctx.scale(1.8, 1.8);
 
         // Efeito de caminhada (bounce e inclinação leve)
         if (isWalking) {
@@ -2062,7 +2068,7 @@ export class GameRenderer {
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = '9px monospace';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(hero.name, hx, hy - 42);
+      this.ctx.fillText(hero.name, hx, hy - 54);
 
       // Barra de Vida
       const hpPct = Math.max(0, hero.hp / hero.maxHp);
@@ -2070,17 +2076,17 @@ export class GameRenderer {
       const barH = 3;
       
       this.ctx.fillStyle = '#2c2e33';
-      this.ctx.fillRect(hx - barW / 2, hy - 36, barW, barH);
+      this.ctx.fillRect(hx - barW / 2, hy - 48, barW, barH);
       this.ctx.fillStyle = hpPct > 0.45 ? '#3aff7d' : '#ffea3a';
       if (hpPct < 0.2) this.ctx.fillStyle = '#ff3d3d';
-      this.ctx.fillRect(hx - barW / 2, hy - 36, barW * hpPct, barH);
+      this.ctx.fillRect(hx - barW / 2, hy - 48, barW * hpPct, barH);
 
       // Auréola flutuante se Sacerdote
       if (hero.className === 'PRIEST') {
         this.ctx.strokeStyle = '#ffea3a';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
-        this.ctx.arc(hx, hy - 46, 2.5, 0, Math.PI * 2);
+        this.ctx.arc(hx, hy - 60, 2.5, 0, Math.PI * 2);
         this.ctx.stroke();
       }
     } else {
