@@ -409,10 +409,9 @@ export class GameRenderer {
     const metrics = this.getTownGridMetrics(town, width, height);
     const now = performance.now();
 
-    // Zona permitida para construção: margem de 1 tile nas bordas (evita árvores/caminhos do tapete)
-    // Mantida em sincronia com Town.isAreaFree() em src/core/town.js
-    const BUILD_COL_MIN = 1, BUILD_COL_MAX = town.grid.cols - 1;
-    const BUILD_ROW_MIN = 1, BUILD_ROW_MAX = town.grid.rows - 1;
+    // Zona de construção: grid completo (sem restrição de borda)
+    const BUILD_COL_MIN = 0, BUILD_COL_MAX = town.grid.cols;
+    const BUILD_ROW_MIN = 0, BUILD_ROW_MAX = town.grid.rows;
 
     // Calcular quais células estão ocupadas por edifícios construídos
     const occupiedCells = new Set();
@@ -965,14 +964,10 @@ export class GameRenderer {
     const bx = b.x;
     const by = b.y;
 
-    // Tamanhos baseados nas métricas do grid para evitar distorção
-    // Prefeitura (3x3 tiles) → maior; outros (2x2 tiles) → médio
     const metrics = this.getTownGridMetrics(town);
-    const tileRef = metrics.tileW; // Largura de referência do tile
-
-    const baseSize = b.key === 'townhall' ?
-      Math.max(140, tileRef * 1.6) :
-      Math.max(100, tileRef * 1.15);
+    const fp = town.getBuildingFootprint(b.key);
+    const isoFootprintW = (fp.w + fp.h) * metrics.tileW / 2;
+    const baseSize = isoFootprintW * 1.05;
 
     const wSize = baseSize;
     const hSize = baseSize;
@@ -984,11 +979,14 @@ export class GameRenderer {
 
     this.ctx.save();
 
-    // Se for preview, desenha o lote semi-transparente
     if (b.isPreview) {
       this.ctx.globalAlpha = 0.6;
     }
-    this.drawBuildingLot(bx, by, wSize, hSize, isBuilt ? level : 1);
+    // Lote só no fallback geométrico (sem imagem) — com imagem PNG o lot causa "sombra" indesejada
+    const hasImg = isBuilt && this.images[b.key]?.loaded;
+    if (!hasImg) {
+      this.drawBuildingLot(bx, by, wSize, hSize, isBuilt ? level : 1);
+    }
 
     const isFlipped = b.isPreview ? !!this.pendingPlacementFlipped : !!(town.getBuildingPlacement(b.key)?.flipped);
 
@@ -999,11 +997,9 @@ export class GameRenderer {
       if (img && img.loaded) {
         this.ctx.save();
         
-        // Variação de escala por nível (Nível 1: 0.88x, Nível 2: 1.0x, Nível 3: 1.14x)
-        const scaleMult = level === 1 ? 0.88 : (level === 2 ? 1.0 : 1.14);
-        // Tamanho calculado a partir do footprint real do lote isométrico
-        const fp = town.getBuildingFootprint(b.key);
-        const imgBase = Math.max(100, (fp.w + fp.h) * tileRef / 2);
+        // Variação de escala por nível (Nível 1: 1.0x, Nível 2: 1.12x, Nível 3: 1.26x)
+        const scaleMult = level === 1 ? 1.0 : (level === 2 ? 1.12 : 1.26);
+        const imgBase = isoFootprintW * 1.5;
         const dw = imgBase * scaleMult;
         const dh = imgBase * scaleMult;
         

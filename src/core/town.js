@@ -107,11 +107,6 @@ export class Town {
   }
 
   isAreaFree(col, row, footprint, ignoredBuilding = null) {
-    // Margem de 1 tile em cada borda — libera 99 células (grid 14x12 menos bordas)
-    if (col < 1 || row < 1 || (col + footprint.w) > (this.grid.cols - 1) || (row + footprint.h) > (this.grid.rows - 1)) {
-      return false;
-    }
-
     if (!this.isInsideGrid(col, row, footprint)) return false;
 
     const test = { col, row, w: footprint.w, h: footprint.h };
