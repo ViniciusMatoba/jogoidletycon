@@ -2541,7 +2541,24 @@ export class GameRenderer {
         const speed = type === 'arrow' ? 320 : (type === 'holy' ? 200 : 260);
         const dx = atk.toX - atk.fromX;
         const dy = atk.toY - atk.fromY;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (isNaN(dist) || dist <= 0) {
+          // Se for inválido, dá dano imediato sem projétil para não travar
+          const spawnFn = addFloater || this._addFloater;
+          if (spawnFn) {
+            spawnFn({
+              x: atk.toX || 480,
+              y: (atk.toY || 270) - 15,
+              text: `${atk.damage}`,
+              color: atk.color,
+              time: 0.9,
+              map: 'hunt'
+            });
+          }
+          return;
+        }
+
         this.projectiles.push({
           type,
           x: atk.fromX,
@@ -2557,7 +2574,6 @@ export class GameRenderer {
           traveled: 0,
           time: 0,
           addFloater: addFloater || this._addFloater,
-          // Rastro de partículas
           trail: [],
           life: 1.0
         });
@@ -2583,6 +2599,12 @@ export class GameRenderer {
       const rx = p.toX - p.x;
       const ry = p.toY - p.y;
       const rem = Math.sqrt(rx * rx + ry * ry);
+
+      // Limitar tempo de vida para o projétil nunca ficar preso
+      if (isNaN(p.x) || isNaN(p.y) || isNaN(p.traveled) || p.time > 5) {
+        p.life = 0;
+        return;
+      }
 
       if (rem < 10 || p.traveled >= p.dist) {
         // Impacto!
@@ -2612,9 +2634,319 @@ export class GameRenderer {
     // 4. Efeitos de postura (ranged: anel de carga)
     heroes.forEach(hero => {
       if (hero.state !== 'FIGHTING' || !hero.targetMonster) return;
+      if (hero.keepAwayRange <= 0) return; // só ranged
 
-      this.ctx.restore();
+      const cdPct = hero.cooldownTimer * hero.spd;
+      if (cdPct > 0.65 && cdPct <= 1.0) {
+        const chargePct = (1 - cdPct) / 0.35;
+        this._drawCastingAura(hero, chargePct);
+      }
     });
+
+    // 5. Desenhar projéteis
+    this.projectiles.forEach(p => this._drawProjectile(p));
+
+    // 6. Desenhar impactos
+    this._impacts.forEach(imp => this._drawImpact(imp));
+
+    // 7. Efeitos melee salvos
+    if (!this._meleeEffects) this._meleeEffects = [];
+    this._meleeEffects = this._meleeEffects.filter(e => e.life > 0);
+    this._meleeEffects.forEach(e => {
+      e.time += dt;
+      e.life -= dt * 3;
+      this._drawMeleeEffect(e);
+    });
+  }
+
+  _spawnMeleeEffect(atk, className) {
+    if (!this._meleeEffects) this._meleeEffects = [];
+    this._meleeEffects.push({
+      type: atk.type,
+      x: atk.toX,
+      y: atk.toY,
+      fromX: atk.fromX,
+      fromY: atk.fromY,
+      color: atk.color,
+      impactColor: atk.impactColor,
+      className,
+      time: 0,
+      life: 1.0
+    });
+  }
+
+  _drawMeleeEffect(e) {
+    const pos = this.toIso(e.x, e.y);
+    const fromPos = this.toIso(e.fromX, e.fromY);
+    const t = 1 - e.life;
+    const alpha = Math.max(0, e.life);
+
+    this.ctx.save();
+    this.ctx.globalAlpha = alpha;
+
+    if (e.className === 'WARRIOR') {
+      // Arco largo de golpe (espada pesada)
+      const angle = Math.atan2(pos.y - fromPos.y, pos.x - fromPos.x);
+      const radius = 22 + t * 10;
+      this.ctx.strokeStyle = e.color;
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, radius, angle - 0.8, angle + 0.8);
+      this.ctx.stroke();
+      // Faíscas metálicas
+      for (let i = 0; i < 5; i++) {
+        const sparkAngle = angle - 0.9 + i * 0.45;
+        const sparkLen = 8 + Math.random() * 10;
+        this.ctx.strokeStyle = '#e8f4ff';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pos.x, pos.y);
+        this.ctx.lineTo(
+          pos.x + Math.cos(sparkAngle) * sparkLen,
+          pos.y + Math.sin(sparkAngle) * sparkLen
+        );
+        this.ctx.stroke();
+      }
+    } else {
+      // Slash rápido do Mercenário (duas linhas cruzadas)
+      const angle = Math.atan2(pos.y - fromPos.y, pos.x - fromPos.x);
+      const r = 18 + t * 8;
+      for (let i = -1; i <= 1; i += 2) {
+        this.ctx.strokeStyle = i === -1 ? e.color : e.impactColor;
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(
+          pos.x - Math.cos(angle + i * 0.4) * r,
+          pos.y - Math.sin(angle + i * 0.4) * r
+        );
+        this.ctx.lineTo(
+          pos.x + Math.cos(angle + i * 0.4) * r,
+          pos.y + Math.sin(angle + i * 0.4) * r
+        );
+        this.ctx.stroke();
+      }
+      // Gotinhas de sangue/dano
+      for (let j = 0; j < 4; j++) {
+        const da = (Math.random() - 0.5) * Math.PI;
+        const dr = 6 + Math.random() * 12;
+        this.ctx.fillStyle = e.color;
+        this.ctx.beginPath();
+        this.ctx.arc(
+          pos.x + Math.cos(angle + da) * dr,
+          pos.y + Math.sin(angle + da) * dr,
+          1.5, 0, Math.PI * 2
+        );
+        this.ctx.fill();
+      }
+    }
+
+    this.ctx.restore();
+  }
+
+  _drawCastingAura(hero, pct) {
+    const pos = this.toIso(hero.x, hero.y);
+    const color = hero.classConfig.projectileColor || '#ffffff';
+    const radius = 14 + pct * 8;
+
+    this.ctx.save();
+    this.ctx.globalAlpha = pct * 0.6;
+    this.ctx.strokeStyle = color;
+    this.ctx.lineWidth = 2;
+    this.ctx.shadowColor = color;
+    this.ctx.shadowBlur = 8;
+    this.ctx.beginPath();
+    this.ctx.arc(pos.x, pos.y - 20, radius, 0, Math.PI * 2);
+    this.ctx.stroke();
+    this.ctx.restore();
+  }
+
+  _drawProjectile(p) {
+    const pos = this.toIso(p.x, p.y);
+    this.ctx.save();
+
+    if (p.type === 'arrow') {
+      // Flecha: linha com ponta triangular
+      const dx = p.vx;
+      const dy = p.vy;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = dx / len;
+      const ny = dy / len;
+      const arrowLen = 14;
+
+      // Rastro suave
+      p.trail.forEach((t, i) => {
+        const tp = this.toIso(t.x, t.y);
+        const a = Math.max(0, (1 - t.age * 4) * 0.4);
+        this.ctx.globalAlpha = a;
+        this.ctx.fillStyle = p.color;
+        this.ctx.beginPath();
+        this.ctx.arc(tp.x, tp.y, 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
+      });
+
+      // Corpo da flecha
+      this.ctx.globalAlpha = 0.95;
+      this.ctx.strokeStyle = '#8b6020';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos.x - nx * arrowLen, pos.y - ny * arrowLen);
+      this.ctx.lineTo(pos.x, pos.y);
+      this.ctx.stroke();
+
+      // Ponta (triângulo)
+      this.ctx.fillStyle = p.color;
+      this.ctx.beginPath();
+      const tipX = pos.x + nx * 4;
+      const tipY = pos.y + ny * 4;
+      const perpX = -ny * 3;
+      const perpY = nx * 3;
+      this.ctx.moveTo(tipX, tipY);
+      this.ctx.lineTo(tipX - nx * 7 + perpX, tipY - ny * 7 + perpY);
+      this.ctx.lineTo(tipX - nx * 7 - perpX, tipY - ny * 7 - perpY);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+    } else if (p.type === 'fireball') {
+      // Bola de fogo: esfera com rastro
+      p.trail.forEach((t, i) => {
+        const tp = this.toIso(t.x, t.y);
+        const a = Math.max(0, (1 - t.age * 3) * 0.5);
+        const r = 4 * (1 - t.age * 2);
+        if (r > 0) {
+          this.ctx.globalAlpha = a;
+          this.ctx.fillStyle = i % 2 === 0 ? '#ff4400' : '#ffaa00';
+          this.ctx.beginPath();
+          this.ctx.arc(tp.x, tp.y, r, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+      });
+      // Núcleo
+      this.ctx.globalAlpha = 1;
+      const grad = this.ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 7);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, '#ffee00');
+      grad.addColorStop(1, '#ff2200');
+      this.ctx.fillStyle = grad;
+      this.ctx.shadowColor = '#ff6600';
+      this.ctx.shadowBlur = 12;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (p.type === 'holy') {
+      // Raio de luz sagrado: estrela/cross pulsante
+      const pulse = 0.8 + 0.2 * Math.sin(p.time * 15);
+      const r = 6 * pulse;
+
+      // Rastro de estrelinhas
+      p.trail.forEach((t, i) => {
+        if (i % 2 !== 0) return;
+        const tp = this.toIso(t.x, t.y);
+        const a = Math.max(0, (1 - t.age * 3) * 0.6);
+        this.ctx.globalAlpha = a;
+        this.ctx.fillStyle = p.color;
+        this.ctx.beginPath();
+        this.ctx.arc(tp.x, tp.y, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+      });
+
+      this.ctx.globalAlpha = 1;
+      this.ctx.fillStyle = p.color;
+      this.ctx.shadowColor = p.color;
+      this.ctx.shadowBlur = 14;
+
+      // Cruz de luz
+      const arms = 4;
+      for (let i = 0; i < arms; i++) {
+        const angle = (i / arms) * Math.PI * 2 + p.time * 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pos.x, pos.y);
+        this.ctx.lineTo(
+          pos.x + Math.cos(angle) * r * 1.8,
+          pos.y + Math.sin(angle) * r * 1.8
+        );
+        this.ctx.lineWidth = 2.5;
+        this.ctx.strokeStyle = '#fffaaa';
+        this.ctx.stroke();
+      }
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+
+    this.ctx.restore();
+  }
+
+  _spawnImpact(p) {
+    if (!this._impacts) this._impacts = [];
+    this._impacts.push({
+      type: p.type,
+      x: p.toX,
+      y: p.toY,
+      color: p.color,
+      impactColor: p.impactColor,
+      time: 0,
+      life: 1.0
+    });
+  }
+
+  _drawImpact(imp) {
+    const pos = this.toIso(imp.x, imp.y);
+    const t = imp.time;
+    const alpha = Math.max(0, imp.life);
+
+    this.ctx.save();
+    this.ctx.globalAlpha = alpha;
+
+    if (imp.type === 'arrow') {
+      // Impacto de flecha: spike amarelo
+      const r = 8 + t * 12;
+      this.ctx.strokeStyle = imp.color;
+      this.ctx.lineWidth = 2;
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pos.x, pos.y);
+        this.ctx.lineTo(
+          pos.x + Math.cos(angle) * r,
+          pos.y + Math.sin(angle) * r
+        );
+        this.ctx.stroke();
+      }
+    } else if (imp.type === 'fireball') {
+      // Explosão de fogo
+      const r = 10 + t * 20;
+      this.ctx.fillStyle = imp.impactColor;
+      this.ctx.shadowColor = '#ff4400';
+      this.ctx.shadowBlur = 20;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, r * 0.6, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.strokeStyle = '#ff8800';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+      this.ctx.stroke();
+    } else if (imp.type === 'holy') {
+      // Burst de luz sagrada
+      const r = 8 + t * 18;
+      this.ctx.strokeStyle = imp.color;
+      this.ctx.shadowColor = imp.color;
+      this.ctx.shadowBlur = 18;
+      this.ctx.lineWidth = 2.5;
+      // Cruz
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos.x - r, pos.y); this.ctx.lineTo(pos.x + r, pos.y);
+      this.ctx.moveTo(pos.x, pos.y - r); this.ctx.lineTo(pos.x, pos.y + r);
+      this.ctx.stroke();
+      this.ctx.globalAlpha = alpha * 0.4;
+      this.ctx.fillStyle = imp.color;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, r * 0.5, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+
+    this.ctx.restore();
   }
 
   // --- FILTRO DIA/NOITE ---
