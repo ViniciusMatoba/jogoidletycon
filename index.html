@@ -52,9 +52,14 @@
           <button id="speed-2x" class="speed-btn">2x</button>
           <button id="speed-3x" class="speed-btn">4x</button>
         </div>
-        <div class="building-rotation-control" id="rotation-control" style="display: none; align-items: center; gap: 6px;">
-          <button id="rotate-building-btn" class="action-btn-retro" style="font-size: 10px; padding: 2px 8px; margin: 0; box-shadow: 0 1px #000;">🔄 Rotacionar Obra (R)</button>
+        <!-- HUD de posicionamento — visível apenas ao posicionar/mover construções -->
+        <div id="placement-hud" style="display:none; align-items:center; gap:6px; flex-wrap:wrap; background:rgba(0,0,0,0.55); border:1px solid rgba(255,213,79,0.5); border-radius:6px; padding:4px 8px;">
+          <span id="placement-hud-label" style="color:#ffd54f; font-size:11px; font-weight:bold; white-space:nowrap;">Posicionar: Construção</span>
+          <button id="rotate-building-btn" class="action-btn-retro" style="font-size:11px; padding:4px 10px; margin:0; min-height:32px;">🔄 Girar</button>
+          <button id="cancel-placement-btn" class="action-btn-retro" style="font-size:11px; padding:4px 10px; margin:0; min-height:32px; background:#c43a32; color:#fff; border-color:#8b2020;">✕ Cancelar</button>
         </div>
+        <!-- Controle de rotação legado (mantido para compatibilidade, oculto) -->
+        <div id="rotation-control" style="display:none;"></div>
         <div class="monster-level-indicator" id="monster-level-btn" title="Selecione o nível dos monstros" style="display: none; margin-left: auto; margin-right: 8px;">
           <span class="biome-quick-icon">😈</span>
           <div class="biome-quick-info">

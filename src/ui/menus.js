@@ -14,6 +14,46 @@ let wasCraftModalActive = false;
 
 let activeRecipeFilter = 'all';
 
+function activatePlacementMode(bKey, game) {
+  pendingBuildingPlacement = bKey;
+  const currentPlacement = game.town.getBuildingPlacement(bKey);
+  pendingPlacementFlipped = currentPlacement ? !!currentPlacement.flipped : false;
+  if (window.gameRenderer) {
+    window.gameRenderer.activeView = 'town';
+    window.gameRenderer.pendingPlacement = bKey;
+    window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
+    window.gameRenderer.hoveredTile = null;
+  }
+  const hud = document.getElementById('placement-hud');
+  if (hud) {
+    const label = BUILDINGS_CONFIG[bKey]?.name || bKey;
+    const hudLabel = hud.querySelector('#placement-hud-label');
+    if (hudLabel) hudLabel.textContent = `Posicionar: ${label}`;
+    hud.style.display = 'flex';
+  }
+  // Hide old rotation-only control (replaced by hud)
+  const rotationControl = document.getElementById('rotation-control');
+  if (rotationControl) rotationControl.style.display = 'none';
+}
+
+function cancelPlacementMode(game) {
+  pendingBuildingPlacement = null;
+  pendingPlacementFlipped = false;
+  if (window.gameRenderer) {
+    window.gameRenderer.pendingPlacement = null;
+    window.gameRenderer.hoveredTile = null;
+    window.gameRenderer.pendingPlacementFlipped = false;
+  }
+  const hud = document.getElementById('placement-hud');
+  if (hud) hud.style.display = 'none';
+  if (game) game.addFloater({
+    x: (window.gameRenderer?.canvas?.width || 960) / 2,
+    y: (window.gameRenderer?.canvas?.height || 540) / 2 - 60,
+    text: 'Cancelado',
+    color: '#ff5252'
+  });
+}
+
 const BUILDING_ACTION_LABELS = {
   townhall: { name: 'Centro da Cidade', icon: '🏛️', modalId: 'town-modal' },
   hotel: { name: 'Hotel', icon: '🏨', modalId: 'craft-modal' },
@@ -366,22 +406,10 @@ export function setupUI(game) {
   if (moveBuildingBtn) {
     moveBuildingBtn.addEventListener('click', () => {
       if (!activeBuildingKey || !window.gameRenderer) return;
-
-      pendingBuildingPlacement = activeBuildingKey;
-      const currentPlacement = game.town.getBuildingPlacement(activeBuildingKey);
-      pendingPlacementFlipped = currentPlacement ? !!currentPlacement.flipped : false;
-
-      window.gameRenderer.activeView = 'town';
-      window.gameRenderer.pendingPlacement = activeBuildingKey;
-      window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
-      window.gameRenderer.hoveredTile = null;
-
-      const rotationControl = document.getElementById('rotation-control');
-      if (rotationControl) rotationControl.style.display = 'flex';
-
-      const actionsModal = document.getElementById('building-actions-modal');
-      if (actionsModal) actionsModal.classList.remove('active');
+      const bKey = activeBuildingKey;
       activeBuildingKey = null;
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+      activatePlacementMode(bKey, game);
     });
   }
 
@@ -390,50 +418,28 @@ export function setupUI(game) {
     if (pendingBuildingPlacement) {
       if (e.key === 'r' || e.key === 'R') {
         pendingPlacementFlipped = !pendingPlacementFlipped;
-        if (window.gameRenderer) {
-          window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
-        }
-        game.addFloater({
-          x: window.gameRenderer.canvas.width / 2,
-          y: window.gameRenderer.canvas.height / 2 - 50,
-          text: 'Rotacionado!',
-          color: '#ffd54f'
-        });
+        if (window.gameRenderer) window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
+        game.addFloater({ x: window.gameRenderer.canvas.width / 2, y: window.gameRenderer.canvas.height / 2 - 50, text: 'Rotacionado!', color: '#ffd54f' });
       } else if (e.key === 'Escape') {
-        pendingBuildingPlacement = null;
-        if (window.gameRenderer) {
-          window.gameRenderer.pendingPlacement = null;
-          window.gameRenderer.hoveredTile = null;
-          window.gameRenderer.pendingPlacementFlipped = false;
-        }
-        const rotationControl = document.getElementById('rotation-control');
-        if (rotationControl) rotationControl.style.display = 'none';
-        game.addFloater({
-          x: window.gameRenderer.canvas.width / 2,
-          y: window.gameRenderer.canvas.height / 2 - 50,
-          text: 'Cancelado',
-          color: '#ff5252'
-        });
+        cancelPlacementMode(game);
       }
     }
   });
 
+  // Botões do HUD de posicionamento (mobile-friendly)
   const rotateBtn = document.getElementById('rotate-building-btn');
   if (rotateBtn) {
     rotateBtn.addEventListener('click', () => {
-      if (pendingBuildingPlacement) {
-        pendingPlacementFlipped = !pendingPlacementFlipped;
-        if (window.gameRenderer) {
-          window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
-        }
-        game.addFloater({
-          x: window.gameRenderer.canvas.width / 2,
-          y: window.gameRenderer.canvas.height / 2 - 50,
-          text: 'Rotacionado!',
-          color: '#ffd54f'
-        });
-      }
+      if (!pendingBuildingPlacement) return;
+      pendingPlacementFlipped = !pendingPlacementFlipped;
+      if (window.gameRenderer) window.gameRenderer.pendingPlacementFlipped = pendingPlacementFlipped;
+      game.addFloater({ x: window.gameRenderer.canvas.width / 2, y: window.gameRenderer.canvas.height / 2 - 50, text: 'Rotacionado!', color: '#ffd54f' });
     });
+  }
+
+  const cancelPlacementBtn = document.getElementById('cancel-placement-btn');
+  if (cancelPlacementBtn) {
+    cancelPlacementBtn.addEventListener('click', () => cancelPlacementMode(game));
   }
 
   // 8. Cliques e Movimentação no Canvas (Evil Hunter Tycoon style)
@@ -602,19 +608,18 @@ export function setupUI(game) {
 
         const result = game.town.buildAt(pendingBuildingPlacement, tile.col, tile.row, pendingPlacementFlipped);
         if (result.success) {
-          const placed = pendingBuildingPlacement;
           pendingBuildingPlacement = null;
           pendingPlacementFlipped = false;
           window.gameRenderer.pendingPlacement = null;
           window.gameRenderer.hoveredTile = null;
           window.gameRenderer.pendingPlacementFlipped = false;
-          const rotationControl = document.getElementById('rotation-control');
-          if (rotationControl) rotationControl.style.display = 'none';
-          game.addFloater({ x, y, text: result.moved ? 'Movido!' : 'Construido!', color: '#3aff7d' });
+          const hud = document.getElementById('placement-hud');
+          if (hud) hud.style.display = 'none';
+          game.addFloater({ x, y, text: result.moved ? 'Movido!' : 'Construído!', color: '#3aff7d' });
           renderBuildings(game);
           game.saveGame();
         } else {
-          alert(result.reason || 'Nao foi possivel construir aqui.');
+          game.addFloater({ x, y, text: result.reason || 'Sem espaço!', color: '#ff5252' });
         }
         return;
       }
@@ -1029,6 +1034,26 @@ export function renderBuildings(game) {
 
   upgradeContainer.innerHTML = '';
 
+  // Banner de sequência obrigatória (só aparece enquanto não concluída)
+  const hasTownhall = game.town.isBuilt('townhall');
+  const hasMarket = game.town.isBuilt('market');
+  if (!hasTownhall || !hasMarket) {
+    const steps = [
+      { done: hasTownhall, icon: '🏛️', label: 'Centro da Cidade' },
+      { done: hasMarket,   icon: '⚖️', label: 'Mercado da Vila'  }
+    ];
+    const stepsHtml = steps.map((s, i) => `
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 0;">
+        <span style="font-size:16px;opacity:${s.done ? 0.4 : 1};">${s.done ? '✅' : s.icon}</span>
+        <span style="color:${s.done ? '#4caf50' : '#ffd54f'};text-decoration:${s.done ? 'line-through' : 'none'};">${i + 1}. ${s.label}</span>
+        ${s.done ? '' : '<span style="background:#ffd54f;color:#000;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:bold;">PRÓXIMO</span>'}
+      </div>`).join('');
+    const bannerEl = document.createElement('div');
+    bannerEl.style.cssText = 'background:rgba(0,0,0,0.3);border:1px solid rgba(255,213,79,0.35);border-radius:6px;padding:10px 12px;margin-bottom:10px;';
+    bannerEl.innerHTML = `<p style="color:#ffd54f;font-size:10px;font-weight:bold;margin:0 0 6px 0;">⚠️ SEQUÊNCIA OBRIGATÓRIA DE CONSTRUÇÃO</p>${stepsHtml}`;
+    upgradeContainer.appendChild(bannerEl);
+  }
+
   for (const bKey in BUILDINGS_CONFIG) {
     const config = game.town.getBuildingConfig(bKey);
     const itemEl = document.createElement('div');
@@ -1053,9 +1078,11 @@ export function renderBuildings(game) {
           break;
         }
       }
-      // Check townhall dependency
+      // Check sequence dependency: townhall → market → others
       if (bKey !== 'townhall') {
         if (game.town.buildings.townhall <= 0) {
+          canUpgrade = false;
+        } else if (bKey !== 'market' && game.town.buildings.market <= 0) {
           canUpgrade = false;
         } else if (game.town.buildings[bKey] >= game.town.buildings.townhall) {
           canUpgrade = false;
@@ -1077,12 +1104,21 @@ export function renderBuildings(game) {
       costHtml = `<div class="building-cost">Custo: ${costs.join(', ')}</div>`;
     }
 
+    // Mensagem de bloqueio por sequência (para cards não construídos)
+    const isSeqBlocked = !isBuilt && bKey !== 'townhall' && (
+      !game.town.isBuilt('townhall') || (bKey !== 'market' && !game.town.isBuilt('market'))
+    );
+    const seqBlockMsg = isSeqBlocked
+      ? `<p style="font-size:10px;color:#ff9870;margin:4px 0 0 0;">🔒 ${!game.town.isBuilt('townhall') ? 'Requer: Centro da Cidade' : 'Requer: Mercado da Vila'}</p>`
+      : '';
+
     itemEl.innerHTML = `
       <div class="building-info-header">
         <span class="building-icon">${config.icon}</span>
         <div class="building-title-desc">
-          <h4>${config.name} ${isBuilt ? `(Nív. ${config.level})` : '<span class="locked-text">(Bloqueado)</span>'}</h4>
+          <h4>${config.name} ${isBuilt ? `(Nív. ${config.level})` : '<span class="locked-text">(Não construído)</span>'}</h4>
           <p class="building-desc-text">${config.description}</p>
+          ${seqBlockMsg}
         </div>
       </div>
       <div class="building-perks">
@@ -1092,7 +1128,7 @@ export function renderBuildings(game) {
       </div>
       ${costHtml}
       <button class="upgrade-btn action-btn-retro ${!canUpgrade ? 'disabled' : ''}" data-building="${bKey}" ${!canUpgrade ? 'disabled' : ''}>
-        ${isBuilt ? (isMax ? 'Nível Máximo' : 'Melhorar') : 'Construir'}
+        ${isBuilt ? (isMax ? 'Nível Máximo' : 'Melhorar') : (isSeqBlocked ? '🔒 Bloqueado' : 'Construir')}
       </button>
     `;
 
@@ -1100,27 +1136,18 @@ export function renderBuildings(game) {
     if (button && canUpgrade) {
       button.addEventListener('click', () => {
         if (!isBuilt) {
-          pendingBuildingPlacement = bKey;
-          pendingPlacementFlipped = false;
-          if (window.gameRenderer) {
-            window.gameRenderer.activeView = 'town';
-            window.gameRenderer.pendingPlacement = bKey;
-            window.gameRenderer.pendingPlacementFlipped = false;
-          }
-          const rotationControl = document.getElementById('rotation-control');
-          if (rotationControl) rotationControl.style.display = 'flex';
+          activatePlacementMode(bKey, game);
           document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
-          alert('Escolha um espaco livre no mapa para posicionar a construcao.');
           return;
         }
 
         const result = game.town.upgradeBuilding(bKey);
         if (result.success) {
-          game.addFloater({ x: 200, y: 150, text: 'Evoluido!', color: '#3aff7d' });
+          game.addFloater({ x: 200, y: 150, text: 'Evoluído!', color: '#3aff7d' });
           renderBuildings(game);
           game.saveGame();
         } else {
-          alert(result.reason || 'Erro desconhecido ao melhorar.');
+          game.addFloater({ x: 200, y: 150, text: result.reason || 'Erro ao melhorar!', color: '#ff5252' });
         }
       });
     }
@@ -1959,8 +1986,25 @@ function openBuildTileModal(col, row, game) {
     `;
   }
 
-  // Lista de edifícios que podem ser construídos
-  const buildables = ['townhall', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market'];
+  const hasMarket = game.town.isBuilt('market');
+
+  // Sequência obrigatória: 1º Centro da Cidade → 2º Mercado → demais
+  // Exibir banner de próximo passo obrigatório
+  if (hasTownhall && !hasMarket) {
+    optionsContainer.innerHTML += `
+      <div style="background:rgba(0,80,40,0.25);border:1px solid rgba(60,220,120,0.4);border-radius:5px;padding:10px;margin-bottom:10px;text-align:center;">
+        <div style="font-size:18px;margin-bottom:4px;">⚖️</div>
+        <strong style="color:#69ffb0;font-size:11px;">Construa o Mercado da Vila agora!</strong>
+        <p style="font-size:9px;color:#b0bec5;margin:4px 0 0 0;line-height:1.4;">
+          O Mercado é o segundo edifício obrigatório.<br>
+          Depois de construído, todos os outros prédios serão liberados.
+        </p>
+      </div>
+    `;
+  }
+
+  // Lista de edifícios que podem ser construídos — ordem que reflete a sequência
+  const buildables = ['townhall', 'market', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge'];
 
   buildables.forEach(bKey => {
     const config = BUILDINGS_CONFIG[bKey];
@@ -1969,8 +2013,10 @@ function openBuildTileModal(col, row, game) {
     // Se já estiver construído, não mostramos na lista
     if (isBuilt) return;
 
-    // Verificar pré-requisito: Mercado requer Centro da Cidade
-    const isMarketBlocked = bKey === 'market' && !hasTownhall;
+    // Pré-requisitos por sequência
+    const isBlockedNoTownhall = bKey !== 'townhall' && !hasTownhall;
+    const isBlockedNoMarket = bKey !== 'townhall' && bKey !== 'market' && !hasMarket;
+    const isBlocked = isBlockedNoTownhall || isBlockedNoMarket;
 
     // Verificar se o jogador tem recursos suficientes
     let canAfford = true;
@@ -1988,25 +2034,31 @@ function openBuildTileModal(col, row, game) {
       }
     }
 
-    const canBuild = canAfford && !isMarketBlocked;
+    const canBuild = canAfford && !isBlocked;
     const costText = costTextList.join(', ');
     const optionEl = document.createElement('div');
     optionEl.className = 'build-option-item';
-    optionEl.style = `background: rgba(0,0,0,0.25); border: 1px solid ${isMarketBlocked ? 'rgba(200,100,50,0.4)' : 'rgba(255,255,255,0.1)'}; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;`;
+    optionEl.style = `background: rgba(0,0,0,0.25); border: 1px solid ${isBlocked ? 'rgba(200,100,50,0.4)' : 'rgba(255,255,255,0.1)'}; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;`;
 
     const icons = { townhall: '🏛️', hotel: '🏨', restaurant: '🍲', hospital: '🏥', tavern: '🍺', forge: '⚒️', market: '⚖️' };
     const icon = icons[bKey] || '🏠';
 
-    const prereqNote = isMarketBlocked
-      ? `<p style="font-size:9px;margin:2px 0 0 0;color:#ff9870;">🔒 Requer: Centro da Cidade primeiro</p>`
+    const blockedReason = isBlockedNoTownhall
+      ? '🔒 Requer: Centro da Cidade primeiro'
+      : isBlockedNoMarket
+        ? '🔒 Requer: Mercado da Vila primeiro'
+        : null;
+
+    const prereqNote = blockedReason
+      ? `<p style="font-size:9px;margin:2px 0 0 0;color:#ff9870;">${blockedReason}</p>`
       : `<p style="font-size:9px;margin:2px 0 0 0;color:#b0bec5;line-height:1.3;">Custo: ${costText}</p>`;
 
     optionEl.innerHTML = `
       <div style="text-align: left; flex: 1;">
-        <strong style="color: ${isMarketBlocked ? '#a08c80' : '#ffd54f'}; font-size: 11px;">${isMarketBlocked ? '🔒' : icon} ${config.name}</strong>
+        <strong style="color: ${isBlocked ? '#a08c80' : '#ffd54f'}; font-size: 11px;">${isBlocked ? '🔒' : icon} ${config.name}</strong>
         ${prereqNote}
       </div>
-      <button class="action-btn-retro ${canBuild ? '' : 'disabled'}" style="padding: 4px 8px; font-size: 10px;" ${canBuild ? '' : 'disabled'}>${isMarketBlocked ? '🔒 Bloqueado' : 'Construir'}</button>
+      <button class="action-btn-retro ${canBuild ? '' : 'disabled'}" style="padding: 4px 8px; font-size: 10px;" ${canBuild ? '' : 'disabled'}>${isBlocked ? '🔒 Bloqueado' : 'Construir'}</button>
     `;
 
     const buildBtn = optionEl.querySelector('button');
@@ -2015,16 +2067,11 @@ function openBuildTileModal(col, row, game) {
         const result = game.town.buildAt(bKey, col, row);
         if (result.success) {
           modal.classList.remove('active');
-          game.addFloater({
-            x: window.gameRenderer.canvas.width / 2,
-            y: window.gameRenderer.canvas.height / 2 - 50,
-            text: 'Construído!',
-            color: '#3aff7d'
-          });
+          game.addFloater({ x: window.gameRenderer.canvas.width / 2, y: window.gameRenderer.canvas.height / 2 - 50, text: 'Construído!', color: '#3aff7d' });
           game.saveGame();
           renderBuildings(game);
         } else {
-          alert(result.reason || 'Erro ao construir.');
+          game.addFloater({ x: window.gameRenderer.canvas.width / 2, y: window.gameRenderer.canvas.height / 2 - 50, text: result.reason || 'Erro ao construir!', color: '#ff5252' });
         }
       });
     }

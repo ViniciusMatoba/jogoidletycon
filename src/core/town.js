@@ -173,6 +173,10 @@ export class Town {
       return { success: false, reason: 'Construa o Centro da Cidade primeiro!' };
     }
 
+    if (buildingType !== 'townhall' && buildingType !== 'market' && this.buildings.market <= 0) {
+      return { success: false, reason: 'Construa o Mercado da Vila antes de expandir outros edifícios!' };
+    }
+
     if (buildingType !== 'townhall' && this.buildings[buildingType] >= this.buildings.townhall) {
       return { success: false, reason: 'Melhore a Prefeitura antes para subir este predio!' };
     }
