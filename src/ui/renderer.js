@@ -54,6 +54,8 @@ export class GameRenderer {
     this.hoveredTile = null;
     this.cameraX = 0;
     this.cameraY = 0;
+    this.maxCameraX = 160;
+    this.maxCameraY = 90;
     this.isDragging = false;
     this.hasDragged = false;
     this.dragStartX = 0;
@@ -360,10 +362,13 @@ export class GameRenderer {
   drawTownGridTiles(town, width, height) {
     const metrics = this.getTownGridMetrics(town, width, height);
 
-    for (let row = 0; row < town.grid.rows; row++) {
-      for (let col = 0; col < town.grid.cols; col++) {
-        const checker = (col + row) % 2 === 0;
-        this.drawIsoTile(col, row, metrics, checker ? '#365f31' : '#31582e');
+    // Apenas desenha o quadriculado verde se estiver posicionando um prédio (modo de edição)
+    if (this.pendingPlacement) {
+      for (let row = 0; row < town.grid.rows; row++) {
+        for (let col = 0; col < town.grid.cols; col++) {
+          const checker = (col + row) % 2 === 0;
+          this.drawIsoTile(col, row, metrics, checker ? 'rgba(54, 95, 49, 0.35)' : 'rgba(49, 88, 46, 0.35)', 'rgba(24, 34, 28, 0.15)');
+        }
       }
     }
 
@@ -449,8 +454,16 @@ export class GameRenderer {
     this.ctx.save();
     this.ctx.translate(-this.cameraX, -this.cameraY);
 
-    // Se for Cidade, desenha as tiles sob translação
+    // Se for Cidade, desenha o background HD e as tiles sob translação
     if (this.activeView === 'town') {
+      const bg = this.images['bg_town'];
+      if (bg && bg.loaded) {
+        const bgW = 1280;
+        const bgH = 720;
+        const bx = (width - bgW) / 2;
+        const by = (height - bgH) / 2;
+        this.ctx.drawImage(bg, bx, by, bgW, bgH);
+      }
       this.drawTownGridTiles(game.town, width, height);
     }
 

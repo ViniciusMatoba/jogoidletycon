@@ -316,8 +316,10 @@ export function setupUI(game) {
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
           window.gameRenderer.hasDragged = true;
         }
-        window.gameRenderer.cameraX = Math.max(-300, Math.min(300, startCamX - dx * scaleX));
-        window.gameRenderer.cameraY = Math.max(-200, Math.min(200, startCamY - dy * scaleY));
+        const maxCamX = window.gameRenderer.maxCameraX ?? 300;
+        const maxCamY = window.gameRenderer.maxCameraY ?? 200;
+        window.gameRenderer.cameraX = Math.max(-maxCamX, Math.min(maxCamX, startCamX - dx * scaleX));
+        window.gameRenderer.cameraY = Math.max(-maxCamY, Math.min(maxCamY, startCamY - dy * scaleY));
       }
 
       if (pendingBuildingPlacement) {
@@ -365,8 +367,10 @@ export function setupUI(game) {
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
           window.gameRenderer.hasDragged = true;
         }
-        window.gameRenderer.cameraX = Math.max(-300, Math.min(300, startCamX - dx * scaleX));
-        window.gameRenderer.cameraY = Math.max(-200, Math.min(200, startCamY - dy * scaleY));
+        const maxCamX = window.gameRenderer.maxCameraX ?? 300;
+        const maxCamY = window.gameRenderer.maxCameraY ?? 200;
+        window.gameRenderer.cameraX = Math.max(-maxCamX, Math.min(maxCamX, startCamX - dx * scaleX));
+        window.gameRenderer.cameraY = Math.max(-maxCamY, Math.min(maxCamY, startCamY - dy * scaleY));
       }
 
       if (pendingBuildingPlacement) {
