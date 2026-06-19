@@ -209,11 +209,25 @@ export class GameRenderer {
       'hospital': 'assets/buildings/hospital.png',
       'tavern': 'assets/buildings/tavern.png',
       'forge': 'assets/buildings/forge.png',      // HerÃ³is
-      'hero_warrior': 'assets/sprites/hero_warrior.png',
-      'hero_mercenary': 'assets/sprites/hero_mercenary.png',
-      'hero_mage': 'assets/sprites/hero_mage.png',
-      'hero_priest': 'assets/sprites/hero_priest.png',
-      'hero_archer': 'assets/sprites/hero_archer.png',
+      'hero_warrior_walk': 'assets/sprites/guerreiro_walk.png',
+      'hero_warrior_slash': 'assets/sprites/guerreiro_slash.png',
+      'hero_warrior_thrust': 'assets/sprites/guerreiro_thrust.png',
+      'hero_warrior_shoot': 'assets/sprites/guerreiro_shoot.png',
+      'hero_warrior_cast': 'assets/sprites/guerreiro_cast.png',
+      'hero_warrior_hurt': 'assets/sprites/guerreiro_hurt.png',
+      'hero_warrior_idle': 'assets/sprites/guerreiro_idle.png',
+      'hero_warrior_islash': 'assets/sprites/guerreiro_islash.png',
+      'hero_mercenary': 'assets/sprites/mercenario_universal.png',
+      'hero_mage': 'assets/sprites/mago_universal.png',
+      'hero_priest_walk': 'assets/sprites/sacer_walk.png',
+      'hero_priest_slash': 'assets/sprites/sacer_slash.png',
+      'hero_priest_thrust': 'assets/sprites/sacer_thrust.png',
+      'hero_priest_shoot': 'assets/sprites/sacer_shoot.png',
+      'hero_priest_cast': 'assets/sprites/sacer_cast.png',
+      'hero_priest_hurt': 'assets/sprites/sacer_hurt.png',
+      'hero_priest_idle': 'assets/sprites/sacer_idle.png',
+      'hero_priest_islash': 'assets/sprites/sacer_islash.png',
+      'hero_archer': 'assets/sprites/arqueira_universal.png',
       // Monstros
       'monster_gravida_taubate': 'assets/sprites/Gravida Taubate_universal.png',
       'monster_home_do_saco': 'assets/sprites/Home do Saco_universal.png',
@@ -1937,10 +1951,29 @@ export class GameRenderer {
     else if (hero.className === 'ARCHER') imgKey = 'hero_archer';
 
     let img = this.images[imgKey];
+    let isSplit = false;
+    const action = (hero.state === 'FIGHTING') ? 'slash' : 'walk';
+
     if (!img || !img.loaded) {
-      if (hero.className === 'MERCENARY') imgKey = 'hero_warrior';
-      else if (hero.className === 'PRIEST') imgKey = 'hero_mage';
-      img = this.images[imgKey];
+      const splitKey = `${imgKey}_${action}`;
+      if (this.images[splitKey] && this.images[splitKey].loaded) {
+        img = this.images[splitKey];
+        isSplit = true;
+      } else {
+        // Fallbacks para classes alternativas
+        if (hero.className === 'MERCENARY') imgKey = 'hero_warrior';
+        else if (hero.className === 'PRIEST') imgKey = 'hero_mage';
+        
+        // Verifica se a classe do fallback também é split
+        img = this.images[imgKey];
+        if (!img || !img.loaded) {
+          const fbSplitKey = `${imgKey}_${action}`;
+          if (this.images[fbSplitKey] && this.images[fbSplitKey].loaded) {
+            img = this.images[fbSplitKey];
+            isSplit = true;
+          }
+        }
+      }
     }
 
     if (img && img.loaded) {
@@ -1956,7 +1989,7 @@ export class GameRenderer {
       // Transladar para o ponto de base dos pés no chão
       this.ctx.translate(hx, hy);
 
-      const isSpritesheet = (img.naturalWidth === 832 || img.width === 832);
+      const isSpritesheet = (img.naturalWidth === 832 || img.width === 832 || isSplit);
 
       if (isSpritesheet) {
         // Escalar herói por 1.8x
@@ -1994,16 +2027,30 @@ export class GameRenderer {
 
         if (isFighting) {
           colCount = 6; // Slash has 6 frames
-          if (hero.facingDir === 'N') rowOffset = 12;
-          else if (hero.facingDir === 'W') rowOffset = 13;
-          else if (hero.facingDir === 'S') rowOffset = 14;
-          else if (hero.facingDir === 'E') rowOffset = 15;
+          if (isSplit) {
+            if (hero.facingDir === 'N') rowOffset = 0;
+            else if (hero.facingDir === 'W') rowOffset = 1;
+            else if (hero.facingDir === 'S') rowOffset = 2;
+            else if (hero.facingDir === 'E') rowOffset = 3;
+          } else {
+            if (hero.facingDir === 'N') rowOffset = 12;
+            else if (hero.facingDir === 'W') rowOffset = 13;
+            else if (hero.facingDir === 'S') rowOffset = 14;
+            else if (hero.facingDir === 'E') rowOffset = 15;
+          }
         } else {
           colCount = 9; // Walk has 9 frames
-          if (hero.facingDir === 'N') rowOffset = 8;
-          else if (hero.facingDir === 'W') rowOffset = 9;
-          else if (hero.facingDir === 'S') rowOffset = 10;
-          else if (hero.facingDir === 'E') rowOffset = 11;
+          if (isSplit) {
+            if (hero.facingDir === 'N') rowOffset = 0;
+            else if (hero.facingDir === 'W') rowOffset = 1;
+            else if (hero.facingDir === 'S') rowOffset = 2;
+            else if (hero.facingDir === 'E') rowOffset = 3;
+          } else {
+            if (hero.facingDir === 'N') rowOffset = 8;
+            else if (hero.facingDir === 'W') rowOffset = 9;
+            else if (hero.facingDir === 'S') rowOffset = 10;
+            else if (hero.facingDir === 'E') rowOffset = 11;
+          }
         }
 
         // Frame selection
