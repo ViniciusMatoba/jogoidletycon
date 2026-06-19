@@ -936,6 +936,11 @@ function setupCraftingButtons(game) {
     const recipe = CRAFT_RECIPES[recipeKey];
     const isEquip = recipe.stats !== undefined;
 
+    // Filter out locked equipment slots (helmet, ring, necklace, belt, pants, wings, pet, etc.)
+    if (isEquip && !['weapon', 'armor', 'gloves', 'boots'].includes(recipe.slot)) {
+      continue;
+    }
+
     // Filtragem por prédio
     if (activeRecipeFilter !== 'all') {
       if (activeRecipeFilter === 'forge') {
@@ -1243,18 +1248,30 @@ function refreshHeroProfile(hero, game) {
     expText.innerText = `EXP ${Math.round(hero.xp)} / ${hero.xpNeeded}`;
   }
 
-  // Renderização dos 15 slots de equipamento
+  // Renderização dos 8 slots de equipamento
   const slots = [
     'helmet', 'necklace', 'armor', 'weapon', 'gloves',
-    'ring', 'belt', 'boots', 'pants',
-    'accessory1', 'pet', 'weapon_skin', 'armor_skin', 'wings', 'accessory2'
+    'ring', 'belt', 'boots'
   ];
 
   slots.forEach(slot => {
     const slotEl = document.querySelector(`.slot-${slot.replace('_', '-')}`);
     if (slotEl) {
+      const isLocked = !['weapon', 'armor', 'gloves', 'boots'].includes(slot);
       const item = hero.equipment[slot];
-      if (item) {
+
+      if (isLocked) {
+        slotEl.className = `equip-slot slot-${slot.replace('_', '-')} slot-locked`;
+        slotEl.innerHTML = `<span class="slot-placeholder">🔒</span>`;
+        const slotNamesPt = {
+          helmet: 'Elmo',
+          necklace: 'Colar',
+          ring: 'Anel',
+          belt: 'Cinturão'
+        };
+        const slotName = slotNamesPt[slot] || slot.toUpperCase();
+        slotEl.title = `${slotName} (Desenvolvimento Futuro)`;
+      } else if (item) {
         let rarity = 'common';
         if (item.rarity) {
           rarity = item.rarity;
@@ -1268,8 +1285,7 @@ function refreshHeroProfile(hero, game) {
           }
         }
 
-        const isOuter = ['accessory1', 'pet', 'weapon_skin', 'armor_skin', 'wings', 'accessory2'].includes(slot);
-        slotEl.className = `equip-slot slot-${slot.replace('_', '-')} equipped item-rarity-${rarity} ${isOuter ? 'outer-slot' : ''}`;
+        slotEl.className = `equip-slot slot-${slot.replace('_', '-')} equipped item-rarity-${rarity}`;
         const starsCount = Math.min(5, item.tier + 2);
         const starsHtml = '<span>✦</span>'.repeat(starsCount);
 
@@ -1279,16 +1295,25 @@ function refreshHeroProfile(hero, game) {
         `;
         slotEl.title = `${item.name} (Grau ${item.tier})`;
       } else {
-        const isOuter = ['accessory1', 'pet', 'weapon_skin', 'armor_skin', 'wings', 'accessory2'].includes(slot);
-        slotEl.className = `equip-slot slot-${slot.replace('_', '-')} ${isOuter ? 'outer-slot' : ''}`;
+        slotEl.className = `equip-slot slot-${slot.replace('_', '-')}`;
         
         const placeholders = {
-          helmet: '🪖', necklace: '📿', armor: '🥋', weapon: '⚔️', gloves: '🧤',
-          ring: '💍', belt: '🥋', boots: '🥾', pants: '👖',
-          accessory1: 'G', pet: '🐾', weapon_skin: '⚔️', armor_skin: '🥋', wings: '🪶', accessory2: '◊'
+          helmet: '🪖', necklace: '📿', armor: '🧥', weapon: '⚔️', gloves: '🧤',
+          ring: '💍', belt: '🥋', boots: '🥾'
         };
         slotEl.innerHTML = `<span class="slot-placeholder">${placeholders[slot]}</span>`;
-        slotEl.title = `Slot Vazio: ${slot.toUpperCase()}`;
+        const slotNamesPt = {
+          helmet: 'Elmo',
+          necklace: 'Colar',
+          armor: 'Armadura',
+          weapon: 'Arma',
+          gloves: 'Luvas',
+          ring: 'Anel',
+          belt: 'Cinturão',
+          boots: 'Botas'
+        };
+        const slotName = slotNamesPt[slot] || slot.toUpperCase();
+        slotEl.title = `Slot Vazio: ${slotName}`;
       }
     }
   });
@@ -1361,30 +1386,6 @@ function refreshHeroProfile(hero, game) {
           <div><span style="color: #a08c80;">Status:</span> <span style="color: #3aff7d;">${formatHeroState(hero.state)}</span></div>
         </div>
       `;
-    } else if (activeProfileTab === 'pet') {
-      const petItem = hero.equipment.pet;
-      if (petItem) {
-        panel.innerHTML = `
-          <div style="width: 100%; text-align: left; font-family: var(--font-retro); padding: 4px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 28px;">${petItem.icon}</span>
-              <div>
-                <strong style="color: #ff33aa; font-size: 14px;">${petItem.name}</strong>
-                <p style="color: #a08c80; font-size: 11px;">Mascote de Caça</p>
-              </div>
-            </div>
-            <div style="margin-top: 8px; font-size: 12px; color: #3aff7d;">
-              Atributo: +${petItem.stats.atk || 0} ATK
-            </div>
-          </div>
-        `;
-      } else {
-        panel.innerHTML = `
-          <div style="width: 100%; display: flex; align-items: center; justify-content: center; color: #a08c80; font-family: var(--font-retro); font-size: 13px;">
-            Nenhum mascote equipado. Fabrique na Forja!
-          </div>
-        `;
-      }
     } else if (activeProfileTab === 'inventory') {
       const invItems = [];
       for (const key in hero.inventory) {

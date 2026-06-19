@@ -70,21 +70,14 @@ export class Hero {
 
     // Status de Combate (Base + Equipamentos)
     this.equipment = {
-      weapon: null, // Objeto de item de craft
+      weapon: null,
       armor: null,
       helmet: null,
       necklace: null,
       gloves: null,
       ring: null,
       belt: null,
-      boots: null,
-      pants: null,
-      accessory1: null,
-      pet: null,
-      weapon_skin: null,
-      armor_skin: null,
-      wings: null,
-      accessory2: null
+      boots: null
     };
 
     this.recalculateStats();
@@ -238,6 +231,7 @@ export class Hero {
     if (!town) return;
     this.destinationBuilding = buildingType;
     const pos = getBuildingTownPoint(town, buildingType, viewport.width, viewport.height) ||
+      BUILDING_POSITIONS[buildingType] ||
       getRandomTownPoint(town, viewport.width, viewport.height);
     // Pequena variação para heróis não ficarem sobrepostos
     this.targetX = pos.x + (Math.random() * 12 - 6);
@@ -428,15 +422,16 @@ export class Hero {
         if (this.hp <= 0) {
           this.hp = 1;
           this.addLog(`Ficou inconsciente! Fugindo...`);
+          const fallbackTarget = town.isBuilt('hospital') ? 'hospital' : 'townhall';
           if (this.currentMap === 'hunt') {
-            this.tempTargetBuilding = 'hospital';
+            this.tempTargetBuilding = fallbackTarget;
             const huntExit = getHuntExitPoint(viewport.width, viewport.height);
             this.targetX = huntExit.x;
             this.targetY = huntExit.y; // Ir para a saída
             this.state = 'RETURNING_TOWN';
           } else {
             this.state = 'RETURNING_TOWN';
-            this.targetBuilding('hospital', town, viewport);
+            this.targetBuilding(fallbackTarget, town, viewport);
           }
         }
         break;
@@ -624,24 +619,44 @@ export class Hero {
     const tavernResKey = tavernLevel === 3 ? 'beer_refreshing_t3' : (tavernLevel === 2 ? 'beer_refreshing_t2' : 'beer_refreshing');
 
     // 1. Hospital (Vida)
-    if (this.hp < this.maxHp * 0.35 && this.gold >= 8 && town.isBuilt('hospital') && (town.resources[hospResKey] || 0) > 0) {
-      target = 'hospital';
-      logMsg = `Indo ao Hospital para curar HP.`;
+    if (this.hp < this.maxHp * 0.35) {
+      if (town.isBuilt('hospital') && (town.resources[hospResKey] || 0) > 0 && this.gold >= 8) {
+        target = 'hospital';
+        logMsg = `Indo ao Hospital para curar HP.`;
+      } else if (!town.isBuilt('hospital')) {
+        target = 'townhall';
+        logMsg = `Ferido. Sem hospital, retornando para descansar na praça central.`;
+      }
     }
     // 2. Restaurante (Fome)
-    else if (this.hunger < 25 && this.gold >= 8 && town.isBuilt('restaurant') && (town.resources[restResKey] || 0) > 0) {
-      target = 'restaurant';
-      logMsg = `Fome extrema. Indo ao restaurante.`;
+    else if (this.hunger < 25) {
+      if (town.isBuilt('restaurant') && (town.resources[restResKey] || 0) > 0 && this.gold >= 8) {
+        target = 'restaurant';
+        logMsg = `Fome extrema. Indo ao restaurante.`;
+      } else if (!town.isBuilt('restaurant')) {
+        target = 'townhall';
+        logMsg = `Fome extrema. Sem restaurante, voltando para descansar na praça.`;
+      }
     }
     // 3. Hotel (Energia)
-    else if (this.energy < 20 && this.gold >= 6 && town.isBuilt('hotel') && (town.resources[hotelResKey] || 0) > 0) {
-      target = 'hotel';
-      logMsg = `Exausto. Indo dormir no hotel.`;
+    else if (this.energy < 20) {
+      if (town.isBuilt('hotel') && (town.resources[hotelResKey] || 0) > 0 && this.gold >= 6) {
+        target = 'hotel';
+        logMsg = `Exausto. Indo dormir no hotel.`;
+      } else if (!town.isBuilt('hotel')) {
+        target = 'townhall';
+        logMsg = `Exausto. Sem hotel, voltando para tirar um cochilo na praça.`;
+      }
     }
     // 4. Taverna (Humor)
-    else if (this.mood < 20 && this.gold >= 8 && town.isBuilt('tavern') && (town.resources[tavernResKey] || 0) > 0) {
-      target = 'tavern';
-      logMsg = `Mau humor. Indo à Taverna beber.`;
+    else if (this.mood < 20) {
+      if (town.isBuilt('tavern') && (town.resources[tavernResKey] || 0) > 0 && this.gold >= 8) {
+        target = 'tavern';
+        logMsg = `Mau humor. Indo à Taverna beber.`;
+      } else if (!town.isBuilt('tavern')) {
+        target = 'townhall';
+        logMsg = `Triste. Sem taverna, voltando para relaxar na praça.`;
+      }
     }
     // 5. Mercado (Vender Loot)
     else if (town.autoBuyHeroLoot && this.hasLootToSell() && town.isBuilt('market')) {
@@ -670,9 +685,10 @@ export class Hero {
   // Entra no edifício correspondente quando chega perto
   enterBuilding(town, viewport = {}) {
     let closestBuilding = this.destinationBuilding;
-    let minDist = closestBuilding && town.isBuilt(closestBuilding) ? 0 : Infinity;
+    let isTownhallFallback = (closestBuilding === 'townhall');
+    let minDist = closestBuilding && (town.isBuilt(closestBuilding) || isTownhallFallback) ? 0 : Infinity;
 
-    if (!closestBuilding || !town.isBuilt(closestBuilding)) {
+    if (!closestBuilding || (!town.isBuilt(closestBuilding) && !isTownhallFallback)) {
       closestBuilding = null;
       for (const placed of town.getPlacedBuildings()) {
         const pos = getBuildingTownPoint(town, placed.key, viewport.width, viewport.height);
@@ -703,6 +719,21 @@ export class Hero {
         this.stateTimer = 0;
       } else if (closestBuilding === 'tavern') {
         this.state = 'DRINKING_TAVERN';
+        this.stateTimer = 0;
+      } else if (closestBuilding === 'townhall') {
+        // Se veio para descansar na prefeitura/praça central por falta de edifícios
+        if (this.hp < this.maxHp * 0.35) {
+          this.state = 'HEALING_HOSP';
+        } else if (this.hunger < 25) {
+          this.state = 'EATING_REST';
+        } else if (this.energy < 20) {
+          this.state = 'RESTING_HOTEL';
+        } else if (this.mood < 20) {
+          this.state = 'DRINKING_TAVERN';
+        } else {
+          this.state = 'IDLE_TOWN';
+          this.wanderTown(town, viewport);
+        }
         this.stateTimer = 0;
       } else {
         this.state = 'IDLE_TOWN';
@@ -763,7 +794,7 @@ export class Hero {
       // Filtra por equipamento, classe do herói e tier permitido pela Forja
       if (recipe.stats && recipe.class.includes(this.className) && recipe.tier <= forgeTier) {
         const slot = recipe.slot;
-        if (slot in this.equipment) {
+        if (slot in this.equipment && ['weapon', 'armor', 'gloves', 'boots'].includes(slot)) {
           const currentItem = this.equipment[slot];
           // Se o herói não tiver o item ou a receita for de maior tier
           if (!currentItem || recipe.tier > currentItem.tier) {

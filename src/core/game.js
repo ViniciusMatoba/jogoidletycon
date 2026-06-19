@@ -185,8 +185,7 @@ export class Game {
         hero.inventory = hData.inventory;
         hero.equipment = Object.assign({
           weapon: null, armor: null, helmet: null, necklace: null, gloves: null,
-          ring: null, belt: null, boots: null, pants: null, accessory1: null,
-          pet: null, weapon_skin: null, armor_skin: null, wings: null, accessory2: null
+          ring: null, belt: null, boots: null
         }, hData.equipment);
         hero.cosmetics = hData.cosmetics || hero.cosmetics;
         hero.currentMap = hData.currentMap || 'town';

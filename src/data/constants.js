@@ -363,8 +363,6 @@ export const CRAFT_RECIPES = {
   necklace_t1: { name: 'Colar de Dente de Rato', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { rat_tail: 3, gold: 30 }, stats: { hp: 15 } },
   belt_t1: { name: 'Cinto de Couro Simples', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { rat_tail: 3, gold: 30 }, stats: { def: 1 } },
   boots_t1: { name: 'Botas de Couro Rústicas', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bat_wing: 4, gold: 35 }, stats: { def: 1, hp: 10 } },
-  pants_t1: { name: 'Perneiras de Ferro Rústicas', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { iron_ore: 4, gold: 40 }, stats: { def: 2 } },
-  pet_t1: { name: 'Mascote Morcego da Caverna', slot: 'pet', icon: '🐾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bat_wing: 5, meat_raw: 5, gold: 120 }, stats: { atk: 5 } },
 
   // --- GRAU 2 ---
   sword_t2: { name: 'Espada de Aço Afiada', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 2, cost: { iron_ore: 15, goblin_dagger: 1, gold: 200 }, stats: { atk: 35 } },
@@ -388,8 +386,6 @@ export const CRAFT_RECIPES = {
   necklace_t2: { name: 'Amuleto Goblin de Proteção', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { goblin_ear: 4, gold: 100 }, stats: { hp: 40 } },
   belt_t2: { name: 'Cinto com Fivela de Ferro', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { iron_ore: 4, gold: 80 }, stats: { def: 4 } },
   boots_t2: { name: 'Grevas de Aço Flexíveis', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { iron_ore: 6, gold: 110 }, stats: { def: 4, hp: 30 } },
-  pants_t2: { name: 'Calças de Couro Espesso', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 2, cost: { wolf_fur: 8, gold: 120 }, stats: { def: 6 } },
-  wings_t1: { name: 'Asas de Morcego Sombrias', slot: 'wings', icon: '🪶', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 1, cost: { bat_wing: 10, gold: 100 }, stats: { hp: 50 } },
 
   // --- GRAU 3 ---
   sword_t3: { name: 'Lâmina do Flagelo Dracônico', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 3, cost: { steel_ore: 20, leech_tooth: 2, hydra_scale: 1, gold: 800 }, stats: { atk: 95 } },
@@ -412,6 +408,5 @@ export const CRAFT_RECIPES = {
   ring_t3: { name: 'Anel de Aço Rúnico', slot: 'ring', icon: '💍', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 5, gold: 450 }, stats: { hp: 100 } },
   necklace_t3: { name: 'Colar de Escamas de Crocodilo', slot: 'necklace', icon: '📿', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { crocodile_scale: 4, gold: 450 }, stats: { hp: 120 } },
   belt_t3: { name: 'Cinto de Couro de Serpente', slot: 'belt', icon: '🥋', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 4, gold: 300 }, stats: { def: 10 } },
-  boots_t3: { name: 'Botas do Caminhante do Pântano', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 5, gold: 380 }, stats: { def: 10, hp: 80 } },
-  pants_t3: { name: 'Perneiras de Aço Reforçadas', slot: 'pants', icon: '👖', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { steel_ore: 12, gold: 400 }, stats: { def: 15 } }
+  boots_t3: { name: 'Botas do Caminhante do Pântano', slot: 'boots', icon: '🥾', class: ['WARRIOR', 'MERCENARY', 'ARCHER', 'MAGE', 'PRIEST'], tier: 3, cost: { serpent_skin: 5, gold: 380 }, stats: { def: 10, hp: 80 } }
 };

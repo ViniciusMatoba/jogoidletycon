@@ -1047,15 +1047,6 @@ body {
 .slot-ring         { left: 95px; top: 166px; }
 .slot-boots        { right: 95px; top: 166px; }
 .slot-belt         { left: calc(50% - 21px); top: 202px; }
-.slot-pants        { left: calc(50% - 21px); top: 248px; }
-
-/* Outer Ring (Premium) slots */
-.slot-accessory1   { left: 32px; top: 32px; }
-.slot-pet          { left: 22px; top: 106px; }
-.slot-weapon-skin  { left: 32px; top: 180px; }
-.slot-armor-skin   { right: 32px; top: 32px; }
-.slot-wings        { right: 22px; top: 106px; }
-.slot-accessory2   { right: 32px; top: 180px; }
 
 /* EXP Bar */
 .profile-exp-bar-container {
@@ -1782,5 +1773,18 @@ input:checked + .retro-slider:before {
   50% {
     box-shadow: inset 0 0 10px rgba(255, 193, 7, 0.8), 0 0 6px rgba(255, 193, 7, 0.4);
   }
+}
+
+/* Slots Bloqueados (Desenvolvimento Futuro) */
+.equip-slot.slot-locked {
+  background-color: #120e0c !important;
+  border: 2px dashed #3a2518 !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+.equip-slot.slot-locked:hover {
+  transform: none !important;
+  border-color: #3a2518 !important;
 }
 
