@@ -189,6 +189,29 @@ export class GameRenderer {
         }
       }
 
+      // Segunda passada: despeckle — remove pixels claros isolados (resíduo de antialiasing do fundo quadriculado)
+      const LIGHT_THRESHOLD = 180;
+      for (let py = 0; py < height; py++) {
+        for (let px = 0; px < width; px++) {
+          const pidx = (py * width + px) * 4;
+          if (data[pidx + 3] === 0) continue;
+          const r = data[pidx], g = data[pidx + 1], b = data[pidx + 2];
+          if (r > LIGHT_THRESHOLD && g > LIGHT_THRESHOLD && b > LIGHT_THRESHOLD) {
+            let opaqueNeighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const nx = px + dx, ny = py + dy;
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                  if (data[(ny * width + nx) * 4 + 3] > 0) opaqueNeighbors++;
+                }
+              }
+            }
+            if (opaqueNeighbors <= 2) data[pidx + 3] = 0;
+          }
+        }
+      }
+
       tempCtx.putImageData(imageData, 0, 0);
       return tempCanvas;
     } catch (e) {
@@ -376,9 +399,9 @@ export class GameRenderer {
     const metrics = this.getTownGridMetrics(town, width, height);
     const now = performance.now();
 
-    // Zona permitida para construção: col 2-11, row 2-9 (evita árvores das bordas)
-    const BUILD_COL_MIN = 2, BUILD_COL_MAX = 11;
-    const BUILD_ROW_MIN = 2, BUILD_ROW_MAX = 9;
+    // Zona permitida: margem de 1 tile nas bordas (sincronizado com town.js)
+    const BUILD_COL_MIN = 1, BUILD_COL_MAX = 13; // grid.cols - 1
+    const BUILD_ROW_MIN = 1, BUILD_ROW_MAX = 11; // grid.rows - 1
 
     // Calcular quais células estão ocupadas por edifícios construídos
     const occupiedCells = new Set();
@@ -967,10 +990,9 @@ export class GameRenderer {
         
         // Variação de escala por nível (Nível 1: 0.88x, Nível 2: 1.0x, Nível 3: 1.14x)
         const scaleMult = level === 1 ? 0.88 : (level === 2 ? 1.0 : 1.14);
-        // Tamanho de desenho com proporção 1:1 para não distorcer
-        const imgBase = b.key === 'townhall' ?
-          Math.max(160, tileRef * 1.85) :
-          Math.max(120, tileRef * 1.35);
+        // Tamanho calculado a partir do footprint real do lote isométrico
+        const fp = town.getBuildingFootprint(b.key);
+        const imgBase = Math.max(100, (fp.w + fp.h) * tileRef / 2);
         const dw = imgBase * scaleMult;
         const dh = imgBase * scaleMult;
         

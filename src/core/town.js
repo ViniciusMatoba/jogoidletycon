@@ -107,9 +107,8 @@ export class Town {
   }
 
   isAreaFree(col, row, footprint, ignoredBuilding = null) {
-    // Restringe a colocação de edifícios apenas na clareira central (colunas 2 a 11, linhas 2 a 9)
-    // para evitar a construção sobre as árvores e caminhos das bordas do tapete
-    if (col < 2 || row < 2 || (col + footprint.w) > 12 || (row + footprint.h) > 10) {
+    // Margem de 1 tile em cada borda — libera 99 células (grid 14x12 menos bordas)
+    if (col < 1 || row < 1 || (col + footprint.w) > (this.grid.cols - 1) || (row + footprint.h) > (this.grid.rows - 1)) {
       return false;
     }
 
