@@ -270,14 +270,26 @@ export class GameRenderer {
     for (const key in assetsList) {
       const img = new Image();
       img.src = assetsList[key];
+
+      // Backgrounds de tela cheia NÃO devem passar pelo chroma key —
+      // eles têm pixels claros (céu, chão, árvores) que seriam removidos incorretamente
+      const isBackground = key.startsWith('bg_');
+
       img.onload = () => {
-        const cleanCanvas = this.makeImageTransparent(img);
-        cleanCanvas.loaded = true;
-        this.images[key] = cleanCanvas;
+        if (isBackground) {
+          // Usar imagem direta sem processamento
+          img.loaded = true;
+          this.images[key] = img;
+        } else {
+          const cleanCanvas = this.makeImageTransparent(img);
+          cleanCanvas.loaded = true;
+          this.images[key] = cleanCanvas;
+        }
         
         // Se for um tile de solo, cria o padrão de repetição do Canvas
         if (key.startsWith('tile_')) {
-          this.patterns[key] = this.ctx.createPattern(cleanCanvas, 'repeat');
+          const src = this.images[key];
+          this.patterns[key] = this.ctx.createPattern(src, 'repeat');
         }
       };
       img.onerror = () => {
@@ -404,26 +416,26 @@ export class GameRenderer {
         }
       }
     } else {
-      // === MODO NORMAL: apenas marcar suavemente as áreas disponíveis para construção ===
-      // Pulsação global sincronizada (0.06 a 0.14 de opacidade)
-      const globalPulse = 0.07 + 0.04 * Math.sin(now * 0.0015);
+      // === MODO NORMAL: marcar suavemente as áreas disponíveis para construção ===
+      // Pulsação global sincronizada (0.12 a 0.22 de opacidade — visível sobre o bg_town)
+      const globalPulse = 0.12 + 0.06 * Math.sin(now * 0.0015);
 
       for (let row = BUILD_ROW_MIN; row < BUILD_ROW_MAX; row++) {
         for (let col = BUILD_COL_MIN; col < BUILD_COL_MAX; col++) {
           const isOccupied = occupiedCells.has(`${col},${row}`);
 
           if (isOccupied) {
-            // Célula ocupada por um prédio: marcação dourada muito sutil
+            // Célula ocupada por um prédio: marcação dourada discreta
             this.drawIsoTile(col, row, metrics,
-              'rgba(200, 160, 60, 0.08)',
-              'rgba(200, 160, 60, 0.18)'
+              'rgba(200, 160, 60, 0.10)',
+              'rgba(220, 180, 60, 0.30)'
             );
           } else {
-            // Célula livre: marcação verde-menta suave pulsante — indica que é clicável
-            const localPulse = globalPulse + 0.02 * Math.sin(now * 0.002 + col * 0.4 + row * 0.6);
+            // Célula livre: marcação verde-menta pulsante — indica que é clicável
+            const localPulse = globalPulse + 0.04 * Math.sin(now * 0.002 + col * 0.4 + row * 0.6);
             this.drawIsoTile(col, row, metrics,
-              `rgba(100, 220, 130, ${localPulse})`,
-              'rgba(80, 200, 110, 0.22)'
+              `rgba(80, 220, 110, ${localPulse})`,
+              'rgba(60, 200, 90, 0.35)'
             );
           }
         }
@@ -517,11 +529,21 @@ export class GameRenderer {
     if (this.activeView === 'town') {
       const bg = this.images['bg_town'];
       if (bg && bg.loaded) {
-        const bgW = 1280;
-        const bgH = 720;
+        // Calcular proporção para cobrir todo o canvas mantendo aspect ratio
+        const bgNatW = bg.naturalWidth || bg.width || 1280;
+        const bgNatH = bg.naturalHeight || bg.height || 720;
+        const scaleX = (width + Math.abs(this.maxCameraX) * 2) / bgNatW;
+        const scaleY = (height + Math.abs(this.maxCameraY) * 2) / bgNatH;
+        const scale = Math.max(scaleX, scaleY);
+        const bgW = bgNatW * scale;
+        const bgH = bgNatH * scale;
         const bx = (width - bgW) / 2;
         const by = (height - bgH) / 2;
         this.ctx.drawImage(bg, bx, by, bgW, bgH);
+      } else {
+        // Fallback: fundo verde escuro com textura se o bg não carregar
+        this.ctx.fillStyle = '#1e3320';
+        this.ctx.fillRect(-this.maxCameraX, -this.maxCameraY, width + this.maxCameraX * 2, height + this.maxCameraY * 2);
       }
       this.drawTownGridTiles(game.town, width, height);
     }
