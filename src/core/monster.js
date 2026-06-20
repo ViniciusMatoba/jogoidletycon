@@ -332,6 +332,9 @@ export class MonsterSpawner {
 
     this.monsterLevel = 2; // Nível padrão: Normal
 
+    // Baús de tesouro pendentes (aparecem no mapa após boss morrer)
+    this.pendingChests = [];
+
     // Logs do spawn
     this.logs = ['Spawner inicializado nas Cavernas Rasas.'];
   }
@@ -376,9 +379,17 @@ export class MonsterSpawner {
           this.bossSpawned = false;
           this.bossKillsCount++;
           this.logs.unshift(`CHEFE DERROTADO! ${monster.name} caiu!`);
-          
+
           // Cada chefe derrotado recompensa a cidade
           town.addResource('gold', 100);
+
+          // Chance de spawnar baú de tesouro (35% comum, 15% raro)
+          const roll = Math.random();
+          if (roll < 0.15) {
+            this.pendingChests.push({ x: monster.x, y: monster.y, type: 'rare', collected: false });
+          } else if (roll < 0.50) {
+            this.pendingChests.push({ x: monster.x, y: monster.y, type: 'common', collected: false });
+          }
         } else if (monster.isMiniBoss) {
           this.miniBossSpawned = false;
           this.logs.unshift(`Mini-Boss derrotado!`);

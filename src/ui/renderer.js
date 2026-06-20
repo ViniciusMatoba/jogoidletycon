@@ -404,6 +404,10 @@ export class GameRenderer {
     assetsList['weapon_t1_mage_apprentice_staff'] = 'assets/sprites/weapon_t1_mage_apprentice_staff_universal.png';
     assetsList['weapon_t1_priest_oak_scepter']    = 'assets/sprites/weapon_t1_priest_oak_scepter_universal.png';
 
+    // ── Baús de tesouro (drops de boss) ──
+    assetsList['chest_common'] = 'assets/items/bau_tesouro.png';
+    assetsList['chest_rare']   = 'assets/items/bau_tesouro2.png';
+
     // ── VFX Textures (64×64 frames, spritesheet vertical 64×384 = 6 frames) ──
     const vfxTextures = ['fire','electricity','holy','void','water','wind','explosion','firework'];
     vfxTextures.forEach(k => { assetsList[`vfx_tex_${k}`] = `assets/vfx/textures/${k}.png`; });
@@ -966,6 +970,11 @@ export class GameRenderer {
 
     // 4. Desenhar Efeitos de Batalha (projéteis por classe)
     this.drawCombatEffects(game.heroes, dt, this._addFloater);
+
+    // 5. Desenhar baús de tesouro no mapa de caça
+    if (this.activeView === 'hunt') {
+      this.drawTreasureChests(game.spawner.pendingChests);
+    }
 
     // 6. Desenhar Textos Flutuantes
     this.drawFloaters(game.floaters);
@@ -4453,6 +4462,45 @@ export class GameRenderer {
   }
 
   // --- TEXTOS FLUTUANTES ---
+  drawTreasureChests(chests) {
+    if (!chests || !chests.length) return;
+    const ctx = this.ctx;
+    const now = performance.now() / 1000;
+
+    chests.filter(c => !c.collected).forEach(chest => {
+      const pos = this.toIso(chest.x, chest.y);
+      const key = chest.type === 'rare' ? 'chest_rare' : 'chest_common';
+      const img = this.images[key];
+
+      // Pulso de brilho
+      const glow = chest.type === 'rare' ? '#ffd700' : '#88ccff';
+      const pulse = 0.5 + 0.5 * Math.sin(now * 3);
+      ctx.save();
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 10 + pulse * 14;
+
+      if (img && img.loaded) {
+        const scale = chest.type === 'rare' ? 2.8 : 2.4;
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, pos.x - dw / 2, pos.y - dh, dw, dh);
+      } else {
+        // Fallback: retângulo colorido enquanto imagem carrega
+        ctx.fillStyle = chest.type === 'rare' ? '#ffd700' : '#4fc3f7';
+        ctx.fillRect(pos.x - 16, pos.y - 24, 32, 24);
+      }
+
+      // Ícone de interação pulsando acima do baú
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `rgba(255,255,255,${0.7 + pulse * 0.3})`;
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('✨ Clique!', pos.x, pos.y - (img ? img.height * 2.8 : 24) - 6);
+      ctx.restore();
+    });
+  }
+
   drawFloaters(floaters) {
     floaters.forEach(f => {
       if (f.map && f.map !== this.activeView) return;

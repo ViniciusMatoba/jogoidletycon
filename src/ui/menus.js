@@ -175,6 +175,73 @@ const BUILDING_ACTION_LABELS = {
   market: { name: 'Mercado da Vila', icon: '⚖️', modalId: 'market-modal' }
 };
 
+// ── Baú de Tesouro ────────────────────────────────────────────────────────────
+
+const CHEST_REWARDS = {
+  common: [
+    { icon: '💰', name: 'Ouro',      key: 'gold',      qty: () => 80  + Math.floor(Math.random() * 120) },
+    { icon: '🪨', name: 'Pedra',     key: 'stone',     qty: () => 10  + Math.floor(Math.random() * 20)  },
+    { icon: '🪵', name: 'Madeira',   key: 'wood_rough', qty: () => 8  + Math.floor(Math.random() * 15)  },
+    { icon: '🧪', name: 'Poção',     key: 'healing_potion', qty: () => 1 + Math.floor(Math.random() * 2) },
+  ],
+  rare: [
+    { icon: '💰', name: 'Ouro',      key: 'gold',      qty: () => 250 + Math.floor(Math.random() * 250) },
+    { icon: '💎', name: 'Gema',      key: 'crystal_gem', qty: () => 1 + Math.floor(Math.random() * 3)   },
+    { icon: '🪨', name: 'Pedra',     key: 'stone',     qty: () => 25  + Math.floor(Math.random() * 30)  },
+    { icon: '🪵', name: 'Madeira',   key: 'wood_rough', qty: () => 20 + Math.floor(Math.random() * 25)  },
+    { icon: '🧪', name: 'Poção',     key: 'healing_potion', qty: () => 2 + Math.floor(Math.random() * 3) },
+    { icon: '⚗️', name: 'Mana',      key: 'mana_bottle', qty: () => 1 + Math.floor(Math.random() * 2)   },
+  ],
+};
+
+function openTreasureChestModal(type, game) {
+  const modal = document.getElementById('treasure-chest-modal');
+  if (!modal) return;
+
+  const isRare   = type === 'rare';
+  const rewards  = CHEST_REWARDS[type].map(r => ({ ...r, amount: r.qty() }));
+
+  // Título e imagem
+  document.getElementById('chest-modal-title').textContent = isRare ? '✨ Baú Raro!' : '🎁 Baú de Tesouro';
+  document.getElementById('chest-subtitle').textContent    = isRare
+    ? 'Um baú raro deixado pelo Chefe! Algo precioso está dentro...'
+    : 'O Chefe deixou um baú para trás. Quem sabe o que tem lá?';
+  document.getElementById('chest-img-area').textContent = isRare ? '🎁' : '📦';
+
+  // Chips de recompensa
+  const rewardsEl = document.getElementById('chest-rewards');
+  rewardsEl.innerHTML = rewards.map(r => `
+    <div class="chest-reward-chip ${isRare ? 'reward-rare' : ''}">
+      <span class="reward-icon">${r.icon}</span>
+      <span class="reward-qty">×${r.amount}</span>
+      <span class="reward-name">${r.name}</span>
+    </div>
+  `).join('');
+
+  // Botão coletar
+  const btn = document.getElementById('chest-collect-btn');
+  btn.onclick = () => {
+    rewards.forEach(r => {
+      if (r.key === 'gold') {
+        game.town.gold += r.amount;
+      } else {
+        game.town.resources[r.key] = (game.town.resources[r.key] || 0) + r.amount;
+      }
+    });
+    game.saveGame();
+    game.addFloater({ x: 400, y: 200, text: isRare ? '✨ Baú Raro coletado!' : '📦 Baú coletado!', color: '#ffd700', time: 1.5 });
+    modal.classList.remove('active');
+  };
+
+  // Fechar X
+  document.getElementById('chest-close-x').onclick = () => {
+    modal.classList.remove('active');
+  };
+  modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+
+  modal.classList.add('active');
+}
+
 export function setupUI(game) {
   // 1. Controle de Janelas Modais Retro (Menu de Rodapé)
   const menuButtons = document.querySelectorAll('.menu-btn-retro');
@@ -796,6 +863,19 @@ export function setupUI(game) {
         return;
       }
       
+      // 0. Clicar em baú de tesouro (hunt map)
+      if (activeView === 'hunt' && game.spawner.pendingChests) {
+        for (const chest of game.spawner.pendingChests) {
+          if (chest.collected) continue;
+          const dist = Math.sqrt((chest.x - x) ** 2 + (chest.y - y) ** 2);
+          if (dist < 40) {
+            chest.collected = true;
+            openTreasureChestModal(chest.type, game);
+            return;
+          }
+        }
+      }
+
       // 1. Clicar em um caçador visível (aumentado para dist < 35 para melhor usabilidade mobile)
       let clickedHero = null;
       for (const h of game.heroes) {
