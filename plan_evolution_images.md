@@ -15,13 +15,13 @@ Este documento registra e acompanha o status de criação das **35 imagens de ev
 
 | Edifício | Estágio 1 (Barraca) | Estágio 2 (Palha) | Estágio 3 (Madeira) | Estágio 4 (Pedra) | Estágio 5 (Nobre) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Prefeitura (Townhall)** | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
-| **Hotel (Estalagem)** | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
-| **Restaurante** | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
-| **Hospital** | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
-| **Taverna** | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
-| **Forja** | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
-| **Mercado (Market)** | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
+| **Prefeitura (Townhall)** | Concluido | Concluido | Concluido | Concluido | Concluido |
+| **Hotel (Estalagem)** | Concluido | Concluido | Concluido | Concluido | Concluido |
+| **Restaurante** | Concluido | Concluido | Concluido | Concluido | Concluido |
+| **Hospital** | Concluido | Concluido | Concluido | Concluido | Concluido |
+| **Taverna** | Concluido | Concluido | Concluido | Concluido | Concluido |
+| **Forja** | Concluido | Concluido | Concluido | Concluido | Concluido |
+| **Mercado (Market)** | Concluido | Concluido | Concluido | Concluido | Concluido |
 
 *Legenda:*
 * ⏳ *Pendente*: Imagem ainda não gerada.
@@ -59,4 +59,4 @@ python C:\Users\Usuario\.gemini\antigravity\scratch\make_transparent.py C:\Users
 ## 🛠️ Próximos Passos
 1. [x] Criar o script Python `make_transparent.py` para automatizar a remoção de fundo.
 2. [x] Atualizar o código-fonte em `renderer.js` e `town.js` para suportar as 5 imagens de evolução e o grid de 16x14.
-3. [Pendente - Aguardando Quota de Imagens] Gerar as 35 imagens dos edifícios no estilo 16-bit isometric pixel art.
+3. [x] Gerar as 35 imagens dos edificios no estilo 16-bit isometric pixel art.

@@ -1,4 +1,4 @@
-import { HERO_CLASSES, ITEMS_INFO, CRAFT_RECIPES } from '../data/constants.js';
+import { HERO_CLASSES, ITEMS_INFO, CRAFT_RECIPES, STARTER_EQUIPMENT } from '../data/constants.js';
 import {
   getBuildingTownPoint,
   getHuntEntryPoint,
@@ -88,6 +88,16 @@ const RARITY_MULTIPLIERS = {
   'Lendário': 2.0
 };
 
+function cloneEquipmentItem(item) {
+  if (!item) return null;
+
+  return {
+    ...item,
+    class: item.class ? [...item.class] : undefined,
+    stats: item.stats ? { ...item.stats } : undefined
+  };
+}
+
 export const BUILDING_POSITIONS = {
   townhall: { x: 480, y: 150 },
   hotel: { x: 260, y: 240 },
@@ -175,6 +185,7 @@ export class Hero {
       boots: null
     };
 
+    this.applyStarterEquipment();
     this.recalculateStats();
 
     // Vida atual começa cheia
@@ -228,6 +239,19 @@ export class Hero {
 
     // Histórico de logs de atividades do herói
     this.logs = [`Chegou à cidade.`];
+  }
+
+  applyStarterEquipment() {
+    const starter = STARTER_EQUIPMENT[this.className];
+    if (!starter) return;
+
+    if (!this.equipment.weapon && starter.weapon) {
+      this.equipment.weapon = cloneEquipmentItem(starter.weapon);
+    }
+
+    if (!this.equipment.shield && starter.shield) {
+      this.equipment.shield = cloneEquipmentItem(starter.shield);
+    }
   }
 
   // Recalcula os status somando a classe e equipamentos

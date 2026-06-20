@@ -6,14 +6,19 @@ import {
   screenToGrid
 } from '../core/navigation.js';
 
-const BUILDING_LEVEL_SCALE = [1.0, 1.12, 1.26]; // escala visual por nível (índice = level - 1)
+const BUILDING_LEVEL_SCALE = [1.0, 1.04, 1.08, 1.12, 1.16]; // visual scale by asset stage
 
 const BUILDING_VISUAL_STAGES = [
   { key: 'straw', name: 'Palha', wall: '#8f6b38', wallDark: '#5d4428', roof: '#d0a84f', roofDark: '#8c6428', trim: '#4a301a', foundation: '#5c4938' },
   { key: 'wood', name: 'Madeira', wall: '#8a5632', wallDark: '#55321f', roof: '#7d3326', roofDark: '#4e2018', trim: '#2c1a12', foundation: '#6d5b48' },
   { key: 'stone', name: 'Pedra', wall: '#747d82', wallDark: '#3e484d', roof: '#6d4633', roofDark: '#3c281e', trim: '#252b2e', foundation: '#4f5a5f' },
-  { key: 'brick', name: 'Tijolo', wall: '#9a4939', wallDark: '#5c2b24', roof: '#bd6b33', roofDark: '#743817', trim: '#2f2119', foundation: '#66706f' }
+  { key: 'brick', name: 'Tijolo', wall: '#9a4939', wallDark: '#5c2b24', roof: '#bd6b33', roofDark: '#743817', trim: '#2f2119', foundation: '#66706f' },
+  { key: 'noble', name: 'Nobre', wall: '#b9b8aa', wallDark: '#6b6f70', roof: '#24435e', roofDark: '#152838', trim: '#6f4a24', foundation: '#7d8586' }
 ];
+
+function getBuildingAssetStage(level) {
+  return Math.min(Math.max(level || 1, 1), 5);
+}
 
 export function getBuildingVisualStage(level) {
   return BUILDING_VISUAL_STAGES[Math.min(Math.max(level, 1), BUILDING_VISUAL_STAGES.length) - 1];
@@ -376,6 +381,26 @@ export class GameRenderer {
     assetsList['weapon_bow']       = 'assets/sprites/weapon_bow_universal.png';
     assetsList['weapon_staff']     = 'assets/sprites/weapon_staff_universal.png';
     assetsList['weapon_shield']    = 'assets/sprites/weapon_shield_universal.png';
+    assetsList['weapon_starter_warrior_sword']    = 'assets/sprites/weapon_starter_warrior_sword_universal.png';
+    assetsList['weapon_starter_warrior_shield']   = 'assets/sprites/weapon_starter_warrior_shield_universal.png';
+    assetsList['weapon_starter_mercenary_dagger'] = 'assets/sprites/weapon_starter_mercenary_dagger_universal.png';
+    assetsList['weapon_starter_archer_bow']       = 'assets/sprites/weapon_starter_archer_bow_universal.png';
+    assetsList['weapon_starter_archer_bow_walk_bg'] = 'assets/sprites/weapon_starter_archer_bow_walk_bg_universal.png';
+    assetsList['weapon_starter_archer_bow_walk_fg'] = 'assets/sprites/weapon_starter_archer_bow_walk_fg_universal.png';
+    assetsList['weapon_starter_archer_bow_shoot_bg'] = 'assets/sprites/weapon_starter_archer_bow_shoot_bg_universal.png';
+    assetsList['weapon_starter_archer_bow_shoot_fg'] = 'assets/sprites/weapon_starter_archer_bow_shoot_fg_universal.png';
+    assetsList['weapon_starter_mage_staff']       = 'assets/sprites/weapon_starter_mage_staff_universal.png';
+    assetsList['weapon_starter_priest_scepter']   = 'assets/sprites/weapon_starter_priest_scepter_universal.png';
+    assetsList['weapon_t1_warrior_iron_sword']    = 'assets/sprites/weapon_t1_warrior_iron_sword_universal.png';
+    assetsList['weapon_t1_warrior_round_shield']  = 'assets/sprites/weapon_t1_warrior_round_shield_universal.png';
+    assetsList['weapon_t1_mercenary_iron_dagger'] = 'assets/sprites/weapon_t1_mercenary_iron_dagger_universal.png';
+    assetsList['weapon_t1_archer_hunter_bow']     = 'assets/sprites/weapon_t1_archer_hunter_bow_universal.png';
+    assetsList['weapon_t1_archer_hunter_bow_walk_bg'] = 'assets/sprites/weapon_t1_archer_hunter_bow_walk_bg_universal.png';
+    assetsList['weapon_t1_archer_hunter_bow_walk_fg'] = 'assets/sprites/weapon_t1_archer_hunter_bow_walk_fg_universal.png';
+    assetsList['weapon_t1_archer_hunter_bow_shoot_bg'] = 'assets/sprites/weapon_t1_archer_hunter_bow_shoot_bg_universal.png';
+    assetsList['weapon_t1_archer_hunter_bow_shoot_fg'] = 'assets/sprites/weapon_t1_archer_hunter_bow_shoot_fg_universal.png';
+    assetsList['weapon_t1_mage_apprentice_staff'] = 'assets/sprites/weapon_t1_mage_apprentice_staff_universal.png';
+    assetsList['weapon_t1_priest_oak_scepter']    = 'assets/sprites/weapon_t1_priest_oak_scepter_universal.png';
 
     for (const key in assetsList) {
       const img = new Image();
@@ -1159,18 +1184,7 @@ export class GameRenderer {
 
     if (isBuilt) {
       // Mapeamento do nível do prédio para um dos 5 estágios visuais
-      let stage = 1;
-      if (b.key === 'market') {
-        if (level === 1) stage = 1;
-        else if (level === 2) stage = 3;
-        else stage = 5;
-      } else {
-        if (level === 1) stage = 1;
-        else if (level === 2) stage = 2;
-        else if (level === 3 || level === 4) stage = 3;
-        else if (level === 5 || level === 6) stage = 4;
-        else stage = 5; // level >= 7
-      }
+      const stage = getBuildingAssetStage(level);
 
       // Tentar usar o estágio específico, com fallback para o original e depois geométrico
       const stageKey = `${b.key}_${stage}`;
@@ -1185,7 +1199,7 @@ export class GameRenderer {
         this.ctx.save();
         
         // Variação de escala por nível (Nível 1: 1.0x, Nível 2: 1.12x, Nível 3: 1.26x)
-        const scaleMult = BUILDING_LEVEL_SCALE[Math.min(level - 1, 2)];
+        const scaleMult = BUILDING_LEVEL_SCALE[stage - 1] || 1;
         // Aumentamos o tamanho de renderização (de 1.5 para 1.75) para destacar as novas imagens!
         const imgBase = isoFootprintW * 1.75;
         const dw = imgBase * scaleMult;
@@ -2917,6 +2931,28 @@ export class GameRenderer {
         // 1. Corpo
         const bodyImg = this.images[`body_${hero.cosmetics.bodyType}`];
         if (bodyImg && bodyImg.loaded) {
+          let weaponDrawnBehindBody = false;
+          let weaponForegroundKey = null;
+          if (hero.className === 'ARCHER' && hero.equipment.weapon) {
+            const bowBackgroundKey = action === 'shoot'
+              ? hero.equipment.weapon.shootBackgroundAssetKey
+              : hero.equipment.weapon.walkBackgroundAssetKey;
+            weaponForegroundKey = action === 'shoot'
+              ? (hero.equipment.weapon.shootForegroundAssetKey || null)
+              : (hero.equipment.weapon.walkForegroundAssetKey || null);
+            const bowBackgroundImg = bowBackgroundKey ? this.images[bowBackgroundKey] : null;
+            if (bowBackgroundImg && bowBackgroundImg.loaded) {
+              this.ctx.drawImage(bowBackgroundImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+            } else if (hero.facingDir === 'N') {
+              const bowKey = hero.equipment.weapon.assetKey || 'weapon_bow';
+              const bowImg = this.images[bowKey];
+              if (bowImg && bowImg.loaded) {
+                this.ctx.drawImage(bowImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+              }
+              weaponDrawnBehindBody = true;
+            }
+          }
+
           this.ctx.drawImage(bodyImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
 
           // 2. Cabelo (se houver)
@@ -2953,22 +2989,27 @@ export class GameRenderer {
             }
           }
 
-          // 5. Escudo (se Guerreiro com arma equipada)
-          if (hero.className === 'WARRIOR' && hero.equipment.weapon) {
-            const shieldImg = this.images['weapon_shield'];
+          // 5. Escudo
+          if (hero.equipment.shield || (hero.className === 'WARRIOR' && hero.equipment.weapon)) {
+            const shieldKey = hero.equipment.weapon?.shieldAssetKey || hero.equipment.shield?.assetKey || 'weapon_shield';
+            const shieldImg = this.images[shieldKey];
             if (shieldImg && shieldImg.loaded) {
               this.ctx.drawImage(shieldImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
             }
           }
 
           // 6. Arma (se equipada)
-          if (hero.equipment.weapon) {
-            let weaponType = 'longsword';
-            if (hero.className === 'MERCENARY') weaponType = 'dagger';
-            else if (hero.className === 'ARCHER') weaponType = 'bow';
-            else if (hero.className === 'MAGE' || hero.className === 'PRIEST') weaponType = 'staff';
+          if (hero.equipment.weapon && !weaponDrawnBehindBody) {
+            let weaponKey = weaponForegroundKey || hero.equipment.weapon.classAssetKeys?.[hero.className] || hero.equipment.weapon.assetKey;
+            if (!weaponKey) {
+              let weaponType = 'longsword';
+              if (hero.className === 'MERCENARY') weaponType = 'dagger';
+              else if (hero.className === 'ARCHER') weaponType = 'bow';
+              else if (hero.className === 'MAGE' || hero.className === 'PRIEST') weaponType = 'staff';
+              weaponKey = `weapon_${weaponType}`;
+            }
 
-            const weaponImg = this.images[`weapon_${weaponType}`];
+            const weaponImg = this.images[weaponKey];
             if (weaponImg && weaponImg.loaded) {
               this.ctx.drawImage(weaponImg, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
             }

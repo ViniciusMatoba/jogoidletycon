@@ -22,3 +22,8 @@ node_modules/
 # Claude CLI
 .claude/
 
+# Repositorios externos usados apenas como referencia local
+external/
+
+# Arquivos intermediarios gerados para revisao local
+assets/generated/

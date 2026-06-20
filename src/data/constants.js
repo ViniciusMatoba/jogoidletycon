@@ -438,6 +438,83 @@ export const BUILDINGS_CONFIG = {
   }
 };
 
+export const STARTER_EQUIPMENT = {
+  WARRIOR: {
+    weapon: {
+      key: 'starter_warrior_sword',
+      name: 'Espada Enferrujada de Recruta',
+      slot: 'weapon',
+      icon: '⚔️',
+      class: ['WARRIOR'],
+      tier: 0,
+      assetKey: 'weapon_starter_warrior_sword',
+      stats: { atk: 2 }
+    },
+    shield: {
+      key: 'starter_warrior_shield',
+      name: 'Escudo de Madeira Gasto',
+      slot: 'shield',
+      icon: '🛡️',
+      class: ['WARRIOR'],
+      tier: 0,
+      assetKey: 'weapon_starter_warrior_shield',
+      stats: { def: 1 }
+    }
+  },
+  MERCENARY: {
+    weapon: {
+      key: 'starter_mercenary_dagger',
+      name: 'Adagas Cegas de Rua',
+      slot: 'weapon',
+      icon: '🗡️',
+      class: ['MERCENARY'],
+      tier: 0,
+      assetKey: 'weapon_starter_mercenary_dagger',
+      stats: { atk: 2 }
+    }
+  },
+  ARCHER: {
+    weapon: {
+      key: 'starter_archer_bow',
+      name: 'Arco Curto de Aprendiz',
+      slot: 'weapon',
+      icon: '🏹',
+      class: ['ARCHER'],
+      tier: 0,
+      assetKey: 'weapon_starter_archer_bow',
+      walkBackgroundAssetKey: 'weapon_starter_archer_bow_walk_bg',
+      walkForegroundAssetKey: 'weapon_starter_archer_bow_walk_fg',
+      shootBackgroundAssetKey: 'weapon_starter_archer_bow_shoot_bg',
+      shootForegroundAssetKey: 'weapon_starter_archer_bow_shoot_fg',
+      stats: { atk: 2 }
+    }
+  },
+  MAGE: {
+    weapon: {
+      key: 'starter_mage_staff',
+      name: 'Cajado Torto de Aprendiz',
+      slot: 'weapon',
+      icon: '🔮',
+      class: ['MAGE'],
+      tier: 0,
+      assetKey: 'weapon_starter_mage_staff',
+      stats: { atk: 2 }
+    }
+  },
+  PRIEST: {
+    weapon: {
+      key: 'starter_priest_scepter',
+      name: 'Cetro Simples de Peregrino',
+      slot: 'weapon',
+      icon: '✦',
+      class: ['PRIEST'],
+      tier: 0,
+      assetKey: 'weapon_starter_priest_scepter',
+      stats: { atk: 1, def: 1 }
+    }
+  }
+};
+
 export const CRAFT_RECIPES = {
   // Consumíveis
   // --- TIER 1 ---
@@ -468,9 +545,9 @@ export const CRAFT_RECIPES = {
 
   // EQUIPAMENTOS ORIGINAIS E LENDÁRIOS DO FOLCLORE
   // --- GRAU 1 ---
-  sword_t1: { name: 'Espada de Ferro Curta', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 1, cost: { iron_ore: 5, wood_rough: 2, gold: 50 }, stats: { atk: 12 } },
-  bow_t1: { name: 'Arco de Bordo Simples', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 1, cost: { wood_rough: 6, gold: 50 }, stats: { atk: 10 } },
-  staff_t1: { name: 'Cajado Rúnico Rústico', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 5, iron_ore: 1, gold: 50 }, stats: { atk: 9 } },
+  sword_t1: { name: 'Espada de Ferro Curta', slot: 'weapon', icon: '⚔️', class: ['WARRIOR', 'MERCENARY'], tier: 1, cost: { iron_ore: 5, wood_rough: 2, gold: 50 }, classAssetKeys: { WARRIOR: 'weapon_t1_warrior_iron_sword', MERCENARY: 'weapon_t1_mercenary_iron_dagger' }, shieldAssetKey: 'weapon_t1_warrior_round_shield', stats: { atk: 12 } },
+  bow_t1: { name: 'Arco de Bordo Simples', slot: 'weapon', icon: '🏹', class: ['ARCHER'], tier: 1, cost: { wood_rough: 6, gold: 50 }, assetKey: 'weapon_t1_archer_hunter_bow', walkBackgroundAssetKey: 'weapon_t1_archer_hunter_bow_walk_bg', walkForegroundAssetKey: 'weapon_t1_archer_hunter_bow_walk_fg', shootBackgroundAssetKey: 'weapon_t1_archer_hunter_bow_shoot_bg', shootForegroundAssetKey: 'weapon_t1_archer_hunter_bow_shoot_fg', stats: { atk: 10 } },
+  staff_t1: { name: 'Cajado Rúnico Rústico', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 5, iron_ore: 1, gold: 50 }, classAssetKeys: { MAGE: 'weapon_t1_mage_apprentice_staff', PRIEST: 'weapon_t1_priest_oak_scepter' }, stats: { atk: 9 } },
   
   // Equipamento Lendário Tier 1 do Folclore (Gorro do Saci)
   cajado_saci_t1: { name: 'Cajado de Saci', slot: 'weapon', icon: '🔮', class: ['MAGE', 'PRIEST'], tier: 1, cost: { wood_rough: 3, gorro_vermelho: 1, gold: 80 }, stats: { atk: 18 } },
