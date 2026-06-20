@@ -79,6 +79,10 @@ export class GameRenderer {
     this._meleeEffects = [];
     // Sistema VFX por spritesheet
     this._vfxEffects = [];
+    // Marcadores de morte (caveira, lápide, rip boss)
+    this._deathMarkers = [];
+    // Rastreia estado ghost dos heróis para detectar morte
+    this._heroGhostTrack = new Map();
     // Referência ao addFloater do game (injetada depois)
     this._addFloater = null;
   }
@@ -407,6 +411,11 @@ export class GameRenderer {
     // ── Baús de tesouro (drops de boss) ──
     assetsList['chest_common'] = 'assets/items/bau_tesouro.png';
     assetsList['chest_rare']   = 'assets/items/bau_tesouro2.png';
+
+    // ── Marcadores de morte ──
+    assetsList['death_skull']     = 'assets/items/caveiras.png';    // monstro normal (35x27)
+    assetsList['death_gravestone'] = 'assets/items/grave_stone.png'; // herói (34x36)
+    assetsList['death_boss']      = 'assets/items/rip_boss.png';    // boss (27x38)
 
     // ── VFX Textures (64×64 frames, spritesheet vertical 64×384 = 6 frames) ──
     const vfxTextures = ['fire','electricity','holy','void','water','wind','explosion','firework'];
@@ -3870,7 +3879,15 @@ export class GameRenderer {
       this._drawMeleeEffect(e);
     });
 
-    // 8. VFX por spritesheet
+    // 8. Marcadores de morte (caveira, lápide, rip boss)
+    this._consumeDeathEvents(heroes, dt);
+    this._deathMarkers = this._deathMarkers.filter(m => m.life > 0);
+    this._deathMarkers.forEach(m => {
+      m.life -= dt / m.duration;
+      this._drawDeathMarker(m);
+    });
+
+    // 9. VFX por spritesheet
     this._vfxEffects = this._vfxEffects.filter(v => v.frame < v.totalFrames);
     this._vfxEffects.forEach(v => {
       v.elapsed += dt;
@@ -4499,6 +4516,59 @@ export class GameRenderer {
       ctx.fillText('✨ Clique!', pos.x, pos.y - (img ? img.height * 2.8 : 24) - 6);
       ctx.restore();
     });
+  }
+
+  _consumeDeathEvents(heroes, dt) {
+    // Eventos de morte de monstros/boss vindos do spawner
+    const spawner = window.game?.spawner;
+    if (spawner && spawner.deathEvents.length > 0) {
+      spawner.deathEvents.forEach(ev => {
+        if (ev.type === 'boss') {
+          this._deathMarkers.push({ key: 'death_boss', x: ev.x, y: ev.y, scale: 4.0, duration: 6, life: 1 });
+        } else if (ev.type === 'miniboss') {
+          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 3.0, duration: 4, life: 1 });
+        } else {
+          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 2.2, duration: 3, life: 1 });
+        }
+      });
+      spawner.deathEvents = [];
+    }
+
+    // Detectar heróis que acabaram de virar ghost (morte)
+    heroes.forEach(hero => {
+      const wasGhost = this._heroGhostTrack.get(hero.id);
+      if (!wasGhost && hero.isGhost && hero.currentMap === 'hunt') {
+        this._deathMarkers.push({ key: 'death_gravestone', x: hero.x, y: hero.y, scale: 3.5, duration: 8, life: 1 });
+      }
+      this._heroGhostTrack.set(hero.id, hero.isGhost);
+    });
+  }
+
+  _drawDeathMarker(m) {
+    const img = this.images[m.key];
+    if (!img || !img.loaded) return;
+    const pos = this.toIso(m.x, m.y);
+    const alpha = Math.min(1, m.life * 3);   // fade-in rápido
+    const fadeAlpha = m.life < 0.3 ? m.life / 0.3 : 1; // fade-out nos últimos 30%
+    const finalAlpha = Math.min(alpha, fadeAlpha);
+    const floatY = m.key === 'death_gravestone' ? 0 : -6 * (1 - m.life); // caveira sobe levemente
+    const dw = img.width  * m.scale;
+    const dh = img.height * m.scale;
+
+    this.ctx.save();
+    this.ctx.globalAlpha = finalAlpha;
+    this.ctx.imageSmoothingEnabled = false;
+
+    if (m.key === 'death_boss') {
+      this.ctx.shadowColor = '#ff4444';
+      this.ctx.shadowBlur  = 18;
+    } else if (m.key === 'death_gravestone') {
+      this.ctx.shadowColor = '#aaaaff';
+      this.ctx.shadowBlur  = 10;
+    }
+
+    this.ctx.drawImage(img, pos.x - dw / 2, pos.y - dh + floatY, dw, dh);
+    this.ctx.restore();
   }
 
   drawFloaters(floaters) {

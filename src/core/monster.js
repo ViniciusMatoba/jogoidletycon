@@ -334,6 +334,8 @@ export class MonsterSpawner {
 
     // Baús de tesouro pendentes (aparecem no mapa após boss morrer)
     this.pendingChests = [];
+    // Eventos de morte para o renderer exibir imagens de caveira/rip
+    this.deathEvents = [];
 
     // Logs do spawn
     this.logs = ['Spawner inicializado nas Cavernas Rasas.'];
@@ -375,6 +377,7 @@ export class MonsterSpawner {
         if (!monster.isMiniBoss && !monster.isBoss) {
           this.killsCount++;
           this.checkSpecialSpawns(actualViewport);
+          this.deathEvents.push({ type: 'monster', x: monster.x, y: monster.y });
         } else if (monster.isBoss) {
           this.bossSpawned = false;
           this.bossKillsCount++;
@@ -382,6 +385,8 @@ export class MonsterSpawner {
 
           // Cada chefe derrotado recompensa a cidade
           town.addResource('gold', 100);
+
+          this.deathEvents.push({ type: 'boss', x: monster.x, y: monster.y });
 
           // Chance de spawnar baú de tesouro (35% comum, 15% raro)
           const roll = Math.random();
@@ -393,6 +398,7 @@ export class MonsterSpawner {
         } else if (monster.isMiniBoss) {
           this.miniBossSpawned = false;
           this.logs.unshift(`Mini-Boss derrotado!`);
+          this.deathEvents.push({ type: 'miniboss', x: monster.x, y: monster.y });
         }
       }
     }
