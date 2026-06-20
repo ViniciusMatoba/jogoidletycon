@@ -4524,11 +4524,11 @@ export class GameRenderer {
     if (spawner && spawner.deathEvents.length > 0) {
       spawner.deathEvents.forEach(ev => {
         if (ev.type === 'boss') {
-          this._deathMarkers.push({ key: 'death_boss', x: ev.x, y: ev.y, scale: 2.0, duration: 5, life: 1 });
+          this._deathMarkers.push({ key: 'death_boss', x: ev.x, y: ev.y, scale: 2.0, duration: 1.0, life: 1 });
         } else if (ev.type === 'miniboss') {
-          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 1.6, duration: 3.5, life: 1 });
+          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 1.6, duration: 0.8, life: 1 });
         } else {
-          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 1.2, duration: 2.5, life: 1 });
+          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 1.2, duration: 0.6, life: 1 });
         }
       });
       spawner.deathEvents = [];
@@ -4538,7 +4538,7 @@ export class GameRenderer {
     heroes.forEach(hero => {
       const wasGhost = this._heroGhostTrack.get(hero.id);
       if (!wasGhost && hero.isGhost && hero.currentMap === 'hunt') {
-        this._deathMarkers.push({ key: 'death_gravestone', x: hero.x, y: hero.y, scale: 2.0, duration: 6, life: 1 });
+        this._deathMarkers.push({ key: 'death_gravestone', x: hero.x, y: hero.y, scale: 2.0, duration: 1.0, life: 1 });
       }
       this._heroGhostTrack.set(hero.id, hero.isGhost);
     });
