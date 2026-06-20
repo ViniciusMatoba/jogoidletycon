@@ -388,12 +388,14 @@ export class MonsterSpawner {
 
           this.deathEvents.push({ type: 'boss', x: monster.x, y: monster.y });
 
-          // Chance de spawnar baú de tesouro (35% comum, 15% raro)
+          // Chance de spawnar baú de tesouro (5% raro, 12% comum)
           const roll = Math.random();
-          if (roll < 0.15) {
-            this.pendingChests.push({ x: monster.x, y: monster.y, type: 'rare', collected: false });
-          } else if (roll < 0.50) {
-            this.pendingChests.push({ x: monster.x, y: monster.y, type: 'common', collected: false });
+          if (roll < 0.05) {
+            const pt = getRandomHuntPoint(actualViewport.width, actualViewport.height);
+            this.pendingChests.push({ x: pt.x, y: pt.y, type: 'rare', collected: false });
+          } else if (roll < 0.17) {
+            const pt = getRandomHuntPoint(actualViewport.width, actualViewport.height);
+            this.pendingChests.push({ x: pt.x, y: pt.y, type: 'common', collected: false });
           }
         } else if (monster.isMiniBoss) {
           this.miniBossSpawned = false;

@@ -4497,7 +4497,7 @@ export class GameRenderer {
       ctx.shadowBlur = 10 + pulse * 14;
 
       if (img && img.loaded) {
-        const scale = chest.type === 'rare' ? 2.8 : 2.4;
+        const scale = chest.type === 'rare' ? 1.8 : 1.5;
         const dw = img.width * scale;
         const dh = img.height * scale;
         ctx.imageSmoothingEnabled = false;
@@ -4505,15 +4505,15 @@ export class GameRenderer {
       } else {
         // Fallback: retângulo colorido enquanto imagem carrega
         ctx.fillStyle = chest.type === 'rare' ? '#ffd700' : '#4fc3f7';
-        ctx.fillRect(pos.x - 16, pos.y - 24, 32, 24);
+        ctx.fillRect(pos.x - 10, pos.y - 16, 20, 16);
       }
 
       // Ícone de interação pulsando acima do baú
       ctx.shadowBlur = 0;
       ctx.fillStyle = `rgba(255,255,255,${0.7 + pulse * 0.3})`;
-      ctx.font = 'bold 11px monospace';
+      ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('✨ Clique!', pos.x, pos.y - (img ? img.height * 2.8 : 24) - 6);
+      ctx.fillText('clique', pos.x, pos.y - (img ? img.height * 1.8 : 18) - 4);
       ctx.restore();
     });
   }
@@ -4524,11 +4524,11 @@ export class GameRenderer {
     if (spawner && spawner.deathEvents.length > 0) {
       spawner.deathEvents.forEach(ev => {
         if (ev.type === 'boss') {
-          this._deathMarkers.push({ key: 'death_boss', x: ev.x, y: ev.y, scale: 4.0, duration: 6, life: 1 });
+          this._deathMarkers.push({ key: 'death_boss', x: ev.x, y: ev.y, scale: 2.0, duration: 5, life: 1 });
         } else if (ev.type === 'miniboss') {
-          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 3.0, duration: 4, life: 1 });
+          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 1.6, duration: 3.5, life: 1 });
         } else {
-          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 2.2, duration: 3, life: 1 });
+          this._deathMarkers.push({ key: 'death_skull', x: ev.x, y: ev.y, scale: 1.2, duration: 2.5, life: 1 });
         }
       });
       spawner.deathEvents = [];
@@ -4538,7 +4538,7 @@ export class GameRenderer {
     heroes.forEach(hero => {
       const wasGhost = this._heroGhostTrack.get(hero.id);
       if (!wasGhost && hero.isGhost && hero.currentMap === 'hunt') {
-        this._deathMarkers.push({ key: 'death_gravestone', x: hero.x, y: hero.y, scale: 3.5, duration: 8, life: 1 });
+        this._deathMarkers.push({ key: 'death_gravestone', x: hero.x, y: hero.y, scale: 2.0, duration: 6, life: 1 });
       }
       this._heroGhostTrack.set(hero.id, hero.isGhost);
     });
