@@ -77,6 +77,8 @@ export class GameRenderer {
     this.projectiles = [];
     this._impacts = [];
     this._meleeEffects = [];
+    // Sistema VFX por spritesheet
+    this._vfxEffects = [];
     // Referência ao addFloater do game (injetada depois)
     this._addFloater = null;
   }
@@ -402,6 +404,26 @@ export class GameRenderer {
     assetsList['weapon_t1_mage_apprentice_staff'] = 'assets/sprites/weapon_t1_mage_apprentice_staff_universal.png';
     assetsList['weapon_t1_priest_oak_scepter']    = 'assets/sprites/weapon_t1_priest_oak_scepter_universal.png';
 
+    // ── VFX Textures (64×64 frames, spritesheet vertical 64×384 = 6 frames) ──
+    const vfxTextures = ['fire','electricity','holy','void','water','wind','explosion','firework'];
+    vfxTextures.forEach(k => { assetsList[`vfx_tex_${k}`] = `assets/vfx/textures/${k}.png`; });
+
+    // ── VFX Slash (64×64 frames, spritesheet 320×128 = 10 frames 5×2) ──
+    const vfxSlash = ['slash1_red','slash1_blue','slash1_green','slash1_gold','slash1_purple',
+                      'slash2_red','slash2_blue','slash3_red','slash3_blue'];
+    vfxSlash.forEach(k => { assetsList[`vfx_${k}`] = `assets/vfx/slash/${k}.png`; });
+
+    // ── VFX Hit (336×48 = 7 frames × 48px horizontal) ──
+    assetsList['vfx_hit1'] = 'assets/vfx/hit/hit1.png';
+    assetsList['vfx_hit2'] = 'assets/vfx/hit/hit2.png';
+    assetsList['vfx_hit3'] = 'assets/vfx/hit/hit3.png';
+
+    // ── VFX Magic Pack (spritesheets prontos) ──
+    assetsList['vfx_dark_bolt']  = 'assets/vfx/magic/dark_bolt.png';   // 704×88 → 8 frames 88×88
+    assetsList['vfx_fire_bomb']  = 'assets/vfx/magic/fire_bomb.png';   // 896×64 → 14 frames 64×64
+    assetsList['vfx_lightning']  = 'assets/vfx/magic/lightning.png';   // 640×128 → 5 frames 128×128
+    assetsList['vfx_spark']      = 'assets/vfx/magic/spark.png';       // 224×32 → 7 frames 32×32
+
     for (const key in assetsList) {
       const img = new Image();
       img.src = assetsList[key];
@@ -413,7 +435,8 @@ export class GameRenderer {
                     key.startsWith('body_') || key.startsWith('hair_') ||
                     key.startsWith('armor_') || key.startsWith('helmet_') ||
                     key.startsWith('weapon_') || key.startsWith('pet_') ||
-                    key.startsWith('hero_') || key.startsWith('monster_');
+                    key.startsWith('hero_') || key.startsWith('monster_') ||
+                    key.startsWith('vfx_');
 
       img.onload = () => {
         if (isBackground || isLPC) {
@@ -3671,6 +3694,8 @@ export class GameRenderer {
       if (type === 'melee' || type === 'slash' || type === 'skill_taunt' || type === 'skill_buff_atk' || type === 'skill_brutal_strike') {
         // Melee ou imediato: cria efeito visual imediato
         this._spawnMeleeEffect(atk, hero.className);
+        // VFX spritesheet por classe
+        this._spawnClassVFX(hero.className, type, atk.toX, atk.toY);
       } else {
         // Projéteis e magias: cria projétil voador
         let speed = type === 'arrow' ? 320 : (type === 'holy' ? 200 : 260);
@@ -3835,6 +3860,68 @@ export class GameRenderer {
       e.life -= dt * 3;
       this._drawMeleeEffect(e);
     });
+
+    // 8. VFX por spritesheet
+    this._vfxEffects = this._vfxEffects.filter(v => v.frame < v.totalFrames);
+    this._vfxEffects.forEach(v => {
+      v.elapsed += dt;
+      const frameDur = 1 / v.fps;
+      if (v.elapsed >= frameDur) {
+        v.frame += Math.floor(v.elapsed / frameDur);
+        v.elapsed = v.elapsed % frameDur;
+      }
+      this._drawVFX(v);
+    });
+  }
+
+  _spawnClassVFX(className, type, x, y) {
+    // Mapeamento de classe → VFX spritesheet
+    const MAP = {
+      WARRIOR:    { key: 'vfx_slash1_red',    fw: 64, fh: 64, cols: 5, rows: 2, fps: 14, scale: 1.8 },
+      MERCENARY:  { key: 'vfx_slash2_red',    fw: 64, fh: 64, cols: 5, rows: 2, fps: 14, scale: 1.6 },
+      ARCHER:     { key: 'vfx_tex_electricity', fw: 64, fh: 64, cols: 1, rows: 6, fps: 12, scale: 1.4 },
+      MAGE:       { key: 'vfx_tex_fire',       fw: 64, fh: 64, cols: 1, rows: 6, fps: 12, scale: 1.4 },
+      PRIEST:     { key: 'vfx_tex_holy',       fw: 64, fh: 64, cols: 1, rows: 6, fps: 10, scale: 1.4 },
+    };
+    // Variações por habilidade especial
+    if (type === 'skill_taunt')        MAP.WARRIOR  = { key: 'vfx_slash1_gold',  fw: 64, fh: 64, cols: 5, rows: 2, fps: 14, scale: 2.0 };
+    if (type === 'skill_brutal_strike') MAP.WARRIOR = { key: 'vfx_slash3_red',   fw: 64, fh: 64, cols: 5, rows: 2, fps: 16, scale: 2.2 };
+    if (type === 'skill_buff_atk' && className === 'MERCENARY') MAP.MERCENARY = { key: 'vfx_tex_explosion', fw: 64, fh: 64, cols: 1, rows: 6, fps: 12, scale: 1.6 };
+
+    const cfg = MAP[className];
+    if (cfg) this.spawnVFX(cfg.key, x, y, cfg);
+  }
+
+  spawnVFX(key, worldX, worldY, opts = {}) {
+    const img = this.images[key];
+    if (!img || !img.loaded) return;
+    const fw    = opts.fw    || 64;
+    const fh    = opts.fh    || 64;
+    const cols  = opts.cols  || Math.floor(img.width  / fw);
+    const rows  = opts.rows  || Math.floor(img.height / fh);
+    const fps   = opts.fps   || 12;
+    const scale = opts.scale || 1.5;
+    this._vfxEffects.push({
+      key, worldX, worldY, fw, fh, cols, rows, fps, scale,
+      totalFrames: cols * rows,
+      frame: 0, elapsed: 0
+    });
+  }
+
+  _drawVFX(v) {
+    const img = this.images[v.key];
+    if (!img || !img.loaded || v.frame >= v.totalFrames) return;
+    const pos = this.toIso(v.worldX, v.worldY);
+    const col = v.frame % v.cols;
+    const row = Math.floor(v.frame / v.cols);
+    const sx  = col * v.fw;
+    const sy  = row * v.fh;
+    const dw  = v.fw * v.scale;
+    const dh  = v.fh * v.scale;
+    this.ctx.save();
+    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.drawImage(img, sx, sy, v.fw, v.fh, pos.x - dw / 2, pos.y - dh / 2, dw, dh);
+    this.ctx.restore();
   }
 
   _spawnMeleeEffect(atk, className) {
