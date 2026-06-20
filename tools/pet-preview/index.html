@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Preview Pets</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111419;
+      --panel: #181b20;
+      --panel-2: #101317;
+      --gold: #d6a629;
+      --line: #5f4424;
+      --text: #f3dfaa;
+      --muted: #c6b27a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 13px;
+    }
+
+    strong {
+      white-space: nowrap;
+    }
+
+    .meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      justify-content: center;
+      text-align: center;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    button {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      background: #2a2118;
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover,
+    button.active {
+      border-color: var(--gold);
+      color: #fff3bc;
+    }
+
+    #petBar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px;
+      overflow-x: auto;
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--line);
+      scrollbar-width: thin;
+    }
+
+    .pet-button {
+      width: 46px;
+      height: 42px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      padding: 2px;
+      border-radius: 4px;
+    }
+
+    .pet-button img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    main {
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #6ea53e;
+    }
+
+    .label {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      padding: 6px 8px;
+      border: 1px solid rgba(95, 68, 36, 0.8);
+      background: rgba(16, 19, 23, 0.78);
+      color: var(--text);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    @media (max-width: 540px) {
+      header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+      }
+
+      .meta {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        text-align: left;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong id="title">Pets - Preview</strong>
+    <div class="meta">
+      <span>spritesheet 256x256</span>
+      <span>frame 64x64</span>
+      <span>linhas S/W/E/N</span>
+    </div>
+    <div class="actions">
+      <button id="mode">Todos</button>
+      <button id="toggle">Pausar</button>
+    </div>
+  </header>
+  <nav id="petBar" aria-label="Pets"></nav>
+  <main>
+    <canvas id="scene"></canvas>
+    <div class="label" id="label">Carregando pets...</div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    const toggle = document.getElementById('toggle');
+    const modeButton = document.getElementById('mode');
+    const petBar = document.getElementById('petBar');
+    const title = document.getElementById('title');
+    const label = document.getElementById('label');
+
+    const dirRows = { S: 0, W: 1, E: 2, N: 3 };
+    const rootPrefix = '../../';
+    const sprites = new Map();
+    const pets = [];
+    let selectedIndex = 0;
+    let showAll = false;
+    let running = true;
+    let last = performance.now();
+    let frameTime = 0;
+
+    toggle.addEventListener('click', () => {
+      running = !running;
+      toggle.textContent = running ? 'Pausar' : 'Retomar';
+    });
+
+    modeButton.addEventListener('click', () => {
+      showAll = !showAll;
+      modeButton.textContent = showAll ? 'Um Pet' : 'Todos';
+      modeButton.classList.toggle('active', showAll);
+      updateLabel();
+    });
+
+    function resize() {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+    }
+
+    function makePet(entry, index) {
+      const w = Math.max(320, canvas.clientWidth || 320);
+      const h = Math.max(420, canvas.clientHeight || 420);
+      return {
+        ...entry,
+        x: 72 + (index % 5) * Math.max(54, Math.min(92, w / 7)),
+        y: 110 + Math.floor(index / 5) * 72,
+        targetX: 80 + Math.random() * Math.max(80, w - 160),
+        targetY: 90 + Math.random() * Math.max(100, h - 170),
+        dir: 'E',
+        speed: entry.kind === 'bat' ? 118 : 78 + (index % 4) * 8,
+        wait: 0,
+        phase: index * 0.47
+      };
+    }
+
+    function chooseTarget(pet) {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      pet.targetX = 54 + Math.random() * Math.max(80, w - 108);
+      pet.targetY = 70 + Math.random() * Math.max(80, h - 132);
+    }
+
+    function drawIsoGrid(w, h) {
+      ctx.fillStyle = '#72aa3f';
+      ctx.fillRect(0, 0, w, h);
+
+      const tileW = 72;
+      const tileH = 36;
+      const cols = Math.ceil(w / tileW) + 8;
+      const rows = Math.ceil(h / tileH) + 8;
+      const originX = w / 2;
+      const originY = -tileH * 2;
+
+      ctx.lineWidth = 1;
+      for (let row = -rows; row < rows; row++) {
+        for (let col = -cols; col < cols; col++) {
+          const x = originX + (col - row) * tileW / 2;
+          const y = originY + (col + row) * tileH / 2;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + tileW / 2, y + tileH / 2);
+          ctx.lineTo(x, y + tileH);
+          ctx.lineTo(x - tileW / 2, y + tileH / 2);
+          ctx.closePath();
+          ctx.strokeStyle = (col + row) % 2 === 0 ? 'rgba(214, 166, 41, 0.23)' : 'rgba(55, 130, 59, 0.28)';
+          ctx.stroke();
+        }
+      }
+    }
+
+    function updatePet(pet, dt) {
+      const dx = pet.targetX - pet.x;
+      const dy = pet.targetY - pet.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < 5) {
+        pet.wait -= dt;
+        if (pet.wait <= 0) {
+          chooseTarget(pet);
+          pet.wait = 0.25 + Math.random() * 0.8;
+        }
+        return;
+      }
+
+      const step = Math.min(dist, pet.speed * dt);
+      pet.x += dx / dist * step;
+      pet.y += dy / dist * step;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        pet.dir = dx >= 0 ? 'E' : 'W';
+      } else {
+        pet.dir = dy >= 0 ? 'S' : 'N';
+      }
+    }
+
+    function update(dt) {
+      if (!running) return;
+      frameTime += dt;
+      const visiblePets = showAll ? pets : [pets[selectedIndex]].filter(Boolean);
+      visiblePets.forEach(pet => updatePet(pet, dt));
+    }
+
+    function drawPet(pet) {
+      const sprite = sprites.get(pet.slug);
+      const moving = Math.hypot(pet.targetX - pet.x, pet.targetY - pet.y) > 5;
+      const frameSpeed = pet.kind === 'bat' ? 13 : 9;
+      const frame = moving || pet.kind === 'bat' ? Math.floor((frameTime + pet.phase) * frameSpeed) % 4 : 0;
+      const row = dirRows[pet.dir];
+      const baseSize = pet.kind === 'bat' ? 54 : 52;
+      const size = Math.max(42, Math.min(60, baseSize + canvas.clientWidth * 0.01));
+      const float = pet.kind === 'bat' ? Math.sin(frameTime * 4 + pet.phase) * 4 - 8 : 0;
+
+      ctx.fillStyle = pet.kind === 'bat' ? 'rgba(30, 26, 34, 0.18)' : 'rgba(30, 38, 24, 0.28)';
+      ctx.beginPath();
+      ctx.ellipse(pet.x, pet.y + 8, size * 0.32, size * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (sprite && sprite.complete) {
+        ctx.drawImage(
+          sprite,
+          frame * 64,
+          row * 64,
+          64,
+          64,
+          Math.round(pet.x - size / 2),
+          Math.round(pet.y - size + 10 + float),
+          size,
+          size
+        );
+      }
+    }
+
+    function draw() {
+      drawIsoGrid(canvas.clientWidth, canvas.clientHeight);
+      const visiblePets = showAll ? [...pets] : [pets[selectedIndex]].filter(Boolean);
+      visiblePets.sort((a, b) => a.y - b.y).forEach(drawPet);
+    }
+
+    function loop(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      resize();
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function updateLabel() {
+      if (showAll) {
+        title.textContent = 'Pets - Todos';
+        label.textContent = `${pets.length} pets em movimento livre`;
+        return;
+      }
+      const pet = pets[selectedIndex];
+      title.textContent = pet ? `${pet.name} - Preview` : 'Pets - Preview';
+      label.textContent = pet ? `${pet.name} | ${pet.kind === 'bat' ? 'voo' : 'caminhada'} | ${pet.sprite}` : 'Carregando pets...';
+    }
+
+    function renderPetBar() {
+      petBar.innerHTML = '';
+      pets.forEach((pet, index) => {
+        const button = document.createElement('button');
+        button.className = 'pet-button';
+        button.title = pet.name;
+        button.type = 'button';
+        const img = document.createElement('img');
+        img.alt = pet.name;
+        img.src = rootPrefix + pet.icon;
+        button.appendChild(img);
+        button.addEventListener('click', () => {
+          selectedIndex = index;
+          showAll = false;
+          modeButton.textContent = 'Todos';
+          modeButton.classList.remove('active');
+          document.querySelectorAll('.pet-button').forEach(el => el.classList.remove('active'));
+          button.classList.add('active');
+          updateLabel();
+        });
+        if (index === selectedIndex) button.classList.add('active');
+        petBar.appendChild(button);
+      });
+    }
+
+    async function init() {
+      const res = await fetch(rootPrefix + 'assets/sprites/pets/pets_manifest.json');
+      const manifest = await res.json();
+      manifest.forEach((entry, index) => {
+        const img = new Image();
+        img.src = rootPrefix + entry.sprite;
+        sprites.set(entry.slug, img);
+        pets.push(makePet(entry, index));
+      });
+      renderPetBar();
+      updateLabel();
+      requestAnimationFrame(loop);
+    }
+
+    init().catch(err => {
+      label.textContent = `Erro ao carregar pets: ${err.message}`;
+    });
+  </script>
+</body>
+</html>
