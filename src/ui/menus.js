@@ -1949,6 +1949,26 @@ function drawHeroLPC(hero, ctx, destWidth, destHeight) {
   ctx.ellipse(destWidth / 2, feetY, 10 * scale, 3 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
+  const isArcher = hero.className === 'ARCHER';
+  let weaponBackgroundKey = null;
+  let weaponForegroundKey = null;
+  let weaponDrawnBehindBody = false;
+
+  if (isArcher && hero.equipment.weapon) {
+    weaponBackgroundKey = hero.equipment.weapon.walkBackgroundAssetKey || null;
+    weaponForegroundKey = hero.equipment.weapon.walkForegroundAssetKey || null;
+
+    if (!weaponBackgroundKey && !weaponForegroundKey) {
+      weaponBackgroundKey = hero.equipment.weapon.assetKey || 'weapon_bow';
+    }
+
+    const bgWeaponImg = weaponBackgroundKey ? images[weaponBackgroundKey] : null;
+    if (bgWeaponImg && bgWeaponImg.loaded) {
+      ctx.drawImage(bgWeaponImg, sx, sy, sw, sh, dx, dy, dw, dh);
+      weaponDrawnBehindBody = true;
+    }
+  }
+
   // 2. Body
   ctx.drawImage(bodyImg, sx, sy, sw, sh, dx, dy, dw, dh);
 
@@ -1986,24 +2006,33 @@ function drawHeroLPC(hero, ctx, destWidth, destHeight) {
     }
   }
 
-  // 6. Shield (Warrior with weapon equipped)
-  if (hero.className === 'WARRIOR' && hero.equipment.weapon) {
-    const shieldImg = images['weapon_shield'];
+  // 6. Shield
+  if (hero.equipment.shield || (hero.className === 'WARRIOR' && hero.equipment.weapon)) {
+    const shieldKey = hero.equipment.weapon?.shieldAssetKey || hero.equipment.shield?.assetKey || 'weapon_shield';
+    const shieldImg = images[shieldKey];
     if (shieldImg && shieldImg.loaded) {
       ctx.drawImage(shieldImg, sx, sy, sw, sh, dx, dy, dw, dh);
     }
   }
 
   // 7. Weapon
-  if (hero.equipment.weapon) {
-    let weaponType = 'longsword';
-    if (hero.className === 'MERCENARY') weaponType = 'dagger';
-    else if (hero.className === 'ARCHER') weaponType = 'bow';
-    else if (hero.className === 'MAGE' || hero.className === 'PRIEST') weaponType = 'staff';
+  if (hero.equipment.weapon && !weaponDrawnBehindBody) {
+    let weaponKey = weaponForegroundKey || hero.equipment.weapon.classAssetKeys?.[hero.className] || hero.equipment.weapon.assetKey;
+    if (!weaponKey) {
+      if (hero.className === 'MERCENARY') weaponKey = 'weapon_dagger';
+      else if (hero.className === 'ARCHER') weaponKey = 'weapon_bow';
+      else if (hero.className === 'MAGE' || hero.className === 'PRIEST') weaponKey = 'weapon_staff';
+      else weaponKey = 'weapon_longsword';
+    }
 
-    const weaponImg = images[`weapon_${weaponType}`];
+    const weaponImg = images[weaponKey];
     if (weaponImg && weaponImg.loaded) {
       ctx.drawImage(weaponImg, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+  } else if (weaponDrawnBehindBody && weaponForegroundKey) {
+    const fgWeaponImg = images[weaponForegroundKey];
+    if (fgWeaponImg && fgWeaponImg.loaded) {
+      ctx.drawImage(fgWeaponImg, sx, sy, sw, sh, dx, dy, dw, dh);
     }
   }
 
@@ -2584,5 +2613,3 @@ function formatResourceName(res) {
   };
   return names[res] || res;
 }
-
-
