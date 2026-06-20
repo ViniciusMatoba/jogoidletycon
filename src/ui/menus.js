@@ -14,6 +14,117 @@ let wasCraftModalActive = false;
 
 let activeRecipeFilter = 'all';
 
+const PROFILE_EQUIPMENT_SLOTS = [
+  { key: 'helmet', name: 'Elmo', placeholder: '🪖', locked: true },
+  { key: 'necklace', name: 'Colar', placeholder: '📿', locked: true },
+  { key: 'armor', name: 'Armadura', placeholder: '🧥', locked: false },
+  { key: 'weapon', name: 'Arma', placeholder: '⚔️', locked: false },
+  { key: 'gloves', name: 'Luvas', placeholder: '🧤', locked: false },
+  { key: 'ring', name: 'Anel', placeholder: '💍', locked: true },
+  { key: 'belt', name: 'Cinto', placeholder: '🥋', locked: true },
+  { key: 'boots', name: 'Botas', placeholder: '🥾', locked: false }
+];
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
+
+function getItemRarity(item) {
+  if (!item) return 'common';
+  if (item.rarity) return item.rarity;
+  if (!item.stats) return 'common';
+
+  const name = item.name || '';
+  if (name.includes('Saci') || name.includes('Mula') || name.includes('Curupira') || name.includes('Boitatá') || name.includes('BoitatÃ¡') || name.includes('Mapinguari')) {
+    return 'legendary';
+  }
+  if (item.tier >= 3) return 'rare';
+  if (item.tier === 2) return 'uncommon';
+  return 'common';
+}
+
+function ensureEquipmentItemModal() {
+  let modal = document.getElementById('equipment-item-modal');
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'equipment-item-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="retro-modal equipment-item-window">
+      <div class="modal-header">
+        <h3>Item</h3>
+        <button class="close-modal-btn" id="equipment-item-close-x">&times;</button>
+      </div>
+      <div class="equipment-item-body" id="equipment-item-body"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.classList.remove('active');
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) close();
+  });
+  modal.querySelector('#equipment-item-close-x')?.addEventListener('click', close);
+  return modal;
+}
+
+function openEquipmentItemModal(item, slotMeta) {
+  if (!item) return;
+
+  const modal = ensureEquipmentItemModal();
+  const body = modal.querySelector('#equipment-item-body');
+  const rarity = getItemRarity(item);
+  const stats = item.stats || {};
+  const statLabels = {
+    atk: 'ATK',
+    def: 'DEF',
+    hp: 'HP',
+    maxHp: 'HP',
+    spd: 'Veloc.',
+    crit: 'Crítico',
+    dodge: 'Evasão',
+    energy: 'Energia',
+    mood: 'Humor'
+  };
+  const statsHtml = Object.entries(stats).length
+    ? Object.entries(stats).map(([key, value]) => `
+        <div class="equipment-stat-chip">
+          <span>${escapeHtml(statLabels[key] || key.toUpperCase())}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `).join('')
+    : '<div class="equipment-stat-chip"><span>Bônus</span><strong>-</strong></div>';
+
+  const classText = Array.isArray(item.class) ? item.class.join(', ') : (item.class || 'Todas');
+  if (body) {
+    body.innerHTML = `
+      <div class="equipment-item-title-row">
+        <div class="equipment-item-icon item-rarity-${rarity}">${item.icon || slotMeta.placeholder}</div>
+        <div>
+          <h4 class="equipment-item-name">${escapeHtml(item.name || slotMeta.name)}</h4>
+          <div class="equipment-item-subtitle">${escapeHtml(slotMeta.name)} • Grau ${escapeHtml(item.tier ?? 0)} • ${escapeHtml(rarity)}</div>
+        </div>
+      </div>
+      <div class="equipment-item-stats">${statsHtml}</div>
+      <div class="equipment-item-meta">
+        <div><strong>Classe:</strong> ${escapeHtml(classText)}</div>
+        <div><strong>Chave:</strong> ${escapeHtml(item.key || item.result || 'item_equipado')}</div>
+      </div>
+      <button class="profile-close-btn equipment-item-close" id="equipment-item-close-btn">Close</button>
+    `;
+    body.querySelector('#equipment-item-close-btn')?.addEventListener('click', () => modal.classList.remove('active'));
+  }
+
+  modal.classList.add('active');
+}
+
 function activatePlacementMode(bKey, game) {
   pendingBuildingPlacement = bKey;
   const currentPlacement = game.town.getBuildingPlacement(bKey);
@@ -1659,71 +1770,39 @@ function refreshHeroProfile(hero, game) {
   }
 
   // Renderização dos 8 slots de equipamento
-  const slots = [
-    'helmet', 'necklace', 'armor', 'weapon', 'gloves',
-    'ring', 'belt', 'boots'
-  ];
+  const slots = PROFILE_EQUIPMENT_SLOTS;
 
-  slots.forEach(slot => {
+  slots.forEach(slotMeta => {
+    const slot = slotMeta.key;
     const slotEl = document.querySelector(`.slot-${slot.replace('_', '-')}`);
     if (slotEl) {
-      const isLocked = !['weapon', 'armor', 'gloves', 'boots'].includes(slot);
       const item = hero.equipment[slot];
+      slotEl.onclick = null;
+      slotEl.dataset.slotName = slotMeta.name;
 
-      if (isLocked) {
+      if (slotMeta.locked && !item) {
         slotEl.className = `equip-slot slot-${slot.replace('_', '-')} slot-locked`;
         slotEl.innerHTML = `<span class="slot-placeholder">🔒</span>`;
-        const slotNamesPt = {
-          helmet: 'Elmo',
-          necklace: 'Colar',
-          ring: 'Anel',
-          belt: 'Cinturão'
-        };
-        const slotName = slotNamesPt[slot] || slot.toUpperCase();
-        slotEl.title = `${slotName} (Desenvolvimento Futuro)`;
+        slotEl.title = `${slotMeta.name} bloqueado`;
       } else if (item) {
-        let rarity = 'common';
-        if (item.rarity) {
-          rarity = item.rarity;
-        } else if (item.stats) {
-          if (item.name.includes('Saci') || item.name.includes('Mula') || item.name.includes('Curupira') || item.name.includes('Boitatá') || item.name.includes('Mapinguari')) {
-            rarity = 'legendary';
-          } else if (item.tier === 3) {
-            rarity = 'rare';
-          } else if (item.tier === 2) {
-            rarity = 'uncommon';
-          }
-        }
-
+        const rarity = getItemRarity(item);
         slotEl.className = `equip-slot slot-${slot.replace('_', '-')} equipped item-rarity-${rarity}`;
-        const starsCount = Math.min(5, item.tier + 2);
+        const starsCount = Math.min(5, Math.max(1, (item.tier ?? 0) + 2));
         const starsHtml = '<span>✦</span>'.repeat(starsCount);
 
         slotEl.innerHTML = `
-          <span class="slot-placeholder">${item.icon || '⚔️'}</span>
+          <span class="slot-placeholder">${item.icon || slotMeta.placeholder}</span>
           <div class="slot-stars">${starsHtml}</div>
         `;
-        slotEl.title = `${item.name} (Grau ${item.tier})`;
+        slotEl.title = `${item.name} (Grau ${item.tier ?? 0})`;
+        slotEl.onclick = (event) => {
+          event.stopPropagation();
+          openEquipmentItemModal(item, slotMeta);
+        };
       } else {
         slotEl.className = `equip-slot slot-${slot.replace('_', '-')}`;
-        
-        const placeholders = {
-          helmet: '🪖', necklace: '📿', armor: '🧥', weapon: '⚔️', gloves: '🧤',
-          ring: '💍', belt: '🥋', boots: '🥾'
-        };
-        slotEl.innerHTML = `<span class="slot-placeholder">${placeholders[slot]}</span>`;
-        const slotNamesPt = {
-          helmet: 'Elmo',
-          necklace: 'Colar',
-          armor: 'Armadura',
-          weapon: 'Arma',
-          gloves: 'Luvas',
-          ring: 'Anel',
-          belt: 'Cinturão',
-          boots: 'Botas'
-        };
-        const slotName = slotNamesPt[slot] || slot.toUpperCase();
-        slotEl.title = `Slot Vazio: ${slotName}`;
+        slotEl.innerHTML = `<span class="slot-placeholder">${slotMeta.placeholder}</span>`;
+        slotEl.title = `Slot vazio: ${slotMeta.name}`;
       }
     }
   });

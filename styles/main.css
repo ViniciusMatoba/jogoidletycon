@@ -246,37 +246,46 @@ body {
 /* BARRA DE MENU INFERIOR FIXADA */
 .retro-footer-menu {
   display: flex;
-  justify-content: space-around;
-  align-items: center;
+  justify-content: stretch;
+  align-items: stretch;
   height: 55px;
   background-color: #161a24;
   border-top: 4px double var(--border-color);
-  padding: 4px 12px;
+  padding: 0;
   position: relative;
   z-index: 220;
+  gap: 0;
 }
 
 .menu-btn-retro {
+  flex: 1 1 0;
+  min-width: 0;
   background-color: #5c4530;
   border: 3px double #8c6e54;
+  border-left-width: 0;
   color: #fff;
-  padding: 6px 16px;
+  padding: 0 4px;
   font-family: var(--font-retro);
-  font-size: 16px;
+  font-size: clamp(10px, 2.3vw, 15px);
+  line-height: 1.1;
+  text-align: center;
   cursor: pointer;
   box-shadow: 0 2px #000;
-  border-radius: 2px;
+  border-radius: 0;
   transition: all 0.1s;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.menu-btn-retro:first-child {
+  border-left-width: 3px;
 }
 .menu-btn-retro:hover {
   background-color: #70553c;
-  transform: translateY(-1px);
 }
 .menu-btn-retro:active {
-  transform: translateY(1px);
   box-shadow: 0 0px #000;
 }
 .menu-btn-retro.active {
@@ -927,15 +936,15 @@ body {
     overflow: hidden;
   }
   .retro-footer-menu {
-    height: auto;
-    min-height: 50px;
-    padding: 6px 2px;
-    flex-wrap: wrap;
-    gap: 4px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0;
+    flex-wrap: nowrap;
+    gap: 0;
   }
   .menu-btn-retro {
-    padding: 4px 8px;
-    font-size: 14px;
+    padding: 0 3px;
+    font-size: clamp(9px, 2.6vw, 12px);
   }
   .retro-modal {
     width: 95%;
@@ -953,19 +962,24 @@ body {
 /* ==================== DETAILED HERO PROFILE WINDOW (EVIL HUNTER TYCOON STYLE) ==================== */
 
 .hero-profile-window {
-  max-width: 380px !important;
+  width: min(96vw, 430px) !important;
+  max-width: 430px !important;
+  max-height: calc(100dvh - 18px);
   background-color: #171310;
   border: 6px double #5c4530;
   border-radius: 4px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
 }
 
 .profile-body {
-  padding: 10px;
+  padding: clamp(8px, 2.2vw, 12px);
   display: flex;
   flex-direction: column;
   background-color: #1a1512;
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: calc(100dvh - 86px);
+  scrollbar-width: thin;
 }
 
 .profile-top-bar {
@@ -1016,19 +1030,23 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 290px;
+  min-height: clamp(250px, 64vw, 330px);
+  height: auto;
   position: relative;
   background-color: #120e0c;
   border: 2px solid #3d2b1f;
   border-radius: 4px;
   margin-bottom: 8px;
+  padding: clamp(6px, 1.8vw, 12px);
   overflow: hidden;
 }
 
 .circle-slots-wrapper {
   position: relative;
-  width: 320px;
-  height: 280px;
+  width: min(100%, 340px);
+  aspect-ratio: 1 / 1;
+  height: auto;
+  margin: 0 auto;
 }
 
 .profile-avatar-center {
@@ -1037,11 +1055,12 @@ body {
   left: 50%;
   transform: translate(-50%, -55%);
   z-index: 2;
-  width: 96px;
-  height: 96px;
+  width: clamp(90px, 30vw, 126px);
+  height: clamp(90px, 30vw, 126px);
   display: flex;
   justify-content: center;
   align-items: center;
+  pointer-events: none;
 }
 
 .profile-avatar-center canvas {
@@ -1053,8 +1072,8 @@ body {
 /* Equipment slots */
 .equip-slot {
   position: absolute;
-  width: 42px;
-  height: 42px;
+  width: clamp(42px, 12.5vw, 52px);
+  height: clamp(42px, 12.5vw, 52px);
   background-color: #1c1512;
   border: 2px solid #423226;
   border-radius: 4px;
@@ -1065,10 +1084,13 @@ body {
   cursor: pointer;
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.7);
   transition: transform 0.1s, border-color 0.1s;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  touch-action: manipulation;
 }
 
 .equip-slot:hover {
-  transform: scale(1.05);
+  transform: translate(-50%, -50%) scale(1.05);
   border-color: #7a5c43;
 }
 
@@ -1096,6 +1118,15 @@ body {
   background-color: #291e17;
   border-color: #c39b34;
   box-shadow: 0 0 8px rgba(195, 155, 52, 0.4);
+  cursor: pointer;
+}
+
+.equip-slot.equipped::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(255, 232, 135, 0.18);
+  pointer-events: none;
 }
 
 .equip-slot.equipped .slot-placeholder {
@@ -1121,16 +1152,15 @@ body {
   text-shadow: 0 1px #000;
 }
 
-/* Posicionamento absoluto dos slots no wrapper 320x280 */
-/* Inner Ring slots */
-.slot-helmet       { left: calc(50% - 21px); top: 10px; }
-.slot-necklace     { left: 95px; top: 46px; }
-.slot-armor        { right: 95px; top: 46px; }
-.slot-weapon       { left: 74px; top: 106px; }
-.slot-gloves       { right: 74px; top: 106px; }
-.slot-ring         { left: 95px; top: 166px; }
-.slot-boots        { right: 95px; top: 166px; }
-.slot-belt         { left: calc(50% - 21px); top: 202px; }
+/* 8 slots fixos ao redor do personagem */
+.slot-helmet   { left: 50%; top: 8%; }
+.slot-armor    { left: 78%; top: 24%; }
+.slot-gloves   { left: 86%; top: 52%; }
+.slot-boots    { left: 72%; top: 82%; }
+.slot-belt     { left: 50%; top: 92%; }
+.slot-ring     { left: 28%; top: 82%; }
+.slot-weapon   { left: 14%; top: 52%; }
+.slot-necklace { left: 22%; top: 24%; }
 
 /* EXP Bar */
 .profile-exp-bar-container {
@@ -1894,8 +1924,91 @@ input:checked + .retro-slider:before {
   box-shadow: none !important;
 }
 .equip-slot.slot-locked:hover {
-  transform: none !important;
+  transform: translate(-50%, -50%) !important;
   border-color: #3a2518 !important;
+}
+
+.equipment-item-window {
+  width: min(92vw, 340px) !important;
+  max-height: calc(100dvh - 24px);
+  border: 4px double #6a4a2e;
+}
+
+.equipment-item-body {
+  padding: 12px;
+  background: #17110e;
+  color: #e8d6b8;
+  font-family: var(--font-retro);
+}
+
+.equipment-item-title-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #3d2b1f;
+}
+
+.equipment-item-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: #241914;
+  border: 2px solid #5b422c;
+  border-radius: 4px;
+  font-size: 22px;
+}
+
+.equipment-item-name {
+  margin: 0;
+  color: #ffca28;
+  font-family: var(--font-pixel);
+  font-size: clamp(9px, 2.6vw, 12px);
+  line-height: 1.35;
+}
+
+.equipment-item-subtitle {
+  margin-top: 4px;
+  color: #a08c80;
+  font-size: 11px;
+}
+
+.equipment-item-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.equipment-stat-chip {
+  border: 1px solid #3d2b1f;
+  background: #120c09;
+  padding: 5px 6px;
+  border-radius: 3px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.equipment-stat-chip strong {
+  color: #ffb74d;
+}
+
+.equipment-item-meta {
+  display: grid;
+  gap: 5px;
+  padding-top: 8px;
+  border-top: 1px solid #3d2b1f;
+  color: #c7b39a;
+  font-size: 11px;
+}
+
+.equipment-item-close {
+  width: 100%;
+  margin-top: 12px;
 }
 
 /* Prevenção de gestos nativos de zoom de duplo clique em botões e canvas */
@@ -1924,6 +2037,11 @@ input:checked + .retro-slider:before {
 .menu-btn-retro:active, .action-btn-retro:active, .profile-tab-btn:active, .hire-btn:active, .speed-btn:active, .active-biome-indicator:active, .monster-level-indicator:active {
   transform: translateY(1px) scale(0.98);
   box-shadow: 0 0px #000;
+}
+
+.retro-footer-menu .menu-btn-retro:hover,
+.retro-footer-menu .menu-btn-retro:active {
+  transform: none;
 }
 
 /* Efeito de abertura suave nos modais */
@@ -1979,13 +2097,12 @@ input:checked + .retro-slider:before {
   
   /* Ajustes no rodapé do menu */
   .retro-footer-menu {
-    height: 52px;
-    padding: 2px 4px;
+    height: 50px;
+    padding: 0;
   }
   .menu-btn-retro {
-    padding: 6px 8px;
-    font-size: 14px;
-    gap: 3px;
+    padding: 0 2px;
+    font-size: clamp(8px, 2.45vw, 11px);
   }
   
   /* Ajustes no cabeçalho */
@@ -2011,14 +2128,13 @@ input:checked + .retro-slider:before {
   
   /* Ajuste no círculo de slots para caber em telas menores sem cortar */
   .circle-slots-wrapper {
-    transform: scale(0.85);
-    transform-origin: center center;
-    height: 240px;
-    width: 275px;
+    transform: none;
+    width: min(100%, 300px);
+    height: auto;
     margin: 0 auto;
   }
   .slots-layout-container {
-    height: 245px;
+    min-height: 286px;
   }
 }
 

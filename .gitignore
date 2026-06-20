@@ -27,3 +27,6 @@ external/
 
 # Arquivos intermediarios gerados para revisao local
 assets/generated/
+
+# Logs locais de servidor/dev
+.local-logs/
