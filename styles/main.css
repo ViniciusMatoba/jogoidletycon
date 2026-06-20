@@ -1,4 +1,248 @@
-/* Folha de Estilos Avançada: Guilda Idle RPG Tycoon (Edição Modais Retro) */
+/* Folha de Estilos Avançada: Ociosos e Gloriosos */
+
+/* ═══════════════════════════════════════════════════════════
+   TELA DE LOGIN
+════════════════════════════════════════════════════════════ */
+
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1a0a2e 0%, #0a0a18 60%, #000 100%);
+  font-family: 'Outfit', sans-serif;
+  overflow: hidden;
+}
+
+#login-overlay.hidden { display: none; }
+
+/* Estrelas animadas */
+.login-bg-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, #fff8 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 50%, #fff5 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 15%, #fff6 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 40%, #fff4 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 70%, #fff7 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 80%, #fff3 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 90%, #fff5 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 10%, #fff6 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 65%, #fff4 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 55%, #fff3 0%, transparent 100%);
+  animation: stars-twinkle 6s ease-in-out infinite alternate;
+}
+
+@keyframes stars-twinkle {
+  0%   { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 1.0; transform: scale(1.01); }
+}
+
+/* Card central */
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 92vw);
+  background: linear-gradient(160deg, #1c1430 0%, #10101e 100%);
+  border: 1px solid #5a3fa0;
+  border-radius: 16px;
+  padding: 36px 32px 28px;
+  box-shadow: 0 0 60px #3d1d8044, 0 0 120px #1a0a2e88;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Logo */
+.login-logo {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.login-pixel-sword {
+  font-size: 40px;
+  animation: sword-float 3s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes sword-float {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50%       { transform: translateY(-8px) rotate(5deg); }
+}
+
+.login-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(14px, 4vw, 20px);
+  color: #f0c060;
+  text-shadow: 0 0 20px #c8883088, 2px 2px 0 #7a4010;
+  line-height: 1.5;
+  margin: 10px 0 6px;
+  letter-spacing: 1px;
+}
+
+.login-tagline {
+  color: #9a80c0;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Texto de sabor (humor rotativo) */
+.login-flavor {
+  text-align: center;
+  color: #7060a0;
+  font-size: 12px;
+  font-style: italic;
+  min-height: 18px;
+  margin: -4px 0;
+}
+
+/* Botões */
+.login-btn {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.login-btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 20px #0006; }
+.login-btn:active { transform: translateY(0); }
+.login-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.login-btn-google {
+  background: #fff;
+  color: #222;
+  box-shadow: 0 2px 8px #0004;
+}
+
+.login-btn-primary {
+  background: linear-gradient(135deg, #6a3fa0, #4a1f80);
+  color: #fff;
+  flex: 1;
+}
+
+.login-btn-secondary {
+  background: linear-gradient(135deg, #1e6a3a, #0e4020);
+  color: #fff;
+  flex: 1;
+}
+
+.login-btn-ghost {
+  background: transparent;
+  color: #8a70c0;
+  border: 1px solid #3a2860;
+  font-size: 13px;
+  padding: 10px;
+}
+
+.login-btn-ghost:hover { background: #ffffff08; border-color: #6a50a0; }
+
+/* Separador */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #3a2860;
+  font-size: 12px;
+  margin: -4px 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #3a2860;
+}
+
+/* Formulário e-mail */
+#email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#email-form.hidden { display: none; }
+
+.login-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #0e0e1e;
+  border: 1px solid #3a2860;
+  border-radius: 8px;
+  color: #e0d0ff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #7a50c0;
+  box-shadow: 0 0 0 3px #7a50c020;
+}
+
+.login-input::placeholder { color: #4a3870; }
+
+.login-email-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.login-link {
+  background: none;
+  border: none;
+  color: #5a4090;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  padding: 4px;
+  text-decoration: underline;
+  font-family: 'Outfit', sans-serif;
+}
+
+.login-link:hover { color: #9a70d0; }
+
+/* Mensagem de erro */
+.login-error {
+  background: #3a1020;
+  border: 1px solid #8a2040;
+  border-radius: 8px;
+  color: #f08090;
+  font-size: 13px;
+  padding: 10px 14px;
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.login-error.hidden { display: none; }
+
+/* Rodapé */
+.login-footer {
+  text-align: center;
+  color: #3a2860;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 4px 0 0;
+  border-top: 1px solid #1e1640;
+  padding-top: 12px;
+}
+
+/* ══════════════════════════════════════════════════════════ */
 
 :root {
   --bg-main: #0c0e12;
@@ -75,6 +319,49 @@ body {
   position: relative;
   overflow: hidden;
 }
+
+/* Badge de usuário logado */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff0a;
+  border: 1px solid #3a2860;
+  border-radius: 20px;
+  padding: 4px 12px 4px 6px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #5a3fa0;
+}
+
+.user-name {
+  font-size: 12px;
+  color: #c0a0f0;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-logout-btn {
+  background: none;
+  border: none;
+  color: #5a4090;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.user-logout-btn:hover { color: #f08080; }
 
 /* BARRA SUPERIOR (ESTOQUE) */
 .town-header {

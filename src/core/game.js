@@ -14,10 +14,16 @@ export class Game {
     this.floaters = [];
     this.isPaused = false;
     this.speed = 1.0;
-    this.init();
+    this._pendingCloudSave = null; // preenchido por main.js antes de init()
   }
 
   init() {
+    // Se main.js injetou dados da nuvem, usa-os como save prioritário
+    if (this._pendingCloudSave) {
+      const ok = this._applyLoadedData(this._pendingCloudSave);
+      this._pendingCloudSave = null;
+      if (ok) return;
+    }
     if (this.loadGame()) return;
 
     const startingClasses = Object.keys(HERO_CLASSES);
@@ -123,8 +129,8 @@ export class Game {
     return { success: true };
   }
 
-  saveGame() {
-    const data = {
+  _buildSaveData() {
+    return {
       version: SAVE_VERSION,
       town: {
         gold: this.town.gold,
@@ -162,16 +168,21 @@ export class Game {
       })),
       lastSavedTime: Date.now()
     };
-
-    localStorage.setItem('idle_hunter_tycoon_save', JSON.stringify(data));
   }
 
-  loadGame() {
-    try {
-      const saved = localStorage.getItem('idle_hunter_tycoon_save');
-      if (!saved) return false;
+  saveGame() {
+    const data = this._buildSaveData();
+    localStorage.setItem('idle_hunter_tycoon_save', JSON.stringify(data));
 
-      const data = JSON.parse(saved);
+    if (window.currentUser) {
+      import('./cloudSave.js').then(({ saveToCloud }) => {
+        saveToCloud(window.currentUser.uid, data);
+      }).catch(() => {});
+    }
+  }
+
+  _applyLoadedData(data) {
+    try {
       if (!data || data.version !== SAVE_VERSION) return false;
 
       this.town.gold = data.town.gold;
@@ -220,7 +231,18 @@ export class Game {
 
       return true;
     } catch (e) {
-      console.error('Falha ao carregar save:', e);
+      console.error('Falha ao aplicar save:', e);
+      return false;
+    }
+  }
+
+  loadGame() {
+    try {
+      const saved = localStorage.getItem('idle_hunter_tycoon_save');
+      if (!saved) return false;
+      return this._applyLoadedData(JSON.parse(saved));
+    } catch (e) {
+      console.error('Falha ao carregar save local:', e);
       return false;
     }
   }
