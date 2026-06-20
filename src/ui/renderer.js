@@ -406,12 +406,17 @@ export class GameRenderer {
       const img = new Image();
       img.src = assetsList[key];
 
-      // Backgrounds de tela cheia NÃO devem passar pelo chroma key —
-      // eles têm pixels claros (céu, chão, árvores) que seriam removidos incorretamente
+      // Backgrounds e sprites LPC (_universal) NÃO passam pelo chroma key —
+      // LPC já têm alpha correto; chroma key removeria pixels válidos (ossos brancos, etc.)
       const isBackground = key.startsWith('bg_');
+      const isLPC = key.includes('_universal') ||
+                    key.startsWith('body_') || key.startsWith('hair_') ||
+                    key.startsWith('armor_') || key.startsWith('helmet_') ||
+                    key.startsWith('weapon_') || key.startsWith('pet_') ||
+                    key.startsWith('hero_') || key.startsWith('monster_');
 
       img.onload = () => {
-        if (isBackground) {
+        if (isBackground || isLPC) {
           img.loaded = true;
           this.images[key] = img;
           if (key.startsWith('tile_')) {

@@ -1,6 +1,6 @@
 import { Game }                        from './core/game.js';
-import { GameRenderer }               from './ui/renderer.js?v=2';
-import { setupUI, updateUI }          from './ui/menus.js?v=heroes-lpc-restore-1';
+import { GameRenderer }               from './ui/renderer.js?v=3';
+import { setupUI, updateUI }          from './ui/menus.js?v=heroes-lpc-restore-4';
 import { onAuth, logout }             from './core/auth.js';
 import { loadFromCloud, saveToCloud,
          migrateLocalToCloud }        from './core/cloudSave.js';

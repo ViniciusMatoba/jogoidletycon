@@ -1,0 +1,172 @@
+[
+  {
+    "slug": "fox",
+    "name": "Raposa",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/fox_pet_walk_v2.png",
+    "icon": "assets/sprites/pets/fox_pet_icon_v2.png",
+    "preview": "assets/sprites/pets/fox_pet_walk_v2_preview.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "hyena",
+    "name": "Hiena",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/pet_hyena_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_hyena_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_hyena_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "capybara",
+    "name": "Capivara",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/pet_capybara_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_capybara_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_capybara_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "skunk",
+    "name": "Gamba",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/pet_skunk_walk_v3.png",
+    "icon": "assets/sprites/pets/pet_skunk_icon_v3.png",
+    "preview": "assets/sprites/pets/pet_skunk_preview_v3.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "lemur",
+    "name": "Lemure",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/pet_lemur_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_lemur_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_lemur_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "llama",
+    "name": "Lhama",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/pet_llama_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_llama_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_llama_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "meerkat",
+    "name": "Suricato",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/pet_meerkat_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_meerkat_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_meerkat_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "oryx",
+    "name": "Orix",
+    "kind": "quad",
+    "sprite": "assets/sprites/pets/pet_oryx_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_oryx_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_oryx_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "lava_bat",
+    "name": "Morcego de Lava",
+    "kind": "bat",
+    "sprite": "assets/sprites/pets/pet_lava_bat_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_lava_bat_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_lava_bat_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  },
+  {
+    "slug": "pink_bat",
+    "name": "Morcego Rosa",
+    "kind": "bat",
+    "sprite": "assets/sprites/pets/pet_pink_bat_walk_v2.png",
+    "icon": "assets/sprites/pets/pet_pink_bat_icon_v2.png",
+    "preview": "assets/sprites/pets/pet_pink_bat_preview_v2.gif",
+    "cellSize": 64,
+    "cols": 4,
+    "rows": 4,
+    "rowOrder": [
+      "S",
+      "W",
+      "E",
+      "N"
+    ]
+  }
+]

@@ -1926,17 +1926,19 @@ function drawHeroLPC(hero, ctx, destWidth, destHeight) {
   const images = window.gameRenderer.images;
   
   const sx = 0;
-  const sy = 10 * 64; 
+  const sy = 10 * 64;
   const sw = 64;
   const sh = 64;
-  
-  const scale = destHeight / 64;
-  const dw = 64 * scale;
-  const dh = destHeight;
-  const dx = (destWidth - dw) / 2;
-  const dy = 0;
 
-  const bodyImg = images[`body_${hero.cosmetics.bodyType}`];
+  const scale = Math.min(destWidth / 64, destHeight / 64);
+  const dw = 64 * scale;
+  const dh = 64 * scale;
+  const dx = (destWidth - dw) / 2;
+  const dy = (destHeight - dh) / 2;
+
+  const gender = hero.cosmetics?.gender || (hero.id % 2 === 0 ? 'female' : 'male');
+  const bodyType = hero.cosmetics?.bodyType || gender;
+  const bodyImg = images[`body_${bodyType}`];
   if (!bodyImg || !bodyImg.loaded) return false;
 
   ctx.save();
@@ -1973,8 +1975,10 @@ function drawHeroLPC(hero, ctx, destWidth, destHeight) {
   ctx.drawImage(bodyImg, sx, sy, sw, sh, dx, dy, dw, dh);
 
   // 3. Hair
-  if (hero.cosmetics.hairStyle !== 'none') {
-    const hairImg = images[`hair_${hero.cosmetics.hairStyle}_${hero.cosmetics.hairColor}`];
+  const hairStyle = hero.cosmetics?.hairStyle;
+  const hairColor = hero.cosmetics?.hairColor;
+  if (hairStyle && hairStyle !== 'none' && hairColor && hairColor !== 'none') {
+    const hairImg = images[`hair_${hairStyle}_${hairColor}`];
     if (hairImg && hairImg.loaded) {
       ctx.drawImage(hairImg, sx, sy, sw, sh, dx, dy, dw, dh);
     }
@@ -1986,7 +1990,8 @@ function drawHeroLPC(hero, ctx, destWidth, destHeight) {
     if (hero.className === 'MERCENARY' || hero.className === 'ARCHER') armorType = 'medium';
     else if (hero.className === 'MAGE' || hero.className === 'PRIEST') armorType = 'light';
 
-    const armorImg = images[`armor_${armorType}_t${hero.equipment.armor.tier}_${hero.cosmetics.gender}`];
+    const armorGender = hero.cosmetics?.gender || gender;
+    const armorImg = images[`armor_${armorType}_t${hero.equipment.armor.tier}_${armorGender}`];
     if (armorImg && armorImg.loaded) {
       ctx.drawImage(armorImg, sx, sy, sw, sh, dx, dy, dw, dh);
     }
