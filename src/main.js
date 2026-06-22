@@ -1,5 +1,5 @@
 import { Game }                        from './core/game.js';
-import { GameRenderer }               from './ui/renderer.js?v=8';
+import { GameRenderer }               from './ui/renderer.js?v=9';
 import { setupUI, updateUI }          from './ui/menus.js?v=reset-fix-1';
 import { onAuth, logout }             from './core/auth.js';
 import { loadFromCloud, saveToCloud,

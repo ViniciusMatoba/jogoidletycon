@@ -68,7 +68,10 @@ export class Game {
       color: config.color || '#ffffff',
       timeLeft: config.time || 1.0,
       maxTime: config.time || 1.0,
-      map: config.map || null
+      map: config.map || null,
+      crit: config.crit || false,
+      kind: config.kind || null,
+      size: config.size || null
     });
   }
 
@@ -189,6 +192,9 @@ export class Game {
       this.town.resources = data.town.resources;
       this.town.buildings = data.town.buildings;
       this.town.buildingPlacements = data.town.buildingPlacements || {};
+      if (typeof this.town.sanitizeBuildingPlacements === 'function') {
+        this.town.sanitizeBuildingPlacements();
+      }
 
       this.spawner.currentBiomeId = data.spawner.currentBiomeId;
       this.spawner.killsCount = data.spawner.killsCount;

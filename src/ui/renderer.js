@@ -85,6 +85,11 @@ export class GameRenderer {
     this._heroGhostTrack = new Map();
     // Referência ao addFloater do game (injetada depois)
     this._addFloater = null;
+
+    // Pré-carrega a fonte pixel art para o canvas (números de dano)
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.load("16px 'Press Start 2P'").catch(() => {});
+    }
   }
 
 
@@ -568,8 +573,11 @@ export class GameRenderer {
     const now = time;
 
     // Zona de construção: grid completo (sem restrição de borda)
-    const BUILD_COL_MIN = 0, BUILD_COL_MAX = town.grid.cols;
-    const BUILD_ROW_MIN = 0, BUILD_ROW_MAX = town.grid.rows;
+    const zone = town.buildZone || { colMin: 0, rowMin: 0, colMax: town.grid.cols, rowMax: town.grid.rows };
+    const BUILD_COL_MIN = zone.colMin;
+    const BUILD_COL_MAX = zone.colMax;
+    const BUILD_ROW_MIN = zone.rowMin;
+    const BUILD_ROW_MAX = zone.rowMax;
 
     // Calcular quais células estão ocupadas por edifícios construídos
     const occupiedCells = new Set();
@@ -587,15 +595,22 @@ export class GameRenderer {
       for (let row = 0; row < town.grid.rows; row++) {
         for (let col = 0; col < town.grid.cols; col++) {
           const checker = (col + row) % 2 === 0;
-          const inBuildZone = col >= BUILD_COL_MIN && col < BUILD_COL_MAX &&
-                              row >= BUILD_ROW_MIN && row < BUILD_ROW_MAX;
+          const inBuildZone = town.isInsideBuildZone
+            ? town.isInsideBuildZone(col, row, { w: 1, h: 1 })
+            : col >= BUILD_COL_MIN && col < BUILD_COL_MAX && row >= BUILD_ROW_MIN && row < BUILD_ROW_MAX;
 
           if (inBuildZone) {
             // Células na zona válida: verde pulsante mais forte
-            const pulse = 0.25 + 0.10 * Math.sin(now * 0.002 + col * 0.5 + row * 0.7);
+            const isOccupied = occupiedCells.has(`${col},${row}`);
+            const isWalkable = town.isTileWalkable ? town.isTileWalkable(col, row) : !isOccupied;
+            const pulse = 0.22 + 0.08 * Math.sin(now * 0.002 + col * 0.5 + row * 0.7);
             this.drawIsoTile(col, row, metrics,
-              checker ? `rgba(54, 120, 49, ${pulse})` : `rgba(38, 100, 38, ${pulse})`,
-              'rgba(88, 180, 88, 0.25)'
+              isOccupied
+                ? 'rgba(200, 160, 60, 0.18)'
+                : isWalkable
+                  ? (checker ? `rgba(54, 120, 49, ${pulse})` : `rgba(38, 100, 38, ${pulse})`)
+                  : 'rgba(38, 64, 38, 0.16)',
+              isOccupied ? 'rgba(220, 180, 60, 0.45)' : 'rgba(88, 180, 88, 0.30)'
             );
           } else {
             // Células fora da zona: tom escuro neutro
@@ -637,14 +652,18 @@ export class GameRenderer {
     if (this.pendingPlacement && this.hoveredTile) {
       const footprint = town.getBuildingFootprint(this.pendingPlacement);
       const canPlace = town.isAreaFree(this.hoveredTile.col, this.hoveredTile.row, footprint, this.pendingPlacement);
-      for (let y = 0; y < footprint.h; y++) {
-        for (let x = 0; x < footprint.w; x++) {
+      const margin = town.buildingPathMargin ?? 1;
+      for (let y = -margin; y < footprint.h + margin; y++) {
+        for (let x = -margin; x < footprint.w + margin; x++) {
+          const isFootprint = x >= 0 && y >= 0 && x < footprint.w && y < footprint.h;
           this.drawIsoTile(
             this.hoveredTile.col + x,
             this.hoveredTile.row + y,
             metrics,
-            canPlace ? 'rgba(88, 214, 141, 0.55)' : 'rgba(255, 75, 75, 0.55)',
-            canPlace ? '#d7ff9b' : '#ffdddd'
+            canPlace
+              ? (isFootprint ? 'rgba(88, 214, 141, 0.55)' : 'rgba(70, 190, 120, 0.22)')
+              : (isFootprint ? 'rgba(255, 75, 75, 0.55)' : 'rgba(255, 120, 80, 0.18)'),
+            canPlace ? (isFootprint ? '#d7ff9b' : 'rgba(215,255,155,0.45)') : '#ffdddd'
           );
         }
       }
@@ -3733,8 +3752,10 @@ export class GameRenderer {
               x: atk.toX || 480,
               y: (atk.toY || 270) - 15,
               text: `${atk.damage}`,
-              color: atk.color,
-              time: 0.9,
+              color: atk.isCrit ? '#ff3d00' : atk.color,
+              time: atk.isCrit ? 1.1 : 0.9,
+              crit: !!atk.isCrit,
+              kind: atk.type,
               map: 'hunt'
             });
           }
@@ -3753,6 +3774,7 @@ export class GameRenderer {
             toY: atk.toY,
             color: atk.color,
             impactColor: atk.impactColor,
+            isCrit: atk.isCrit,
             damage: Math.round(atk.damage / 2),
             dist,
             traveled: 0,
@@ -3772,6 +3794,7 @@ export class GameRenderer {
             toY: atk.toY,
             color: atk.color,
             impactColor: atk.impactColor,
+            isCrit: atk.isCrit,
             damage: Math.round(atk.damage / 2),
             dist,
             traveled: 0,
@@ -3791,6 +3814,7 @@ export class GameRenderer {
             toY: atk.toY,
             color: atk.color,
             impactColor: atk.impactColor,
+            isCrit: atk.isCrit,
             damage: atk.damage,
             dist,
             traveled: 0,
@@ -3837,8 +3861,10 @@ export class GameRenderer {
             x: p.toX,
             y: p.toY - 15,
             text: `${p.damage}`,
-            color: p.color,
-            time: 0.9,
+            color: p.isCrit ? '#ff3d00' : p.color,
+            time: p.isCrit ? 1.1 : 0.9,
+            crit: !!p.isCrit,
+            kind: p.type,
             map: 'hunt'
           });
         }
@@ -4572,18 +4598,51 @@ export class GameRenderer {
   }
 
   drawFloaters(floaters) {
+    const ctx = this.ctx;
     floaters.forEach(f => {
       if (f.map && f.map !== this.activeView) return;
-      this.ctx.save();
+
       const alpha = Math.max(0, f.timeLeft / f.maxTime);
-      this.ctx.globalAlpha = alpha;
-      this.ctx.fillStyle = f.color;
-      this.ctx.font = 'bold 10px monospace';
-      this.ctx.textAlign = 'center';
-      
+      const elapsed = f.maxTime - f.timeLeft;
+
+      // Tamanho base da fonte (pixel art). Crítico é maior.
+      let baseSize = f.size || (f.crit ? 20 : 13);
+
+      // "Pop" de surgimento: cresce rápido nos primeiros 18% da vida e assenta.
+      const popDur = f.maxTime * 0.18;
+      let popScale = 1;
+      if (elapsed < popDur) {
+        const t = elapsed / popDur;               // 0 → 1
+        popScale = 1 + (f.crit ? 0.5 : 0.3) * (1 - (1 - t) * (1 - t)); // easeOut
+      }
+      const fontSize = Math.round(baseSize * popScale);
+
       const pos = this.toIso(f.x, f.y);
-      this.ctx.fillText(f.text, pos.x, pos.y - 18);
-      this.ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = `${fontSize}px 'Press Start 2P', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.lineJoin = 'round';
+
+      // Crítico ganha brilho
+      if (f.crit) {
+        ctx.shadowColor = f.color;
+        ctx.shadowBlur = 8;
+      }
+
+      // Contorno preto para legibilidade sobre qualquer fundo
+      ctx.lineWidth = f.crit ? 4 : 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      ctx.strokeText(f.text, pos.x, pos.y - 18);
+
+      // Preenchimento na cor do dano
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, pos.x, pos.y - 18);
+
+      ctx.restore();
     });
   }
 }

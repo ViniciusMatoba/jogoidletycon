@@ -984,9 +984,11 @@ export class Hero {
       addFloater({
         x: monster.x,
         y: monster.y - 15,
-        text: isCrit ? `${netDamage} 💥` : `${netDamage}`,
-        color: isCrit ? '#ff9100' : (this.classConfig.projectileColor || '#ffffff'),
-        time: 0.8,
+        text: `${netDamage}`,
+        color: isCrit ? '#ff3d00' : (this.classConfig.projectileColor || '#ffffff'),
+        time: isCrit ? 1.1 : 0.8,
+        crit: isCrit,
+        kind: 'melee',
         map: 'hunt'
       });
     }
