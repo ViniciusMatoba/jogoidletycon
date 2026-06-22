@@ -1,6 +1,6 @@
 import { Game }                        from './core/game.js';
 import { GameRenderer }               from './ui/renderer.js?v=9';
-import { setupUI, updateUI }          from './ui/menus.js?v=reset-fix-1';
+import { setupUI, updateUI }          from './ui/menus.js?v=reset-fix-2';
 import { onAuth, logout }             from './core/auth.js';
 import { loadFromCloud, saveToCloud,
          migrateLocalToCloud }        from './core/cloudSave.js';
@@ -8,6 +8,9 @@ import { showLoginScreen,
          hideLoginScreen }            from './ui/loginScreen.js';
 
 let booted = false;
+const params = new URLSearchParams(window.location.search);
+const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+const devCityMode = isLocalHost && params.has('devCity');
 
 // ─── Frases de sabor (humor) para a tela de login ────────────────────────────
 
@@ -30,6 +33,17 @@ function initLoginScreen() {
   }
 
   // Observa estado de autenticação
+  if (devCityMode) {
+    bootGame({
+      uid: 'local-dev-city',
+      displayName: 'Teste Local',
+      email: 'dev@local',
+      photoURL: '',
+      isDevLocal: true
+    });
+    return;
+  }
+
   onAuth(async (user) => {
     if (user) {
       await bootGame(user);
@@ -46,12 +60,13 @@ function initLoginScreen() {
 async function bootGame(user) {
   if (booted) return;
   booted = true;
+  const isDevLocal = !!user?.isDevLocal;
 
   // Migra save local para a nuvem se for a primeira vez
-  await migrateLocalToCloud(user.uid);
+  if (!isDevLocal) await migrateLocalToCloud(user.uid);
 
   // Carrega save da nuvem
-  const cloudData = await loadFromCloud(user.uid);
+  const cloudData = isDevLocal ? null : await loadFromCloud(user.uid);
 
   const game     = new Game();
   const renderer = new GameRenderer('game-canvas');
@@ -68,7 +83,7 @@ async function bootGame(user) {
   game.init();
 
   hideLoginScreen();
-  _addUserBadge(user);
+  if (!isDevLocal) _addUserBadge(user);
 
   function resizeCanvasToContainer() {
     const canvas    = renderer.canvas;

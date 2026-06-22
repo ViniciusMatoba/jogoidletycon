@@ -14,6 +14,7 @@ export class Game {
     this.floaters = [];
     this.isPaused = false;
     this.speed = 1.0;
+    this._resetting = false;       // bloqueia saves durante reset do império
     this._pendingCloudSave = null; // preenchido por main.js antes de init()
   }
 
@@ -174,10 +175,13 @@ export class Game {
   }
 
   saveGame() {
+    // Durante um reset, qualquer save é bloqueado para não regravar o que foi apagado
+    if (this._resetting) return;
+
     const data = this._buildSaveData();
     localStorage.setItem('idle_hunter_tycoon_save', JSON.stringify(data));
 
-    if (window.currentUser) {
+    if (window.currentUser && !window.currentUser.isDevLocal) {
       import('./cloudSave.js').then(({ saveToCloud }) => {
         saveToCloud(window.currentUser.uid, data);
       }).catch(() => {});
@@ -271,18 +275,27 @@ export class Game {
   }
 
   async resetGame() {
+    // Bloqueia QUALQUER save daqui em diante (autosave do loop, craft, etc.)
+    // senão o save apagado é regravado durante o await abaixo.
+    this._resetting = true;
+    this.isPaused = true;
+
     // Apaga save local
     localStorage.removeItem('idle_hunter_tycoon_save');
 
     // Apaga save da nuvem — senão o reload baixa o save de volta do Firebase
-    if (window.currentUser) {
+    if (window.currentUser && !window.currentUser.isDevLocal) {
       try {
         const { deleteFromCloud } = await import('./cloudSave.js');
-        await deleteFromCloud(window.currentUser.uid);
+        const ok = await deleteFromCloud(window.currentUser.uid);
+        if (!ok) console.warn('[Reset] deleteFromCloud retornou false');
       } catch (e) {
         console.warn('[Reset] Falha ao apagar save da nuvem:', e);
       }
     }
+
+    // Garante que o local não foi reescrito por algum save tardio
+    localStorage.removeItem('idle_hunter_tycoon_save');
 
     window.location.reload();
   }
