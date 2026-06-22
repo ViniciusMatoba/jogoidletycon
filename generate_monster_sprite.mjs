@@ -113,26 +113,28 @@ const MONSTERS = {
       layers: [
         { folder: 'body/bodies/skeleton',          variant: 'skeleton' },
         { folder: 'head/heads/skeleton/adult',     variant: 'skeleton' },
-        { folder: 'weapons/sword/longsword',       variant: null },
+        { folder: 'weapon/sword/longsword',        variant: null },
       ],
     },
   },
 
   goblin: {
     normal: {
-      // Pequeno, verde, sem arma
+      // Pequeno, verde, com adaga
       outputFile: 'monster_goblin_universal.png',
       layers: [
         { folder: 'body/bodies/teen',        variant: null, recolor: { from: 'light', to: 'bright_green' } },
         { folder: 'head/heads/goblin/child', variant: null },
+        { folder: 'weapon/sword/dagger',     variant: null },
       ],
     },
     raro: {
-      // Goblin adulto verde claro
+      // Goblin adulto verde claro com clava
       outputFile: 'monster_goblin_raro_universal.png',
       layers: [
         { folder: 'body/bodies/male',        variant: null, recolor: { from: 'light', to: 'bright_green' } },
         { folder: 'head/heads/goblin/adult', variant: null },
+        { folder: 'weapon/blunt/club',       variant: null },
       ],
     },
     elite: {
@@ -141,7 +143,7 @@ const MONSTERS = {
       layers: [
         { folder: 'body/bodies/male',        variant: null, recolor: { from: 'light', to: 'dark_green' } },
         { folder: 'head/heads/goblin/adult', variant: null },
-        { folder: 'weapons/blunt/club',      variant: null },
+        { folder: 'weapon/blunt/club',       variant: null },
       ],
     },
   },
@@ -318,24 +320,40 @@ const MONSTERS = {
 
 // ─── FUNÇÕES DE COMPOSIÇÃO ───────────────────────────────────────────────────
 
-function findLayerPng(folder, animName, variant) {
+function findLayerSource(folder, animName, variant) {
   const base = path.join(LPC, folder);
 
-  // Tenta: pasta/animacao/variant.png  (ex: robe/female/walk/purple.png)
-  if (variant) {
-    const p = path.join(base, animName, `${variant}.png`);
-    if (fs.existsSync(p)) return p;
+  // 1. Mapeamento de possíveis nomes de subpastas/arquivos para a animação
+  let possibleDirs = [animName];
+  if (animName === 'slash') possibleDirs.push('attack_slash', 'attack_slash_reverse');
+  if (animName === 'thrust') possibleDirs.push('attack_thrust');
+  if (animName === 'spellcast') possibleDirs.push('cast');
+
+  // Tenta achar em uma das subpastas mapeadas
+  for (const d of possibleDirs) {
+    if (variant) {
+      // Ex: folder/attack_slash/purple.png
+      const p = path.join(base, d, `${variant}.png`);
+      if (fs.existsSync(p)) return { path: p, isSingleSheet: false };
+    }
+    // Ex: folder/attack_slash.png
+    const p2 = path.join(base, `${d}.png`);
+    if (fs.existsSync(p2)) return { path: p2, isSingleSheet: false };
+
+    // Ex: primeira .png em folder/attack_slash/
+    const dir = path.join(base, d);
+    if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) {
+      const files = fs.readdirSync(dir).filter(f => f.endsWith('.png'));
+      if (files.length > 0) return { path: path.join(dir, files[0]), isSingleSheet: false };
+    }
   }
 
-  // Tenta: pasta/animacao.png  (ex: cape/solid/bg/walk.png)
-  const p2 = path.join(base, `${animName}.png`);
-  if (fs.existsSync(p2)) return p2;
-
-  // Tenta: primeira .png dentro de pasta/animacao/
-  const dir = path.join(base, animName);
-  if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) {
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.png'));
-    if (files.length > 0) return path.join(dir, files[0]);
+  // 2. Se não achou pasta da animação, procura por um PNG consolidado na raiz da pasta
+  if (fs.existsSync(base) && fs.statSync(base).isDirectory()) {
+    const files = fs.readdirSync(base).filter(f => f.endsWith('.png'));
+    if (files.length > 0) {
+      return { path: path.join(base, files[0]), isSingleSheet: true };
+    }
   }
 
   return null;
@@ -348,19 +366,38 @@ async function buildAnimStrip(layers, anim) {
   const composites = [];
 
   for (const layer of layers) {
-    const pngPath = findLayerPng(layer.folder, anim.name, layer.variant);
-    if (!pngPath) continue;
+    const src = findLayerSource(layer.folder, anim.name, layer.variant);
+    if (!src) continue;
 
-    const meta = await sharp(pngPath).metadata();
-    let buf = await sharp(pngPath).ensureAlpha().toBuffer();
+    const meta = await sharp(src.path).metadata();
+    let buf;
 
-    // Recorta se o PNG for maior que o esperado
-    if (meta.width > w || meta.height > h) {
-      buf = await sharp(buf).extract({
-        left: 0, top: 0,
-        width: Math.min(meta.width, w),
-        height: Math.min(meta.height, h),
-      }).toBuffer();
+    if (src.isSingleSheet) {
+      // Se for spritesheet único consolidado, o PNG tem o tamanho inteiro (ex: 832x1344).
+      // Se a animação pedida iniciar após o fim do spritesheet, simplesmente pulamos.
+      if (anim.yStart >= meta.height) {
+        continue;
+      }
+      buf = await sharp(src.path)
+        .ensureAlpha()
+        .extract({
+          left: 0,
+          top: anim.yStart,
+          width: Math.min(meta.width, w),
+          height: Math.min(meta.height - anim.yStart, h)
+        })
+        .toBuffer();
+    } else {
+      // Se for um PNG específico de animação (já é uma tira ou grade recortada)
+      buf = await sharp(src.path).ensureAlpha().toBuffer();
+      const bufMeta = await sharp(buf).metadata();
+      if (bufMeta.width > w || bufMeta.height > h) {
+        buf = await sharp(buf).extract({
+          left: 0, top: 0,
+          width: Math.min(bufMeta.width, w),
+          height: Math.min(bufMeta.height, h),
+        }).toBuffer();
+      }
     }
 
     // Palette swap
