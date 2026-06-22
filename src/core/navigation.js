@@ -1,20 +1,38 @@
 export function getTownGridMetrics(town, width = 960, height = 540) {
   const cols = town.grid.cols;
   const rows = town.grid.rows;
-  const tileW = Math.max(44, Math.min(width / (cols * 0.72), height / (rows * 0.42)));
-  const tileH = tileW * 0.5;
-  const mapW = (cols + rows) * tileW / 2;
-  const mapH = (cols + rows) * tileH / 2;
+  const zone = town.buildZone || { colMin: 0, rowMin: 0, colMax: cols, rowMax: rows };
+  const zoneCols = Math.max(1, zone.colMax - zone.colMin);
+  const zoneRows = Math.max(1, zone.rowMax - zone.rowMin);
+  const minTileW = width < 520 ? 28 : 40;
+  const diag = zoneCols + zoneRows; // soma das diagonais do grid iso
+  // Largura do tile: o diamante preenche a clareira de ponta a ponta,
+  // com leve transbordo lateral para chegar perto da estrada marrom.
+  const fillFactor = width > height ? 1.22 : 1.08;
+  let tileW = Math.max(minTileW, (width * fillFactor) * 2 / diag);
+  let tileH = tileW * (width > height ? 0.52 : 0.54);
+  // Limita a altura do diamante à faixa visível (entre cabeçalho e rodapé),
+  // senão os tiles do topo/baixo ficariam atrás da UI.
+  const maxMapH = height * 0.94;
+  if (diag * tileH / 2 > maxMapH) {
+    tileH = (2 * maxMapH) / diag;
+  }
+  const mapW = diag * tileW / 2;
+  const mapH = diag * tileH / 2;
+  const zoneCenterCol = (zone.colMin + zone.colMax) / 2;
+  const zoneCenterRow = (zone.rowMin + zone.rowMax) / 2;
+  const topInset = width > height ? Math.max(74, height * 0.15) : Math.max(62, height * 0.09);
 
   return {
     cols,
     rows,
     tileW,
     tileH,
-    originX: width / 2,
-    originY: Math.max(52, (height - mapH) / 2 + tileH),
+    originX: width / 2 - (zoneCenterCol - zoneCenterRow) * tileW / 2,
+    originY: topInset - (zone.colMin + zone.rowMin) * tileH / 2,
     mapW,
-    mapH
+    mapH,
+    buildZone: zone
   };
 }
 
@@ -36,6 +54,10 @@ export function screenToGrid(x, y, town, width = 960, height = 540) {
     return null;
   }
 
+  if (typeof town.isInsideBuildZone === 'function' && !town.isInsideBuildZone(col, row, { w: 1, h: 1 })) {
+    return null;
+  }
+
   return { col, row };
 }
 
@@ -45,14 +67,31 @@ export function getTownTilePoint(town, col, row, width = 960, height = 540) {
 }
 
 export function getRandomTownPoint(town, width = 960, height = 540) {
-  const col = Math.floor(Math.random() * town.grid.cols);
-  const row = Math.floor(Math.random() * town.grid.rows);
+  const zone = town.buildZone || { colMin: 0, rowMin: 0, colMax: town.grid.cols, rowMax: town.grid.rows };
+  const walkable = [];
+
+  if (typeof town.isTileWalkable === 'function') {
+    for (let row = zone.rowMin; row < zone.rowMax; row++) {
+      for (let col = zone.colMin; col < zone.colMax; col++) {
+        if (town.isTileWalkable(col, row)) walkable.push({ col, row });
+      }
+    }
+  }
+
+  const picked = walkable.length
+    ? walkable[Math.floor(Math.random() * walkable.length)]
+    : {
+      col: zone.colMin + Math.floor(Math.random() * Math.max(1, zone.colMax - zone.colMin)),
+      row: zone.rowMin + Math.floor(Math.random() * Math.max(1, zone.rowMax - zone.rowMin))
+    };
+  const { col, row } = picked;
   return getTownTilePoint(town, col, row, width, height);
 }
 
 export function getTownExitPoint(town, width = 960, height = 540) {
-  const col = Math.floor(town.grid.cols * 0.5);
-  const row = town.grid.rows - 1;
+  const zone = town.buildZone || { colMin: 0, rowMin: 0, colMax: town.grid.cols, rowMax: town.grid.rows };
+  const col = Math.floor((zone.colMin + zone.colMax) * 0.5);
+  const row = zone.rowMax - 1;
   return getTownTilePoint(town, col, row, width, height);
 }
 
@@ -113,5 +152,6 @@ export function getBuildingTownPoint(town, buildingType, width = 960, height = 5
 }
 
 export function isPointInsideTown(town, x, y, width = 960, height = 540) {
-  return screenToGrid(x, y, town, width, height) !== null;
+  const tile = screenToGrid(x, y, town, width, height);
+  return tile !== null && (typeof town.isInsideBuildZone !== 'function' || town.isInsideBuildZone(tile.col, tile.row));
 }

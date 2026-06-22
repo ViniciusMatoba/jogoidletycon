@@ -1,4 +1,4 @@
-import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES } from '../data/constants.js';
+import { BUILDINGS_CONFIG, CRAFT_RECIPES, ITEMS_INFO, BIOMES, HERO_CLASSES, PETS_CONFIG, PET_RARITIES, PET_SUMMON_COST } from '../data/constants.js';
 
 import { getBuildingVisualStage } from './renderer.js?v=2';
 
@@ -13,6 +13,12 @@ let wasTownModalActive = false;
 let wasCraftModalActive = false;
 
 let activeRecipeFilter = 'all';
+
+const HERO_INDOOR_STATES = new Set(['HEALING_HOSP', 'EATING_REST', 'RESTING_HOTEL', 'DRINKING_TAVERN', 'SELLING_LOOT']);
+
+function isHeroVisibleOnMap(hero, activeView) {
+  return hero.currentMap === activeView && !(activeView === 'town' && HERO_INDOOR_STATES.has(hero.state));
+}
 
 const PROFILE_EQUIPMENT_SLOTS = [
   { key: 'helmet', name: 'Elmo', placeholder: '🪖', locked: true },
@@ -172,7 +178,8 @@ const BUILDING_ACTION_LABELS = {
   hospital: { name: 'Hospital', icon: '🏥', modalId: 'craft-modal' },
   tavern: { name: 'Taverna', icon: '🍺', modalId: 'craft-modal' },
   forge: { name: 'Forja', icon: '⚒️', modalId: 'craft-modal' },
-  market: { name: 'Mercado da Vila', icon: '⚖️', modalId: 'market-modal' }
+  market: { name: 'Mercado da Vila', icon: '⚖️', modalId: 'market-modal' },
+  pet_farm: { name: 'Santuário dos Pets', icon: '🐾', modalId: 'pet-gacha-modal' }
 };
 
 // ── Baú de Tesouro ────────────────────────────────────────────────────────────
@@ -239,6 +246,93 @@ function openTreasureChestModal(type, game) {
   };
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
 
+  modal.classList.add('active');
+}
+
+// ── Santuário dos Pets (Gacha de Invocação) ───────────────────────────────────
+
+function openPetGachaModal(game) {
+  if (!game) return;
+  let modal = document.getElementById('pet-gacha-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'pet-gacha-modal';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="retro-modal" style="max-width:460px;width:92%;max-height:88vh;overflow-y:auto;">
+        <div class="modal-header">
+          <h3 id="pet-gacha-title">🐾 SANTUÁRIO DOS PETS</h3>
+          <button id="pet-gacha-close" class="close-modal-btn">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:12px;">
+          <p id="pet-gacha-sub" style="font-size:10px;color:#cfc5a8;margin:0 0 10px;text-align:center;"></p>
+          <div id="pet-gacha-result" style="min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.25);border-radius:8px;margin-bottom:10px;padding:8px;"></div>
+          <button id="pet-gacha-summon" class="action-btn-retro" style="width:100%;margin-bottom:12px;"></button>
+          <p style="font-size:10px;color:#ffd54f;font-weight:bold;margin:0 0 6px;">COLEÇÃO</p>
+          <div id="pet-gacha-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  const closeBtn = modal.querySelector('#pet-gacha-close');
+  const summonBtn = modal.querySelector('#pet-gacha-summon');
+  const grid = modal.querySelector('#pet-gacha-grid');
+  const subEl = modal.querySelector('#pet-gacha-sub');
+  const resultEl = modal.querySelector('#pet-gacha-result');
+
+  function renderCollection() {
+    const owned = game.pets || {};
+    const ownedCount = Object.keys(owned).filter(k => owned[k] > 0).length;
+    const total = Object.keys(PETS_CONFIG).length;
+    const level = game.town.buildings.pet_farm || 1;
+    subEl.innerHTML = `Santuário Nível ${level} · Coleção: ${ownedCount}/${total}<br>Cada pet fortalece <b>todos os heróis</b> (ATK/HP).`;
+
+    summonBtn.innerHTML = PET_SUMMON_COST > 0
+      ? `🎲 Invocar Pet — ${PET_SUMMON_COST} 🪙 (você tem ${Math.floor(game.town.gold)})`
+      : `🎲 Invocar Pet — Grátis (teste)`;
+    summonBtn.disabled = game.town.gold < PET_SUMMON_COST;
+    summonBtn.style.opacity = summonBtn.disabled ? '0.5' : '1';
+
+    grid.innerHTML = Object.entries(PETS_CONFIG).map(([id, p]) => {
+      const count = owned[id] || 0;
+      const rar = PET_RARITIES[p.rarity];
+      const has = count > 0;
+      return `
+        <div title="${p.name} (${rar.name})" style="position:relative;background:rgba(0,0,0,0.3);border:2px solid ${has ? rar.color : 'rgba(255,255,255,0.12)'};border-radius:6px;padding:4px;text-align:center;">
+          <img src="${p.icon}" alt="${p.name}" style="width:100%;image-rendering:pixelated;${has ? '' : 'filter:brightness(0) opacity(0.45);'}">
+          <div style="font-size:8px;color:${has ? rar.color : '#777'};margin-top:2px;line-height:1.1;">${has ? p.name : '???'}</div>
+          ${count > 1 ? `<span style="position:absolute;top:2px;right:2px;background:#000;color:#fff;font-size:8px;border-radius:4px;padding:0 3px;">×${count}</span>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function doSummon() {
+    const res = game.summonPet();
+    if (!res.success) {
+      resultEl.innerHTML = `<span style="color:#ff5252;font-size:11px;">${res.reason}</span>`;
+      return;
+    }
+    const p = PETS_CONFIG[res.petId];
+    const rar = PET_RARITIES[res.rarity];
+    // Aplica o novo bônus imediatamente a todos os heróis
+    game.heroes.forEach(h => {
+      h.recalculateStats();
+      if (h.hp > h.maxHp) h.hp = h.maxHp;
+    });
+    resultEl.innerHTML = `
+      <img src="${p.icon}" alt="${p.name}" style="width:64px;image-rendering:pixelated;filter:drop-shadow(0 0 6px ${rar.color});">
+      <div style="color:${rar.color};font-weight:bold;font-size:13px;margin-top:4px;">${p.name}</div>
+      <div style="color:${rar.color};font-size:10px;">${rar.name}${res.isNew ? ' · NOVO!' : ` · ×${res.count}`}</div>`;
+    renderCollection();
+  }
+
+  closeBtn.onclick = () => modal.classList.remove('active');
+  modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+  summonBtn.onclick = doSummon;
+
+  resultEl.innerHTML = `<span style="color:#cfc5a8;font-size:11px;">Invoque um companheiro mágico!</span>`;
+  renderCollection();
   modal.classList.add('active');
 }
 
@@ -686,7 +780,7 @@ export function setupUI(game) {
 
         // Verifica se o cursor está sobre um herói clicável
         for (const h of (window.game ? window.game.heroes : [])) {
-          if (h.currentMap === 'town') {
+          if (isHeroVisibleOnMap(h, 'town')) {
             const dist = Math.sqrt((h.x - x) ** 2 + (h.y - y) ** 2);
             if (dist < 35) { isCursorPointer = true; break; }
           }
@@ -881,7 +975,7 @@ export function setupUI(game) {
       // 1. Clicar em um caçador visível (aumentado para dist < 35 para melhor usabilidade mobile)
       let clickedHero = null;
       for (const h of game.heroes) {
-        if (h.currentMap === activeView) {
+        if (isHeroVisibleOnMap(h, activeView)) {
           const dist = Math.sqrt((h.x - x) * (h.x - x) + (h.y - y) * (h.y - y));
           if (dist < 35) {
             clickedHero = h;
@@ -1177,6 +1271,12 @@ function renderBiomeCards(game) {
 }
 
 function openBuildingActions(buildingKey) {
+  // O Santuário dos Pets abre a interface de invocação (gacha) em vez do modal padrão
+  if (buildingKey === 'pet_farm') {
+    openPetGachaModal(window.game);
+    return;
+  }
+
   const modal = document.getElementById('building-actions-modal');
   if (!modal) return;
 

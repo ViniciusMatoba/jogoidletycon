@@ -349,7 +349,7 @@ export class GameRenderer {
     };
 
     // Adicionar as 5 variações para cada um dos 7 prédios no pré-carregamento
-    const buildingsToPreload = ['townhall', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market'];
+    const buildingsToPreload = ['townhall', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge', 'market', 'pet_farm'];
     for (const key of buildingsToPreload) {
       for (let s = 1; s <= 5; s++) {
         assetsList[`${key}_${s}`] = `assets/buildings/${key}_${s}.png`;
@@ -779,7 +779,8 @@ export class GameRenderer {
         hospital: { name: 'Hospital', icon: '🏥' },
         tavern: { name: 'Taverna', icon: '🍺' },
         forge: { name: 'Forja', icon: '⚒️' },
-        market: { name: 'Mercado da Vila', icon: '⚖️' }
+        market: { name: 'Mercado da Vila', icon: '⚖️' },
+        pet_farm: { name: 'Santuário dos Pets', icon: '🐾' }
       };
 
       const townMetrics = this.getTownGridMetrics(game.town, width, height);
@@ -1265,8 +1266,8 @@ export class GameRenderer {
         
         // Variação de escala por nível (Nível 1: 1.0x, Nível 2: 1.12x, Nível 3: 1.26x)
         const scaleMult = BUILDING_LEVEL_SCALE[stage - 1] || 1;
-        // Aumentamos o tamanho de renderização (de 1.5 para 1.75) para destacar as novas imagens!
-        const imgBase = isoFootprintW * 1.75;
+        // Tamanho de render reduzido (1.75 -> 1.2) para prédios menores e mais cabíveis na clareira
+        const imgBase = isoFootprintW * 1.2;
         const dw = imgBase * scaleMult;
         const dh = imgBase * scaleMult;
         

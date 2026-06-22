@@ -1,0 +1,19 @@
+{
+  "name": "Capivara Engine Prototype",
+  "source": "assets/sprites/pets/ai_refs/capybara_engine_ai_idle_walk_01.png",
+  "frameSize": 65,
+  "animations": {
+    "idle": {
+      "file": "capybara_engine_idle_strip.png",
+      "gif": "capybara_engine_idle.gif",
+      "frames": 6,
+      "durationMs": 130
+    },
+    "walk": {
+      "file": "capybara_engine_walk_strip.png",
+      "gif": "capybara_engine_walk.gif",
+      "frames": 8,
+      "durationMs": 95
+    }
+  }
+}

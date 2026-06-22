@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todos os Pets - Simulacao</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(#79ad42, #5e9236);
+      color: #f3dfaa;
+      font-family: system-ui, sans-serif;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(30deg, rgba(214,166,41,.16) 1px, transparent 1px) 0 0 / 72px 36px,
+        linear-gradient(150deg, rgba(47,125,58,.24) 1px, transparent 1px) 0 0 / 72px 36px;
+      pointer-events: none;
+    }
+    .hud {
+      position: fixed;
+      left: 8px;
+      right: 8px;
+      top: 8px;
+      z-index: 3;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 9px;
+      border: 1px solid rgba(95, 68, 36, 0.9);
+      background: rgba(16, 19, 23, 0.84);
+      font-size: 12px;
+      pointer-events: none;
+    }
+    .hud strong { color: #fff3bc; }
+    .hud span { color: #c6b27a; }
+    .grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      height: 100vh;
+      padding: 58px 10px 10px;
+    }
+    .card {
+      position: relative;
+      --pet-size: 38px;
+      min-height: 116px;
+      overflow: hidden;
+      border: 1px solid rgba(95, 68, 36, 0.72);
+      border-radius: 6px;
+      background: rgba(20, 28, 19, 0.18);
+    }
+    .name {
+      position: absolute;
+      left: 8px;
+      top: 6px;
+      z-index: 2;
+      color: #fff3bc;
+      font-size: 12px;
+      text-shadow: 0 1px 0 #111;
+    }
+    .missing {
+      position: absolute;
+      left: 8px;
+      bottom: 6px;
+      z-index: 2;
+      color: #f0bd66;
+      font-size: 11px;
+      text-shadow: 0 1px 0 #111;
+    }
+    .shadow {
+      position: absolute;
+      left: 50%;
+      top: 65%;
+      width: calc(var(--pet-size) * 0.68);
+      height: calc(var(--pet-size) * 0.18);
+      margin-left: calc(var(--pet-size) * -0.34);
+      margin-top: calc(var(--pet-size) * -0.09);
+      border-radius: 50%;
+      background: rgba(22, 28, 20, 0.28);
+      transform: translate(var(--x), var(--shadow-y));
+    }
+    .pet {
+      position: absolute;
+      left: 50%;
+      top: 65%;
+      width: var(--pet-size);
+      height: var(--pet-size);
+      margin-left: calc(var(--pet-size) / -2);
+      margin-top: calc(var(--pet-size) * -1);
+      background-repeat: no-repeat;
+      background-size: auto var(--pet-size);
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      transform: translate(var(--x), var(--pet-y)) scaleX(var(--flip));
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-y: auto; height: 100vh; }
+      body { overflow: auto; }
+      .card { min-height: 132px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <strong>Todos os pets</strong>
+    <span>ciclo: lateral, frente, esquerda, direita</span>
+  </div>
+  <main class="grid" id="grid"></main>
+
+  <script>
+    const pets = [
+      ['fox', 'Raposa', 'ground', 'right', 36],
+      ['deer', 'Cervo', 'ground', 'right', 38],
+      ['wolf', 'Lobo', 'ground', 'right', 38],
+      ['rabbit', 'Coelho', 'ground', 'right', 32],
+      ['boar', 'Javali', 'ground', 'right', 40],
+      ['mystic_cat', 'Gato Mistico', 'ground', 'right', 34],
+      ['hyena', 'Hiena', 'ground', 'right', 38],
+      ['lemur', 'Lemure', 'ground', 'right', 36],
+      ['llama', 'Lhama', 'ground', 'right', 40],
+      ['meerkat', 'Suricato', 'ground', 'right', 34],
+      ['oryx', 'Orix', 'ground', 'right', 38],
+      ['owl', 'Coruja', 'flying', 'right', 36],
+      ['lava_bat', 'Morcego Lava', 'flying', 'right', 34],
+      ['pink_bat', 'Morcego Rosa', 'flying', 'right', 34],
+      ['capybara', 'Capivara', 'ground', 'left', 40],
+      ['skunk', 'Gamba', 'ground', 'left', 38]
+    ];
+
+    const grid = document.getElementById('grid');
+    const cards = pets.map(([slug, name, locomotion, baseFacing = 'right', renderSize = 38], index) => {
+      const card = document.createElement('section');
+      card.className = 'card';
+      card.style.setProperty('--pet-size', `${renderSize}px`);
+      card.innerHTML = `
+        <div class="name">${name}</div>
+        <div class="shadow"></div>
+        <div class="pet"></div>
+        <div class="missing" hidden>sem front_walk</div>
+      `;
+      grid.appendChild(card);
+      const pet = card.querySelector('.pet');
+      const shadow = card.querySelector('.shadow');
+      const missing = card.querySelector('.missing');
+      const front = new Image();
+      front.src = `${slug}_engine_prototype/${slug}_engine_front_walk_strip.png`;
+      front.onerror = () => { front.dataset.missing = 'true'; };
+      return { slug, name, locomotion, baseFacing, renderSize, index, card, pet, shadow, missing, front };
+    });
+
+    function strip(slug, kind) {
+      return `${slug}_engine_prototype/${slug}_engine_${kind}_strip.png`;
+    }
+
+    function setSprite(item, kind, frame, flip) {
+      item.pet.style.backgroundImage = `url("${strip(item.slug, kind)}")`;
+      item.pet.style.backgroundPosition = `${-frame * item.renderSize}px 0`;
+      const shouldFlip = item.baseFacing === 'left' ? !flip : flip;
+      item.pet.style.setProperty('--flip', shouldFlip ? -1 : 1);
+    }
+
+    function path(t, card) {
+      const w = card.clientWidth;
+      const h = card.clientHeight;
+      const rx = Math.max(30, w * 0.24);
+      const ry = Math.max(16, h * 0.16);
+      const cycle = 5.6;
+      const p = ((t % cycle) / cycle) * 4;
+      const step = Math.floor(p);
+      const u = p - step;
+      const pts = [
+        { x: 0, y: ry, kind: 'walk', flip: true },
+        { x: 0, y: -ry, kind: 'walk', flip: true },
+        { x: 0, y: ry, kind: 'front_walk', flip: false },
+        { x: -rx, y: 0, kind: 'walk', flip: true },
+        { x: rx, y: 0, kind: 'walk', flip: false },
+        { x: 0, y: ry, kind: 'front_walk', flip: false }
+      ];
+      const a = pts[step];
+      const b = pts[step + 1];
+      return {
+        x: a.x + (b.x - a.x) * u,
+        y: a.y + (b.y - a.y) * u,
+        kind: b.kind,
+        flip: b.flip
+      };
+    }
+
+    function loop(now) {
+      const time = now / 1000;
+      cards.forEach((item) => {
+        const pos = path(time + item.index * 0.31, item.card);
+        let kind = pos.kind;
+        const missingFront = kind === 'front_walk' && item.front.dataset.missing === 'true';
+        if (missingFront) {
+          kind = 'walk';
+        }
+        const frame = Math.floor((time + item.index * 0.19) * 10) % 8;
+        const isFlying = item.locomotion === 'flying';
+        const bob = isFlying ? Math.sin((time + item.index * 0.23) * 7) * 4 : 0;
+        const lift = isFlying ? 30 + bob : 0;
+        item.pet.style.setProperty('--x', `${pos.x}px`);
+        item.pet.style.setProperty('--pet-y', `${pos.y - lift}px`);
+        item.shadow.style.setProperty('--x', `${pos.x}px`);
+        item.shadow.style.setProperty('--shadow-y', `${pos.y}px`);
+        item.missing.hidden = !missingFront;
+        setSprite(item, kind, frame, pos.flip);
+      });
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

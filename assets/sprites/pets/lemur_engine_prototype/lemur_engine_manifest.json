@@ -1,0 +1,23 @@
+{
+  "slug": "lemur",
+  "displayName": "Lemure",
+  "frameSize": 65,
+  "animations": {
+    "idle": {
+      "file": "lemur_engine_idle_strip.png",
+      "frames": 6,
+      "durationMs": 180
+    },
+    "walk": {
+      "file": "lemur_engine_walk_strip.png",
+      "frames": 8,
+      "durationMs": 95
+    },
+    "backWalk": {
+      "file": "lemur_engine_back_walk_strip.png",
+      "frames": 8,
+      "durationMs": 95
+    }
+  },
+  "source": "assets/sprites/pets/ai_refs/lemur_engine_ai_full_01.png"
+}

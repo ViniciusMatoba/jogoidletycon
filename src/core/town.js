@@ -89,6 +89,8 @@ export class Town {
 
     this.autoBuyHeroLoot = false;
     this.grid = { cols: 16, rows: 14 };
+    this.buildZone = { colMin: 0, rowMin: 0, colMax: 16, rowMax: 14 };
+    this.buildingPathMargin = 1;
     this.buildingFootprints = {
       townhall: { w: 3, h: 3 },
       hotel: { w: 2, h: 2 },
@@ -96,7 +98,8 @@ export class Town {
       hospital: { w: 2, h: 2 },
       tavern: { w: 2, h: 2 },
       forge: { w: 2, h: 2 },
-      market: { w: 2, h: 2 }
+      market: { w: 2, h: 2 },
+      pet_farm: { w: 2, h: 2 }
     };
     this.buildingPlacements = {};
     this.craftQueue = [];
@@ -135,16 +138,50 @@ export class Town {
       row + footprint.h <= this.grid.rows;
   }
 
+  isInsideBuildZone(col, row, footprint = { w: 1, h: 1 }) {
+    const zone = this.buildZone || { colMin: 0, rowMin: 0, colMax: this.grid.cols, rowMax: this.grid.rows };
+    return col >= zone.colMin && row >= zone.rowMin &&
+      col + footprint.w <= zone.colMax &&
+      row + footprint.h <= zone.rowMax;
+  }
+
+  isTileWalkable(col, row) {
+    if (!this.isInsideBuildZone(col, row, { w: 1, h: 1 })) return false;
+
+    for (const key in this.buildingPlacements) {
+      if (!this.isBuilt(key)) continue;
+      const placed = this.buildingPlacements[key];
+      const fp = this.getBuildingFootprint(key);
+      if (
+        col >= placed.col &&
+        col < placed.col + fp.w &&
+        row >= placed.row &&
+        row < placed.row + fp.h
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   isAreaFree(col, row, footprint, ignoredBuilding = null) {
     if (!this.isInsideGrid(col, row, footprint)) return false;
+    if (!this.isInsideBuildZone(col, row, footprint)) return false;
 
     const test = { col, row, w: footprint.w, h: footprint.h };
+    const margin = this.buildingPathMargin ?? 1;
     for (const key in this.buildingPlacements) {
       if (key === ignoredBuilding || !this.isBuilt(key)) continue;
 
       const placed = this.buildingPlacements[key];
       const fp = this.getBuildingFootprint(key);
-      const other = { col: placed.col, row: placed.row, w: fp.w, h: fp.h };
+      const other = {
+        col: placed.col - margin,
+        row: placed.row - margin,
+        w: fp.w + margin * 2,
+        h: fp.h + margin * 2
+      };
       const overlaps = test.col < other.col + other.w &&
         test.col + test.w > other.col &&
         test.row < other.row + other.h &&
@@ -154,6 +191,38 @@ export class Town {
     }
 
     return true;
+  }
+
+  findFreeArea(footprint) {
+    const zone = this.buildZone || { colMin: 0, rowMin: 0, colMax: this.grid.cols, rowMax: this.grid.rows };
+    for (let row = zone.rowMin; row <= zone.rowMax - footprint.h; row++) {
+      for (let col = zone.colMin; col <= zone.colMax - footprint.w; col++) {
+        if (this.isAreaFree(col, row, footprint)) return { col, row };
+      }
+    }
+    return null;
+  }
+
+  sanitizeBuildingPlacements() {
+    const order = ['townhall', 'market', 'hotel', 'restaurant', 'hospital', 'tavern', 'forge'];
+    const original = { ...this.buildingPlacements };
+    this.buildingPlacements = {};
+
+    for (const key of order) {
+      if (!this.isBuilt(key)) continue;
+      const footprint = this.getBuildingFootprint(key);
+      const old = original[key];
+
+      if (old && this.isAreaFree(old.col, old.row, footprint, key)) {
+        this.buildingPlacements[key] = { col: old.col, row: old.row, flipped: !!old.flipped };
+        continue;
+      }
+
+      const spot = this.findFreeArea(footprint);
+      if (spot) {
+        this.buildingPlacements[key] = { ...spot, flipped: !!old?.flipped };
+      }
+    }
   }
 
   buildAt(buildingType, col, row, flipped = false) {

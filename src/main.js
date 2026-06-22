@@ -1,6 +1,6 @@
 import { Game }                        from './core/game.js';
-import { GameRenderer }               from './ui/renderer.js?v=9';
-import { setupUI, updateUI }          from './ui/menus.js?v=reset-fix-2';
+import { GameRenderer }               from './ui/renderer.js?v=10';
+import { setupUI, updateUI }          from './ui/menus.js?v=pets-gacha-1';
 import { onAuth, logout }             from './core/auth.js';
 import { loadFromCloud, saveToCloud,
          migrateLocalToCloud }        from './core/cloudSave.js';

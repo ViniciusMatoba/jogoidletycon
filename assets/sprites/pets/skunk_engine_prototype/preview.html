@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gamba Engine Prototype</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      background: #111419;
+      color: #f3dfaa;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      background: #181b20;
+      border-bottom: 1px solid #5f4424;
+      font-size: 13px;
+    }
+    .controls {
+      display: flex;
+      gap: 4px;
+    }
+    button {
+      min-height: 32px;
+      border: 1px solid #5f4424;
+      background: #2a2118;
+      color: #f3dfaa;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.active {
+      border-color: #d6a629;
+      color: #fff3bc;
+    }
+    main {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #6ea53e;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Gamba Engine Prototype</strong>
+    <div class="controls">
+      <button id="idle">Idle</button>
+      <button id="walk" class="active">Walk</button>
+      <button id="pause">Pausar</button>
+    </div>
+  </header>
+  <main>
+    <canvas id="scene"></canvas>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    const idleButton = document.getElementById('idle');
+    const walkButton = document.getElementById('walk');
+    const pauseButton = document.getElementById('pause');
+    const idle = new Image();
+    const walk = new Image();
+    idle.src = 'skunk_engine_idle_strip.png';
+    walk.src = 'skunk_engine_walk_strip.png';
+
+    let mode = 'walk';
+    let running = true;
+    let last = performance.now();
+    let time = 0;
+    const pet = { x: 120, y: 120, targetX: 300, targetY: 220, speed: 84 };
+
+    idleButton.onclick = () => setMode('idle');
+    walkButton.onclick = () => setMode('walk');
+    pauseButton.onclick = () => {
+      running = !running;
+      pauseButton.textContent = running ? 'Pausar' : 'Retomar';
+    };
+
+    function setMode(next) {
+      mode = next;
+      idleButton.classList.toggle('active', mode === 'idle');
+      walkButton.classList.toggle('active', mode === 'walk');
+    }
+
+    function resize() {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+    }
+
+    function chooseTarget() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      pet.targetX = 64 + Math.random() * Math.max(90, w - 128);
+      pet.targetY = 80 + Math.random() * Math.max(90, h - 150);
+    }
+
+    function update(dt) {
+      if (!running) return;
+      time += dt;
+      if (mode !== 'walk') return;
+      const dx = pet.targetX - pet.x;
+      const dy = pet.targetY - pet.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 5) {
+        chooseTarget();
+        return;
+      }
+      const step = Math.min(dist, pet.speed * dt);
+      pet.x += dx / dist * step;
+      pet.y += dy / dist * step;
+    }
+
+    function drawGrid(w, h) {
+      ctx.fillStyle = '#72aa3f';
+      ctx.fillRect(0, 0, w, h);
+      const tileW = 72;
+      const tileH = 36;
+      const cols = Math.ceil(w / tileW) + 8;
+      const rows = Math.ceil(h / tileH) + 8;
+      const originX = w / 2;
+      const originY = -tileH * 2;
+      for (let row = -rows; row < rows; row++) {
+        for (let col = -cols; col < cols; col++) {
+          const x = originX + (col - row) * tileW / 2;
+          const y = originY + (col + row) * tileH / 2;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + tileW / 2, y + tileH / 2);
+          ctx.lineTo(x, y + tileH);
+          ctx.lineTo(x - tileW / 2, y + tileH / 2);
+          ctx.closePath();
+          ctx.strokeStyle = (col + row) % 2 === 0 ? 'rgba(214,166,41,.22)' : 'rgba(55,130,59,.28)';
+          ctx.stroke();
+        }
+      }
+    }
+
+    function drawPet() {
+      const sheet = mode === 'idle' ? idle : walk;
+      const frames = mode === 'idle' ? 6 : 8;
+      const frame = Math.floor(time * (mode === 'idle' ? 7 : 10)) % frames;
+      const size = Math.max(58, Math.min(74, canvas.clientWidth * 0.14));
+      ctx.fillStyle = 'rgba(30,38,24,.25)';
+      ctx.beginPath();
+      ctx.ellipse(pet.x, pet.y + 8, size * .3, size * .09, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (sheet.complete) {
+        ctx.drawImage(sheet, frame * 65, 0, 65, 65, Math.round(pet.x - size / 2), Math.round(pet.y - size + 10), size, size);
+      }
+    }
+
+    function loop(now) {
+      const dt = Math.min(.05, (now - last) / 1000);
+      last = now;
+      resize();
+      update(dt);
+      drawGrid(canvas.clientWidth, canvas.clientHeight);
+      drawPet();
+      requestAnimationFrame(loop);
+    }
+
+    chooseTarget();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

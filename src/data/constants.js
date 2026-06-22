@@ -435,7 +435,45 @@ export const BUILDINGS_CONFIG = {
       { level: 2, cost: { gold: 600, wood_rough: 45, iron_ore: 20 }, sellTax: 0.05, desc: 'Melhora a eficiência comercial. Taxa reduzida para 5%.' },
       { level: 3, cost: { gold: 1800, wood_rough: 90, steel_ore: 30, gorro_vermelho: 1 }, sellTax: 0, desc: 'Isenção fiscal municipal total (0% de taxa).' }
     ]
+  },
+  pet_farm: {
+    name: 'Santuário dos Pets',
+    icon: '🐾',
+    description: 'Invoque companheiros mágicos que fortalecem todos os seus heróis em batalha.',
+    upgrades: [
+      { level: 1, cost: { gold: 800, wood_rough: 20, iron_ore: 8 }, luckBonus: 0.00, desc: 'Libera a invocação de pets (chance base de raros).' },
+      { level: 2, cost: { gold: 2500, wood_rough: 60, steel_ore: 20 }, luckBonus: 0.03, desc: '+3% de chance de pets raros ou melhores.' },
+      { level: 3, cost: { gold: 6000, steel_ore: 50, linho: 30, gorro_vermelho: 1 }, luckBonus: 0.06, desc: '+6% de chance de pets raros ou melhores.' },
+      { level: 4, cost: { gold: 14000, steel_ore: 100, linho: 60, cristal_eterno: 1 }, luckBonus: 0.10, desc: '+10% de chance de pets raros ou melhores.' },
+      { level: 5, cost: { gold: 30000, steel_ore: 180, linho: 120, pena_sagrada: 1 }, luckBonus: 0.16, desc: '+16% de chance de pets raros ou melhores. Santuário no nível máximo.' }
+    ]
   }
+};
+
+// ─── Sistema de Pets (Gacha de Invocação) ─────────────────────────────────────
+
+export const PET_RARITIES = {
+  comum:     { name: 'Comum',     color: '#b0bec5', weight: 60, bonus: { atkPct: 1, hpPct: 0 } },
+  incomum:   { name: 'Incomum',   color: '#66bb6a', weight: 25, bonus: { atkPct: 2, hpPct: 2 } },
+  raro:      { name: 'Raro',      color: '#42a5f5', weight: 12, bonus: { atkPct: 4, hpPct: 3 } },
+  lendario:  { name: 'Lendário',  color: '#ffca28', weight: 3,  bonus: { atkPct: 7, hpPct: 5 } }
+};
+
+// Custo em ouro de cada invocação (MODO TESTE: grátis)
+export const PET_SUMMON_COST = 0;
+
+// Cada pet aponta para seus assets (ícone para UI, spritesheet para o futuro)
+export const PETS_CONFIG = {
+  fox:      { name: 'Raposa',          rarity: 'comum',    icon: 'assets/sprites/pets/fox_pet_icon_v2.png',       sprite: 'assets/sprites/pets/fox_pet_walk_v2.png' },
+  capybara: { name: 'Capivara',        rarity: 'comum',    icon: 'assets/sprites/pets/pet_capybara_icon_v2.png',  sprite: 'assets/sprites/pets/pet_capybara_walk_v2.png' },
+  llama:    { name: 'Lhama',           rarity: 'comum',    icon: 'assets/sprites/pets/pet_llama_icon_v2.png',     sprite: 'assets/sprites/pets/pet_llama_walk_v2.png' },
+  hyena:    { name: 'Hiena',           rarity: 'incomum',  icon: 'assets/sprites/pets/pet_hyena_icon_v2.png',     sprite: 'assets/sprites/pets/pet_hyena_walk_v2.png' },
+  lemur:    { name: 'Lêmure',          rarity: 'incomum',  icon: 'assets/sprites/pets/pet_lemur_icon_v2.png',     sprite: 'assets/sprites/pets/pet_lemur_walk_v2.png' },
+  meerkat:  { name: 'Suricato',        rarity: 'incomum',  icon: 'assets/sprites/pets/pet_meerkat_icon_v2.png',   sprite: 'assets/sprites/pets/pet_meerkat_walk_v2.png' },
+  skunk:    { name: 'Gambá',           rarity: 'raro',     icon: 'assets/sprites/pets/pet_skunk_icon_v4.png',     sprite: 'assets/sprites/pets/pet_skunk_walk_v4.png' },
+  oryx:     { name: 'Órix',            rarity: 'raro',     icon: 'assets/sprites/pets/pet_oryx_icon_v2.png',      sprite: 'assets/sprites/pets/pet_oryx_walk_v2.png' },
+  lava_bat: { name: 'Morcego de Lava', rarity: 'lendario', icon: 'assets/sprites/pets/pet_lava_bat_icon_v2.png',  sprite: 'assets/sprites/pets/pet_lava_bat_walk_v2.png' },
+  pink_bat: { name: 'Morcego Rosa',    rarity: 'lendario', icon: 'assets/sprites/pets/pet_pink_bat_icon_v2.png',  sprite: 'assets/sprites/pets/pet_pink_bat_walk_v2.png' }
 };
 
 export const STARTER_EQUIPMENT = {

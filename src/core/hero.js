@@ -278,6 +278,15 @@ export class Hero {
         this.def += item.stats.def || 0;
       }
     }
+
+    // Bônus global dos pets invocados (Santuário dos Pets)
+    const petBonus = (typeof window !== 'undefined' && window.game?.getPetBonus)
+      ? window.game.getPetBonus()
+      : null;
+    if (petBonus) {
+      this.atk = Math.round(this.atk * (1 + (petBonus.atkPct || 0) / 100));
+      this.maxHp = Math.round(this.maxHp * (1 + (petBonus.hpPct || 0) / 100));
+    }
   }
 
   addLog(msg) {

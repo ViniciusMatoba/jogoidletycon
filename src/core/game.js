@@ -1,7 +1,7 @@
 import { Town } from './town.js';
 import { Hero } from './hero.js';
 import { MonsterSpawner } from './monster.js';
-import { BIOMES, HERO_CLASSES } from '../data/constants.js';
+import { BIOMES, HERO_CLASSES, PETS_CONFIG, PET_RARITIES, PET_SUMMON_COST, BUILDINGS_CONFIG } from '../data/constants.js';
 import { getRandomTownPoint } from './navigation.js';
 
 const SAVE_VERSION = 2;
@@ -11,6 +11,7 @@ export class Game {
     this.town = new Town();
     this.spawner = new MonsterSpawner();
     this.heroes = [];
+    this.pets = {}; // coleção de pets invocados: { petId: quantidade }
     this.floaters = [];
     this.isPaused = false;
     this.speed = 1.0;
@@ -133,6 +134,70 @@ export class Game {
     return { success: true };
   }
 
+  // ─── Sistema de Pets (Gacha) ───────────────────────────────────────────────
+
+  _rollPetRarity() {
+    // Sorteio ponderado pelas weights das raridades
+    const entries = Object.entries(PET_RARITIES);
+    const total = entries.reduce((s, [, r]) => s + r.weight, 0);
+    let roll = Math.random() * total;
+    for (const [key, r] of entries) {
+      roll -= r.weight;
+      if (roll <= 0) return key;
+    }
+    return entries[0][0];
+  }
+
+  _rollNonCommonRarity() {
+    const entries = Object.entries(PET_RARITIES).filter(([k]) => k !== 'comum');
+    const total = entries.reduce((s, [, r]) => s + r.weight, 0);
+    let roll = Math.random() * total;
+    for (const [key, r] of entries) {
+      roll -= r.weight;
+      if (roll <= 0) return key;
+    }
+    return entries[0][0];
+  }
+
+  summonPet() {
+    if (!this.town.isBuilt('pet_farm')) {
+      return { success: false, reason: 'Construa o Santuário dos Pets primeiro!' };
+    }
+
+    // MODO TESTE: invocação grátis e sem raridades — sorteio uniforme entre todos os pets
+    if (this.town.gold < PET_SUMMON_COST) {
+      return { success: false, reason: `Ouro insuficiente! Custo: ${PET_SUMMON_COST}.` };
+    }
+    this.town.gold -= PET_SUMMON_COST;
+
+    const pool = Object.keys(PETS_CONFIG);
+    const petId = pool[Math.floor(Math.random() * pool.length)];
+    const rarity = PETS_CONFIG[petId].rarity;
+
+    const isNew = !this.pets[petId];
+    this.pets[petId] = (this.pets[petId] || 0) + 1;
+
+    this.saveGame();
+    return { success: true, petId, rarity, isNew, count: this.pets[petId] };
+  }
+
+  // Bônus global aplicado a todos os heróis (lido em hero.recalculateStats)
+  getPetBonus() {
+    let atkPct = 0;
+    let hpPct = 0;
+    for (const petId in this.pets) {
+      const count = this.pets[petId];
+      const def = PETS_CONFIG[petId];
+      if (!def || count <= 0) continue;
+      const bonus = PET_RARITIES[def.rarity]?.bonus || { atkPct: 0, hpPct: 0 };
+      // Cópias duplicadas somam 25% do bônus base cada uma
+      const mult = 1 + 0.25 * (count - 1);
+      atkPct += (bonus.atkPct || 0) * mult;
+      hpPct += (bonus.hpPct || 0) * mult;
+    }
+    return { atkPct, hpPct };
+  }
+
   _buildSaveData() {
     return {
       version: SAVE_VERSION,
@@ -170,6 +235,7 @@ export class Game {
         state: h.state,
         isGhost: h.isGhost || false
       })),
+      pets: this.pets,
       lastSavedTime: Date.now()
     };
   }
@@ -199,6 +265,8 @@ export class Game {
       if (typeof this.town.sanitizeBuildingPlacements === 'function') {
         this.town.sanitizeBuildingPlacements();
       }
+
+      this.pets = data.pets || {};
 
       this.spawner.currentBiomeId = data.spawner.currentBiomeId;
       this.spawner.killsCount = data.spawner.killsCount;

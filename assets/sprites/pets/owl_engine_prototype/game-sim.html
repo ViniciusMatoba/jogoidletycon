@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulacao Pet Coruja</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; overflow: hidden; background: #111419; color: #f3dfaa; font-family: system-ui, sans-serif; }
+    canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; image-rendering: crisp-edges; background: #6ea53e; }
+    .hud { position: fixed; left: 8px; right: 8px; top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 9px; border: 1px solid rgba(95, 68, 36, 0.9); background: rgba(16, 19, 23, 0.78); font-size: 12px; pointer-events: none; }
+    .hud strong { color: #fff3bc; }
+    .hud span { color: #c6b27a; }
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div class="hud"><strong>Coruja pet</strong><span>idle + walk + costas</span></div>
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    const idle = new Image();
+    const walk = new Image();
+    const backWalk = new Image();
+    idle.src = 'owl_engine_idle_strip.png';
+    walk.src = 'owl_engine_walk_strip.png';
+    backWalk.src = 'owl_engine_back_walk_strip.png';
+    const pet = { x: innerWidth * 0.5, y: Math.max(220, innerHeight * 0.68), targetX: innerWidth * 0.5, targetY: 110, speed: 78, wait: 0.5, state: 'walk', dirY: -1, dirX: 1 };
+    let last = performance.now();
+    let time = 0;
+    function resize() { const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); canvas.width = Math.floor(innerWidth * dpr); canvas.height = Math.floor(innerHeight * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; }
+    function chooseTarget(preferBack = false) { const marginX = Math.max(42, innerWidth * 0.08); const top = 78; const bottom = Math.max(top + 80, innerHeight - 58); if (preferBack) { pet.targetX = innerWidth * 0.5; pet.targetY = top + 34; return; } pet.targetX = marginX + Math.random() * Math.max(80, innerWidth - marginX * 2); pet.targetY = top + Math.random() * Math.max(90, bottom - top); }
+    function drawIsoGround() { const w = innerWidth; const h = innerHeight; const grd = ctx.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#79ad42'); grd.addColorStop(1, '#5e9236'); ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h); const tileW = 72; const tileH = 36; const cols = Math.ceil(w / tileW) + 10; const rows = Math.ceil(h / tileH) + 10; const originX = w / 2; const originY = -tileH * 2; for (let row = -rows; row < rows; row++) { for (let col = -cols; col < cols; col++) { const x = originX + (col - row) * tileW / 2; const y = originY + (col + row) * tileH / 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + tileW / 2, y + tileH / 2); ctx.lineTo(x, y + tileH); ctx.lineTo(x - tileW / 2, y + tileH / 2); ctx.closePath(); ctx.strokeStyle = (col + row) % 2 === 0 ? 'rgba(214,166,41,.22)' : 'rgba(47,125,58,.28)'; ctx.stroke(); } } drawProp(w * 0.2, h * 0.26, '#8a5a2d', '#d8b47a'); drawProp(w * 0.78, h * 0.22, '#6d6f73', '#c5c8ba'); drawTree(w * 0.15, h * 0.72); drawTree(w * 0.84, h * 0.67); }
+    function drawProp(x, y, wall, roof) { ctx.save(); ctx.translate(x, y); ctx.fillStyle = 'rgba(30, 38, 24, 0.22)'; ctx.beginPath(); ctx.ellipse(0, 42, 38, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = wall; ctx.fillRect(-24, 0, 48, 38); ctx.fillStyle = roof; ctx.beginPath(); ctx.moveTo(-32, 2); ctx.lineTo(0, -20); ctx.lineTo(32, 2); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#302016'; ctx.fillRect(-5, 18, 10, 20); ctx.restore(); }
+    function drawTree(x, y) { ctx.save(); ctx.translate(x, y); ctx.fillStyle = 'rgba(30, 38, 24, 0.2)'; ctx.beginPath(); ctx.ellipse(0, 24, 24, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#5a3924'; ctx.fillRect(-4, 3, 8, 24); ctx.fillStyle = '#2f6e3b'; ctx.beginPath(); ctx.arc(0, -8, 18, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#3d8748'; ctx.beginPath(); ctx.arc(-8, -2, 14, 0, Math.PI * 2); ctx.arc(9, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+    function update(dt) { time += dt; const dx = pet.targetX - pet.x; const dy = pet.targetY - pet.y; const dist = Math.hypot(dx, dy); if (dist < 5) { pet.state = 'idle'; pet.wait -= dt; if (pet.wait <= 0) { chooseTarget(); pet.wait = 0.45 + Math.random() * 1.2; } return; } pet.state = 'walk'; pet.dirY = dy < -4 ? -1 : 1; pet.dirX = dx < -4 ? -1 : 1; const step = Math.min(dist, pet.speed * dt); pet.x += dx / dist * step; pet.y += dy / dist * step; }
+    function drawPet() { const sheet = pet.state === 'idle' ? idle : (pet.dirY < 0 ? backWalk : walk); const frames = pet.state === 'idle' ? 6 : 8; const fps = pet.state === 'idle' ? 7 : 10; const frame = Math.floor(time * fps) % frames; const size = Math.max(54, Math.min(72, innerWidth * 0.14)); const drawX = Math.round(pet.x - size / 2); const drawY = Math.round(pet.y - size + 10); const flipX = pet.state === 'walk' && pet.dirY >= 0 && pet.dirX < 0; ctx.fillStyle = 'rgba(22, 28, 20, 0.28)'; ctx.beginPath(); ctx.ellipse(pet.x, pet.y + 8, size * 0.3, size * 0.09, 0, 0, Math.PI * 2); ctx.fill(); if (sheet.complete) { ctx.save(); if (flipX) { ctx.translate(drawX + size, drawY); ctx.scale(-1, 1); ctx.drawImage(sheet, frame * 65, 0, 65, 65, 0, 0, size, size); } else { ctx.drawImage(sheet, frame * 65, 0, 65, 65, drawX, drawY, size, size); } ctx.restore(); } }
+    function loop(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; resize(); update(dt); drawIsoGround(); drawPet(); requestAnimationFrame(loop); }
+    chooseTarget(true); requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

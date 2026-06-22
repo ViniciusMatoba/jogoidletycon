@@ -1,0 +1,23 @@
+{
+  "slug": "mystic_cat",
+  "displayName": "Gato Mistico",
+  "frameSize": 65,
+  "animations": {
+    "idle": {
+      "file": "mystic_cat_engine_idle_strip.png",
+      "frames": 6,
+      "durationMs": 180
+    },
+    "walk": {
+      "file": "mystic_cat_engine_walk_strip.png",
+      "frames": 8,
+      "durationMs": 95
+    },
+    "backWalk": {
+      "file": "mystic_cat_engine_back_walk_strip.png",
+      "frames": 8,
+      "durationMs": 95
+    }
+  },
+  "source": "assets/sprites/pets/ai_refs/mystic_cat_engine_ai_full_01.png"
+}

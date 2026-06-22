@@ -1,0 +1,19 @@
+{
+  "name": "Gamba Engine Prototype",
+  "source": "assets/sprites/pets/ai_refs/skunk_engine_ai_idle_walk_01.png",
+  "frameSize": 65,
+  "animations": {
+    "idle": {
+      "file": "skunk_engine_idle_strip.png",
+      "gif": "skunk_engine_idle.gif",
+      "frames": 6,
+      "durationMs": 130
+    },
+    "walk": {
+      "file": "skunk_engine_walk_strip.png",
+      "gif": "skunk_engine_walk.gif",
+      "frames": 8,
+      "durationMs": 95
+    }
+  }
+}
