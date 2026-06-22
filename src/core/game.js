@@ -264,8 +264,20 @@ export class Game {
     }
   }
 
-  resetGame() {
+  async resetGame() {
+    // Apaga save local
     localStorage.removeItem('idle_hunter_tycoon_save');
+
+    // Apaga save da nuvem — senão o reload baixa o save de volta do Firebase
+    if (window.currentUser) {
+      try {
+        const { deleteFromCloud } = await import('./cloudSave.js');
+        await deleteFromCloud(window.currentUser.uid);
+      } catch (e) {
+        console.warn('[Reset] Falha ao apagar save da nuvem:', e);
+      }
+    }
+
     window.location.reload();
   }
 }

@@ -7,14 +7,14 @@ import { getAuth, GoogleAuthProvider,
          signOut,
          onAuthStateChanged }         from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore,
-         doc, getDoc, setDoc }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+         doc, getDoc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { firebaseConfig }             from './firebase-config.js';
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-export { auth, db, doc, getDoc, setDoc };
+export { auth, db, doc, getDoc, setDoc, deleteDoc };
 
 // ─── Google Sign-In ──────────────────────────────────────────────────────────
 

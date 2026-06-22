@@ -438,9 +438,11 @@ export function setupUI(game) {
   // 5. Botão Reset de Jogo
   const resetBtn = document.getElementById('reset-btn');
   if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
+    resetBtn.addEventListener('click', async () => {
       if (confirm('Tem certeza de que deseja resetar TODAS as suas construções e heróis? O progresso será perdido.')) {
-        game.resetGame();
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Resetando...';
+        await game.resetGame();
       }
     });
   }

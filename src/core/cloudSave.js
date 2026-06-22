@@ -1,4 +1,4 @@
-import { db, doc, getDoc, setDoc } from './auth.js';
+import { db, doc, getDoc, setDoc, deleteDoc } from './auth.js';
 
 const SAVE_KEY    = 'idle_hunter_tycoon_save';
 const COLLECTION  = 'saves';
@@ -23,6 +23,18 @@ export async function loadFromCloud(uid) {
   } catch (e) {
     console.warn('[CloudSave] Falha ao carregar da nuvem:', e.message);
     return null;
+  }
+}
+
+// ─── Apagar Save da Nuvem ─────────────────────────────────────────────────────
+
+export async function deleteFromCloud(uid) {
+  try {
+    await deleteDoc(doc(db, COLLECTION, uid));
+    return true;
+  } catch (e) {
+    console.warn('[CloudSave] Falha ao apagar save da nuvem:', e.message);
+    return false;
   }
 }
 
