@@ -109,10 +109,11 @@ export const BIOMES = [
     bgClass: 'shallow-caves',
     // Monstros normais mistos (LPC + originais)
     monsters: [
-      { name: 'Rato', hp: 50, atk: 6, def: 1, xp: 12, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'rat_tail', chance: 0.5 }, { item: 'wood_rough', chance: 0.2 }] },
+      { name: 'Ratazana', hp: 50, atk: 6, def: 1, xp: 12, drops: [{ item: 'meat_raw', chance: 0.6 }, { item: 'rat_tail', chance: 0.5 }, { item: 'wood_rough', chance: 0.2 }] },
       { name: 'Zoio', hp: 45, atk: 7, def: 0, xp: 10, drops: [{ item: 'bat_wing', chance: 0.6 }, { item: 'guano', chance: 0.4 }] },
       { name: 'Goblin', hp: 52, atk: 7, def: 1, xp: 13, drops: [{ item: 'goblin_ear', chance: 0.5 }, { item: 'wood_rough', chance: 0.25 }, { item: 'rat_tail', chance: 0.3 }] },
-      { name: 'Esqueleto', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'os_seco', chance: 0.5 }, { item: 'bone_shard', chance: 0.6 }, { item: 'iron_ore', chance: 0.3 }] }
+      { name: 'Esqueleto', hp: 60, atk: 8, def: 3, xp: 15, drops: [{ item: 'os_seco', chance: 0.5 }, { item: 'bone_shard', chance: 0.6 }, { item: 'iron_ore', chance: 0.3 }] },
+      { name: 'Slime Verde', hp: 40, atk: 5, def: 1, xp: 10, drops: [{ item: 'meat_raw', chance: 0.4 }] }
     ],
     // Arrays de chefes para o spawner sortear
     miniBosses: [

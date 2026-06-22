@@ -11,7 +11,8 @@ export class Game {
     this.town = new Town();
     this.spawner = new MonsterSpawner();
     this.heroes = [];
-    this.pets = {}; // coleção de pets invocados: { petId: quantidade }
+    this.pets = {};        // coleção (gacha): { petId: quantidade }
+    this.activePets = [];  // instâncias que seguem os heróis no mapa
     this.floaters = [];
     this.isPaused = false;
     this.speed = 1.0;
@@ -20,17 +21,51 @@ export class Game {
   }
 
   init() {
+    let loaded = false;
     // Se main.js injetou dados da nuvem, usa-os como save prioritário
     if (this._pendingCloudSave) {
       const ok = this._applyLoadedData(this._pendingCloudSave);
       this._pendingCloudSave = null;
-      if (ok) return;
+      if (ok) loaded = true;
     }
-    if (this.loadGame()) return;
+    if (!loaded && this.loadGame()) {
+      loaded = true;
+    }
+
+    if (loaded) {
+      this.syncActivePets();
+      return;
+    }
 
     const startingClasses = Object.keys(HERO_CLASSES);
     const randomClass = startingClasses[Math.floor(Math.random() * startingClasses.length)];
     this.hireHero(randomClass, true);
+    this.ensurePrototypePets();
+  }
+
+  // Reconstrói os pets seguidores (this.activePets) a partir da coleção (this.pets).
+  // Um seguidor por tipo de pet possuído, usando os sprites do Codex (PETS_CONFIG).
+  syncActivePets() {
+    const hiddenTownStates = new Set(['HEALING_HOSP', 'EATING_REST', 'RESTING_HOTEL', 'DRINKING_TAVERN', 'SELLING_LOOT']);
+    const anchor = this.heroes.find(hero => hero.currentMap === 'town' && !hiddenTownStates.has(hero.state)) || { x: 360, y: 320 };
+
+    const ownedIds = Object.keys(this.pets).filter(id => this.pets[id] > 0 && PETS_CONFIG[id]);
+    const existing = new Map(this.activePets.map(p => [p.id, p]));
+
+    this.activePets = ownedIds.map((id, index) => {
+      if (existing.has(id)) return existing.get(id);
+      return {
+        id,
+        name: PETS_CONFIG[id].name,
+        assetKey: `pet_walk_${id}`, // mapeado no renderer para PETS_CONFIG[id].sprite
+        x: anchor.x - 34 + index * 10,
+        y: anchor.y + 18,
+        targetX: anchor.x - 34 + index * 10,
+        targetY: anchor.y + 18,
+        facingDir: 'E',
+        bobSeed: Math.random() * Math.PI * 2
+      };
+    });
   }
 
   hireHero(className, free = false) {
@@ -87,6 +122,7 @@ export class Game {
       hero.update(actualDt, this.town, this.spawner.activeMonsters, this.addFloater.bind(this), viewport, this.heroes);
     });
 
+    this.updatePets(actualDt, viewport);
     this.town.updateCrafting(actualDt);
 
     for (let i = this.floaters.length - 1; i >= 0; i--) {
@@ -97,6 +133,58 @@ export class Game {
         this.floaters.splice(i, 1);
       }
     }
+  }
+
+  updatePets(dt, viewport = {}) {
+    if (!this.activePets.length) return;
+
+    const hiddenTownStates = new Set(['HEALING_HOSP', 'EATING_REST', 'RESTING_HOTEL', 'DRINKING_TAVERN', 'SELLING_LOOT']);
+    const townHeroes = this.heroes.filter(hero => hero.currentMap === 'town' && !hiddenTownStates.has(hero.state));
+    const leader = townHeroes[0];
+    const width = viewport.width || 960;
+    const height = viewport.height || 540;
+    const minX = 24;
+    const maxX = Math.max(minX, Math.min(width - 24, 430));
+    const minY = 70;
+    const maxY = Math.max(minY, height - 72);
+
+    this.activePets.forEach((pet, index) => {
+      let targetX = width * 0.54 + index * 24;
+      let targetY = height * 0.62 + index * 14;
+
+      if (leader) {
+        const side = index % 2 === 0 ? -1 : 1;
+        const drift = Math.sin(performance.now() * 0.0012 + pet.bobSeed) * 6;
+        targetX = leader.x + side * 34 + drift;
+        targetY = leader.y + 18 + Math.cos(performance.now() * 0.001 + pet.bobSeed) * 4;
+      }
+
+      pet.targetX = Math.max(minX, Math.min(maxX, targetX));
+      pet.targetY = Math.max(minY, Math.min(maxY, targetY));
+
+      const dx = pet.targetX - pet.x;
+      const dy = pet.targetY - pet.y;
+      const dist = Math.hypot(dx, dy);
+      const speed = 78;
+
+      if (!leader && dist > 180) {
+        pet.x = pet.targetX;
+        pet.y = pet.targetY;
+        return;
+      }
+
+      if (dist > 1) {
+        const step = Math.min(dist, speed * dt);
+        pet.x += (dx / dist) * step;
+        pet.y += (dy / dist) * step;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+          pet.facingDir = dx >= 0 ? 'E' : 'W';
+        } else {
+          pet.facingDir = dy >= 0 ? 'S' : 'N';
+        }
+      }
+    });
   }
 
   changeBiome(biomeId) {
@@ -176,6 +264,9 @@ export class Game {
 
     const isNew = !this.pets[petId];
     this.pets[petId] = (this.pets[petId] || 0) + 1;
+
+    // Pet invocado passa a seguir os heróis no mapa
+    this.syncActivePets();
 
     this.saveGame();
     return { success: true, petId, rarity, isNew, count: this.pets[petId] };
@@ -266,7 +357,8 @@ export class Game {
         this.town.sanitizeBuildingPlacements();
       }
 
-      this.pets = data.pets || {};
+      // Coleção de pets (objeto). Ignora formato antigo em array.
+      this.pets = (data.pets && !Array.isArray(data.pets)) ? data.pets : {};
 
       this.spawner.currentBiomeId = data.spawner.currentBiomeId;
       this.spawner.killsCount = data.spawner.killsCount;

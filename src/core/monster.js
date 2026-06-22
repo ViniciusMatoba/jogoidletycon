@@ -74,6 +74,7 @@ export class Monster {
     this.attackSpeed = isBoss ? 0.6 : (isMiniBoss ? 0.9 : 1.2); // Ataques por segundo
     this.targetHero = null; // Herói alvo atual
     this.aggroRange = isBoss ? 350 : (isMiniBoss ? 280 : 200); // Raio de detecção de herói
+    this.hurtTimer = 0;
   }
 
   clampToHunt(viewport = {}) {
@@ -90,6 +91,7 @@ export class Monster {
 
   takeDamage(amount, attacker, addFloater, town) {
     this.hp = Math.max(0, this.hp - amount);
+    this.hurtTimer = 0.35; // Ativar animação de dano sofrido
     if (this.hp <= 0) {
       this.die(attacker, addFloater, town);
     }
@@ -185,6 +187,10 @@ export class Monster {
 
   update(dt, heroes = [], viewport = {}, addFloater) {
     if (this.hp <= 0) return;
+
+    if (this.hurtTimer > 0) {
+      this.hurtTimer -= dt;
+    }
 
     // Decrementa temporizador de stun (atordoamento por congelamento)
     if (this.stunTimer === undefined) this.stunTimer = 0;

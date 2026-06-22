@@ -1,4 +1,4 @@
-import { HERO_CLASSES, BIOMES, ITEMS_INFO } from '../data/constants.js';
+import { HERO_CLASSES, BIOMES, ITEMS_INFO, PETS_CONFIG } from '../data/constants.js';
 
 import {
   getTownGridMetrics,
@@ -314,9 +314,10 @@ export class GameRenderer {
       'monster_lagarto': 'assets/sprites/lagarto_universal.png',
       'monster_lobisomen': 'assets/sprites/monster_lobisomen_universal.png',
       'monster_porco': 'assets/sprites/porco_universal.png',
-      'monster_rato': 'assets/sprites/rato_universal.png',
+      'monster_ratazana': 'assets/sprites/monster_ratazana_universal.png?v=custom-rat-2',
       'monster_vampiro': 'assets/sprites/monster_vampiro_universal.png',
       'monster_zoio': 'assets/sprites/zoio_universal.png',
+      'monster_slime_verde': 'assets/sprites/monster_slime_green_universal.png?v=custom-slime-1',
       'monster_saci_perere': 'assets/sprites/saci_perere_universal.png',
       'monster_curupira': 'assets/sprites/curupira_universal.png',
       'monster_mula_sem_cabeca': 'assets/sprites/mula_sem_cabeca_universal.png',
@@ -328,7 +329,7 @@ export class GameRenderer {
       'monster_boto_sedutor': 'assets/sprites/boto_sedutor_universal.png',
       'monster_mapinguari': 'assets/sprites/mapinguari_universal.png',
       // Monstros LPC gerados programaticamente — variante normal
-      'monster_goblin':             'assets/sprites/monster_goblin_universal.png',
+      'monster_goblin':             'assets/sprites/monster_goblin_universal.png?v=custom-goblin-4',
       'monster_esqueleto':          'assets/sprites/monster_esqueleto_universal.png',
       'monster_orc':                'assets/sprites/monster_orc_universal.png',
       'monster_cavaleiro_sombrio':  'assets/sprites/monster_cavaleiro_sombrio_universal.png',
@@ -340,12 +341,16 @@ export class GameRenderer {
       // Variações por raridade
       'monster_esqueleto_raro':     'assets/sprites/monster_esqueleto_raro_universal.png',
       'monster_esqueleto_elite':    'assets/sprites/monster_esqueleto_elite_universal.png',
-      'monster_goblin_raro':        'assets/sprites/monster_goblin_raro_universal.png',
-      'monster_goblin_elite':       'assets/sprites/monster_goblin_elite_universal.png',
+      'monster_goblin_raro':        'assets/sprites/monster_goblin_raro_universal.png?v=custom-goblin-4',
+      'monster_goblin_elite':       'assets/sprites/monster_goblin_elite_universal.png?v=custom-goblin-4',
       'monster_orc_raro':           'assets/sprites/monster_orc_raro_universal.png',
       'monster_lobisomen_raro':     'assets/sprites/monster_lobisomen_raro_universal.png',
       'monster_vampiro_raro':       'assets/sprites/monster_vampiro_raro_universal.png',
       'monster_feiticeira_raro':    'assets/sprites/monster_feiticeira_raro_universal.png',
+      // Pets prototipo
+      'pet_fox_walk': 'assets/sprites/pets/fox_pet_walk.png?v=pet-fox-redraw-1',
+      // Sprites de caminhada dos pets do gacha (Codex) — chave pet_walk_<id>
+      ...Object.fromEntries(Object.entries(PETS_CONFIG).map(([id, p]) => [`pet_walk_${id}`, p.sprite])),
     };
 
     // Adicionar as 5 variações para cada um dos 7 prédios no pré-carregamento
@@ -831,7 +836,18 @@ export class GameRenderer {
         });
       });
 
-      // Heróis ativos na cidade (escondidos se estiverem dentro de um prédio construído)
+      // Pets invocados que seguem os heróis na cidade
+      {
+        const pets = Array.isArray(game.activePets) ? game.activePets : [];
+        pets.forEach(pet => {
+          if (!(Number.isFinite(pet.x) && Number.isFinite(pet.y))) return;
+          renderList.push({
+            y: pet.y + 3,
+            render: () => this.drawPetIndividual(pet, time)
+          });
+        });
+      }
+
       game.heroes.forEach(h => {
         if (h.currentMap === 'town') {
           const isInsideHospital = h.state === 'HEALING_HOSP' && game.town.isBuilt('hospital');
@@ -2318,9 +2334,10 @@ export class GameRenderer {
       // Translações para animações
       this.ctx.translate(pos.x, pos.y);
 
-      const isSpritesheet = (img.naturalWidth === 832 || img.width === 832);
+      const isSpritesheetLPC = (img.naturalWidth === 832 || img.width === 832);
+      const isSpritesheet4x4 = (img.naturalWidth === 256 || img.width === 256 || name.includes('Slime'));
 
-      if (isSpritesheet) {
+      if (isSpritesheetLPC) {
         // --- LPC Spritesheet Cropping & Animation ---
         let rowOffset = 10; // Walk South
         let colCount = 9;
@@ -2354,28 +2371,33 @@ export class GameRenderer {
           }
         }
 
-        if (isFighting) {
+        // Frame selection and row offset determination
+        colCount = 9;
+        rowOffset = 10;
+        let frameIndex = 0;
+
+        if (monster.hurtTimer > 0) {
+          colCount = 6; // Hurt has 6 frames
+          rowOffset = 20; // Hurt row in LPC
+          frameIndex = Math.min(5, Math.floor((0.35 - monster.hurtTimer) / 0.058));
+        } else if (isFighting) {
           colCount = 6; // Slash has 6 frames
           if (monster.facingDir === 'N') rowOffset = 12;
           else if (monster.facingDir === 'W') rowOffset = 13;
           else if (monster.facingDir === 'S') rowOffset = 14;
           else if (monster.facingDir === 'E') rowOffset = 15;
+          frameIndex = Math.floor(time * 0.008) % colCount;
         } else {
           colCount = 9; // Walk has 9 frames
           if (monster.facingDir === 'N') rowOffset = 8;
           else if (monster.facingDir === 'W') rowOffset = 9;
           else if (monster.facingDir === 'S') rowOffset = 10;
           else if (monster.facingDir === 'E') rowOffset = 11;
-        }
-
-        // Frame selection
-        let frameIndex = 0;
-        if (isFighting) {
-          frameIndex = Math.floor(time * 0.008) % colCount;
-        } else if (dist > 2) {
-          frameIndex = Math.floor(time * 0.012) % colCount;
-        } else {
-          frameIndex = 0;
+          if (dist > 2) {
+            frameIndex = Math.floor(time * 0.012) % colCount;
+          } else {
+            frameIndex = 0;
+          }
         }
 
         const sx = frameIndex * 64;
@@ -2383,7 +2405,61 @@ export class GameRenderer {
         const sw = 64;
         const sh = 64;
 
-        const size = monster.isBoss ? 134 : (monster.isMiniBoss ? 100 : 78);
+        let size = monster.isBoss ? 134 : (monster.isMiniBoss ? 100 : 78);
+        if (name.includes('Slime')) {
+          size = monster.isBoss ? 82 : (monster.isMiniBoss ? 62 : 46);
+        }
+        if (filterString && filterString !== 'none') {
+          this.ctx.filter = filterString;
+        }
+        this.ctx.drawImage(img, sx, sy, sw, sh, -size / 2, -size + 4, size, size);
+        if (filterString && filterString !== 'none') {
+          this.ctx.filter = 'none';
+        }
+      } else if (isSpritesheet4x4) {
+        // --- 4x4 (Quad) Spritesheet Cropping & Animation ---
+        const dirRows = { S: 0, W: 1, E: 2, N: 3 };
+        
+        // Calculate direction
+        const dx = monster.targetX - monster.x;
+        const dy = monster.targetY - monster.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!monster.facingDir) {
+          monster.facingDir = 'S';
+        }
+
+        if (dist > 2) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            monster.facingDir = dx > 0 ? 'E' : 'W';
+          } else {
+            monster.facingDir = dy > 0 ? 'S' : 'N';
+          }
+        }
+        
+        const rowOffset = dirRows[monster.facingDir] ?? 0;
+        const isFighting = (game && game.heroes) ? game.heroes.some(h => h.currentMap === 'hunt' && h.targetMonster === monster) : false;
+        
+        // Walk animation: simple 4-frame cycle
+        const frameIndex = (isFighting || dist > 2) ? Math.floor(time * 0.01) % 4 : 0;
+        
+        const cellW = img.naturalWidth / 4;
+        const cellH = img.naturalHeight / 4;
+
+        const sx = frameIndex * cellW;
+        const sy = rowOffset * cellH;
+        const sw = cellW;
+        const sh = cellH;
+        
+        const baseSize = name.includes('Slime') ? 42 : 67;
+        const size = monster.isBoss ? (baseSize * 1.8) : (monster.isMiniBoss ? (baseSize * 1.35) : baseSize);
+        
+        // Bouncing animation for Slime feel
+        if (name.includes('Slime')) {
+          const bounce = Math.abs(Math.sin(time * 0.012)) * 3;
+          this.ctx.translate(0, -bounce);
+        }
+        
         if (filterString && filterString !== 'none') {
           this.ctx.filter = filterString;
         }
@@ -2414,7 +2490,7 @@ export class GameRenderer {
       this.ctx.fillStyle = monster.isBoss ? '#ffea3a' : '#ff9f3a';
       this.ctx.font = monster.isBoss ? 'bold 10px monospace' : '9px monospace';
       this.ctx.textAlign = 'center';
-      const nameOffset = isSpritesheet ? 
+      const nameOffset = (isSpritesheetLPC || isSpritesheet4x4) ? 
         (monster.isBoss ? 112 : (monster.isMiniBoss ? 84 : 67)) : 
         (monster.isBoss ? 100 : (monster.isMiniBoss ? 76 : 58));
       this.ctx.fillText(monster.name, pos.x, pos.y - nameOffset);
@@ -2424,7 +2500,7 @@ export class GameRenderer {
       const barW = monster.isBoss ? 45 : (monster.isMiniBoss ? 30 : 20);
       const barH = 3;
       
-      const barOffset = isSpritesheet ? 
+      const barOffset = (isSpritesheetLPC || isSpritesheet4x4) ? 
         (monster.isBoss ? 98 : (monster.isMiniBoss ? 73 : 56)) : 
         (monster.isBoss ? 86 : (monster.isMiniBoss ? 64 : 48));
       this.ctx.fillStyle = '#2c2e33';
@@ -2725,6 +2801,50 @@ export class GameRenderer {
     this.ctx.beginPath();
     this.ctx.arc(x, y, size, 0, Math.PI * 2);
     this.ctx.fill();
+  }
+
+  // --- RENDER PETS ---
+  drawPetIndividual(pet, time = performance.now()) {
+    const img = this.images[pet.assetKey || 'pet_fox_walk'];
+    const pos = this.toIso(pet.x, pet.y);
+    const dirRows = { S: 0, W: 1, E: 2, N: 3 };
+    const row = dirRows[pet.facingDir] ?? 2;
+    const isMoving = Math.hypot((pet.targetX || pet.x) - pet.x, (pet.targetY || pet.y) - pet.y) > 1.5;
+    const frame = isMoving ? Math.floor(time * 0.01) % 4 : 0;
+    const bob = isMoving ? Math.sin(time * 0.018 + (pet.bobSeed || 0)) * 1.6 : Math.sin(time * 0.004 + (pet.bobSeed || 0)) * 0.8;
+    const size = 48;
+
+    this.ctx.save();
+
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(pos.x, pos.y + 4, 18, 6, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    if (img && img.loaded) {
+      this.ctx.imageSmoothingEnabled = false;
+      this.ctx.drawImage(
+        img,
+        frame * 64,
+        row * 64,
+        64,
+        64,
+        Math.round(pos.x - size / 2),
+        Math.round(pos.y - size + bob),
+        size,
+        size
+      );
+
+    } else {
+      this.ctx.fillStyle = '#e87522';
+      this.ctx.fillRect(pos.x - 10, pos.y - 20, 20, 14);
+      this.ctx.fillStyle = '#fff0d0';
+      this.ctx.fillRect(pos.x - 8, pos.y - 13, 12, 7);
+      this.ctx.fillStyle = '#2a1308';
+      this.ctx.fillRect(pos.x + 5, pos.y - 18, 3, 3);
+    }
+
+    this.ctx.restore();
   }
 
   // --- RENDER HEROIS ---
