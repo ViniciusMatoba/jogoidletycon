@@ -40,7 +40,7 @@ export class Game {
     const startingClasses = Object.keys(HERO_CLASSES);
     const randomClass = startingClasses[Math.floor(Math.random() * startingClasses.length)];
     this.hireHero(randomClass, true);
-    this.ensurePrototypePets();
+    this.syncActivePets();
   }
 
   // Reconstrói os pets seguidores (this.activePets) a partir da coleção (this.pets).
