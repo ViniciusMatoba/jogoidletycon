@@ -341,6 +341,8 @@ export class GameRenderer {
       'monster_lobisomen_raro':     'assets/sprites/monster_lobisomen_raro_universal.png',
       'monster_vampiro_raro':       'assets/sprites/monster_vampiro_raro_universal.png',
       'monster_feiticeira_raro':    'assets/sprites/monster_feiticeira_raro_universal.png',
+      // Pets prototipo
+      'pet_fox_walk': 'assets/sprites/pets/fox_pet_walk.png?v=pet-fox-redraw-1',
     };
 
     // Adicionar as 5 variações para cada um dos 7 prédios no pré-carregamento
@@ -812,6 +814,36 @@ export class GameRenderer {
       });
 
       // Heróis ativos na cidade (escondidos se estiverem dentro de um prédio construído)
+      {
+        const fallbackPet = {
+          id: 'starter_fox_preview',
+          name: 'Raposa',
+          assetKey: 'pet_fox_walk',
+          x: Math.min(width - 90, Math.max(90, width * 0.56)),
+          y: Math.min(height - 90, Math.max(120, height * 0.62)),
+          targetX: Math.min(width - 90, Math.max(90, width * 0.56)),
+          targetY: Math.min(height - 90, Math.max(120, height * 0.62)),
+          facingDir: 'E',
+          bobSeed: 0.4
+        };
+        const pets = Array.isArray(game.pets) && game.pets.length ? game.pets : [fallbackPet];
+        pets.forEach(rawPet => {
+          const pet = (
+            Number.isFinite(rawPet.x) &&
+            Number.isFinite(rawPet.y) &&
+            rawPet.x > -48 &&
+            rawPet.y > -48 &&
+            rawPet.x < width + 48 &&
+            rawPet.y < height + 48
+          ) ? rawPet : fallbackPet;
+
+          renderList.push({
+            y: pet.y + 3,
+            render: () => this.drawPetIndividual(pet, time)
+          });
+        });
+      }
+
       game.heroes.forEach(h => {
         if (h.currentMap === 'town') {
           const isInsideHospital = h.state === 'HEALING_HOSP' && game.town.isBuilt('hospital');
@@ -2705,6 +2737,50 @@ export class GameRenderer {
     this.ctx.beginPath();
     this.ctx.arc(x, y, size, 0, Math.PI * 2);
     this.ctx.fill();
+  }
+
+  // --- RENDER PETS ---
+  drawPetIndividual(pet, time = performance.now()) {
+    const img = this.images[pet.assetKey || 'pet_fox_walk'];
+    const pos = this.toIso(pet.x, pet.y);
+    const dirRows = { S: 0, W: 1, E: 2, N: 3 };
+    const row = dirRows[pet.facingDir] ?? 2;
+    const isMoving = Math.hypot((pet.targetX || pet.x) - pet.x, (pet.targetY || pet.y) - pet.y) > 1.5;
+    const frame = isMoving ? Math.floor(time * 0.01) % 4 : 0;
+    const bob = isMoving ? Math.sin(time * 0.018 + (pet.bobSeed || 0)) * 1.6 : Math.sin(time * 0.004 + (pet.bobSeed || 0)) * 0.8;
+    const size = 48;
+
+    this.ctx.save();
+
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(pos.x, pos.y + 4, 18, 6, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    if (img && img.loaded) {
+      this.ctx.imageSmoothingEnabled = false;
+      this.ctx.drawImage(
+        img,
+        frame * 64,
+        row * 64,
+        64,
+        64,
+        Math.round(pos.x - size / 2),
+        Math.round(pos.y - size + bob),
+        size,
+        size
+      );
+
+    } else {
+      this.ctx.fillStyle = '#e87522';
+      this.ctx.fillRect(pos.x - 10, pos.y - 20, 20, 14);
+      this.ctx.fillStyle = '#fff0d0';
+      this.ctx.fillRect(pos.x - 8, pos.y - 13, 12, 7);
+      this.ctx.fillStyle = '#2a1308';
+      this.ctx.fillRect(pos.x + 5, pos.y - 18, 3, 3);
+    }
+
+    this.ctx.restore();
   }
 
   // --- RENDER HEROIS ---
