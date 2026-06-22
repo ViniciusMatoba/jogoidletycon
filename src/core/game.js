@@ -93,8 +93,12 @@ export class Game {
   }
 
   getHiringCost() {
-    // Retorna custo zero para facilitar testes de variacoes
-    return 0;
+    const count = this.heroes.length;
+    if (count <= 3) return 80;
+    if (count <= 5) return 250;
+    if (count <= 8) return 600;
+    if (count <= 12) return 1500;
+    return 4000;
   }
 
   addFloater(config) {
@@ -252,15 +256,15 @@ export class Game {
       return { success: false, reason: 'Construa o Santuário dos Pets primeiro!' };
     }
 
-    // MODO TESTE: invocação grátis e sem raridades — sorteio uniforme entre todos os pets
     if (this.town.gold < PET_SUMMON_COST) {
-      return { success: false, reason: `Ouro insuficiente! Custo: ${PET_SUMMON_COST}.` };
+      return { success: false, reason: `Ouro insuficiente! Custo: ${PET_SUMMON_COST} Ouro.` };
     }
     this.town.gold -= PET_SUMMON_COST;
 
-    const pool = Object.keys(PETS_CONFIG);
-    const petId = pool[Math.floor(Math.random() * pool.length)];
-    const rarity = PETS_CONFIG[petId].rarity;
+    // Sorteio oficial por peso de raridade
+    const rarity = this._rollPetRarity();
+    const pool = Object.keys(PETS_CONFIG).filter(key => PETS_CONFIG[key].rarity === rarity);
+    const petId = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : Object.keys(PETS_CONFIG)[0];
 
     const isNew = !this.pets[petId];
     this.pets[petId] = (this.pets[petId] || 0) + 1;

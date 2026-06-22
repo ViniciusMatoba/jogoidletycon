@@ -460,8 +460,8 @@ export const PET_RARITIES = {
   lendario:  { name: 'Lendário',  color: '#ffca28', weight: 3,  bonus: { atkPct: 7, hpPct: 5 } }
 };
 
-// Custo em ouro de cada invocação (MODO TESTE: grátis)
-export const PET_SUMMON_COST = 0;
+// Custo em ouro de cada invocação
+export const PET_SUMMON_COST = 500;
 
 // Cada pet aponta para seus assets (ícone para UI, spritesheet para o futuro)
 export const PETS_CONFIG = {
