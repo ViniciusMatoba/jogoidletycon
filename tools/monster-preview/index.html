@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Monstros - Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0f12;
+      --panel: #161920;
+      --panel-2: #0a0c0f;
+      --danger: #e53935;
+      --danger-hover: #ff5252;
+      --gold: #d6a629;
+      --line: #423120;
+      --text: #f0e2cf;
+      --muted: #a69580;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      z-index: 10;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-container h1 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .meta {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .layout-wrapper {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 0;
+      height: 100%;
+    }
+
+    /* Barra lateral */
+    sidebar {
+      background: var(--panel-2);
+      border-right: 1px solid var(--line);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold);
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(214, 166, 41, 0.2);
+      padding-bottom: 4px;
+    }
+
+    .monster-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .monster-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border: 1px solid rgba(95, 68, 36, 0.3);
+      border-radius: 4px;
+      background: #181512;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .monster-btn:hover,
+    .monster-btn.active {
+      border-color: var(--gold);
+      background: #2b2118;
+      box-shadow: 0 0 8px rgba(214, 166, 41, 0.15);
+    }
+
+    .monster-btn .emoji {
+      font-size: 20px;
+    }
+
+    /* Controles de Ação */
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: #1c1815;
+      color: var(--text);
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      border-color: var(--gold);
+      background: #2a221b;
+    }
+
+    .btn.active {
+      border-color: var(--gold);
+      background: #d6a629;
+      color: #000;
+    }
+
+    .btn-danger {
+      border-color: rgba(229, 57, 53, 0.5);
+      background: #1f1212;
+    }
+
+    .btn-danger:hover {
+      border-color: var(--danger);
+      background: #321616;
+    }
+
+    .grid-directions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    /* Área do Canvas */
+    main {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      background: #354728;
+    }
+
+    .info-hud {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: rgba(22, 25, 32, 0.88);
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: none;
+      min-width: 220px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 4px;
+    }
+
+    .hud-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .hud-val {
+      font-family: monospace;
+      color: var(--gold);
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <h1>Simulador de Monstros (Universal LPC)</h1>
+    </div>
+    <div class="meta">
+      <span>Spritesheet: 832x1344</span>
+      <span>Célula: 64x64</span>
+      <span>Grade: 13x21</span>
+    </div>
+  </header>
+
+  <div class="layout-wrapper">
+    <sidebar>
+      <div>
+        <div class="section-title">Selecionar Monstro</div>
+        <div class="monster-list" id="monsterList"></div>
+      </div>
+
+      <div>
+        <div class="section-title">Direção</div>
+        <div class="grid-directions">
+          <button class="btn dir-btn" data-dir="N">Norte (Cima)</button>
+          <button class="btn dir-btn" data-dir="W">Oeste (Esq)</button>
+          <button class="btn dir-btn" data-dir="S" class="active">Sul (Baixo)</button>
+          <button class="btn dir-btn" data-dir="E">Leste (Dir)</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Ações de Teste</div>
+        <div class="control-group">
+          <button class="btn action-btn" data-action="walk">🚶 Caminhar</button>
+          <button class="btn action-btn" data-action="attack">⚔️ Atacar</button>
+          <button class="btn action-btn btn-danger" id="dmgBtn">💥 Tomar Dano</button>
+          <button class="btn action-btn btn-danger" id="killBtn">💀 Morrer</button>
+          <button class="btn" id="reviveBtn">🔄 Ressuscitar</button>
+        </div>
+      </div>
+    </sidebar>
+
+    <main>
+      <canvas id="scene"></canvas>
+      <div class="info-hud">
+        <div class="hud-row">
+          <span>Monstro Ativo:</span>
+          <span class="hud-val" id="hudName">-</span>
+        </div>
+        <div class="hud-row">
+          <span>Spritesheet:</span>
+          <span class="hud-val" id="hudPath">-</span>
+        </div>
+        <div class="hud-row">
+          <span>Ação Atual:</span>
+          <span class="hud-val" id="hudAction">-</span>
+        </div>
+        <div class="hud-row">
+          <span>Direção:</span>
+          <span class="hud-val" id="hudDir">-</span>
+        </div>
+        <div class="hud-row">
+          <span>Linha LPC:</span>
+          <span class="hud-val" id="hudRow">-</span>
+        </div>
+        <div class="hud-row">
+          <span>Frame Ativo:</span>
+          <span class="hud-val" id="hudFrame">-</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+
+    // Monstros Disponíveis (Bioma 1)
+    const MONSTERS_CONFIG = [
+      {
+        id: 'saci_perere',
+        name: 'Saci-Pererê',
+        emoji: '🧢',
+        sprite: '../../assets/sprites/saci_perere_universal.png',
+        scale: 96,
+        type: 'boss'
+      },
+      {
+        id: 'home_do_saco',
+        name: 'Homem do Saco',
+        emoji: '🎒',
+        sprite: '../../assets/sprites/Home do Saco_universal.png',
+        scale: 96,
+        type: 'boss'
+      },
+      {
+        id: 'capitao_orc',
+        name: 'Capitão Orc',
+        emoji: '👹',
+        sprite: '../../assets/sprites/monster_capitao_orc_universal.png',
+        scale: 58,
+        type: 'miniboss'
+      },
+      {
+        id: 'et_verde',
+        name: 'ET Verde',
+        emoji: '👽',
+        sprite: '../../assets/sprites/et verde_universal.png',
+        scale: 58,
+        type: 'miniboss'
+      }
+    ];
+
+    let currentMonsterIndex = 0;
+    const sprites = new Map();
+    let currentDir = 'S'; // Direção padrão: Sul
+    let currentAction = 'walk'; // walk, attack, hurt, dead
+    let animFrame = 0;
+    let animTimer = 0;
+    let isDead = false;
+
+    // Configuração de linhas do Universal LPC
+    const LPC_ROWS = {
+      walk: { N: 8, W: 9, S: 10, E: 11, frames: 9, loop: true, speed: 100 },
+      attack: { N: 12, W: 13, S: 14, E: 15, frames: 6, loop: false, speed: 120 },
+      hurt: { N: 20, W: 20, S: 20, E: 20, frames: 3, loop: false, speed: 150 },
+      dead: { N: 20, W: 20, S: 20, E: 20, frames: 6, loop: false, speed: 200 } // Linha 20, frames 3-5
+    };
+
+    // Inicialização da interface
+    function initUI() {
+      const monsterList = document.getElementById('monsterList');
+      MONSTERS_CONFIG.forEach((m, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `monster-btn ${idx === currentMonsterIndex ? 'active' : ''}`;
+        btn.innerHTML = `<span class="emoji">${m.emoji}</span> <span>${m.name}</span>`;
+        btn.onclick = () => selectMonster(idx);
+        monsterList.appendChild(btn);
+      });
+
+      // Direções
+      document.querySelectorAll('.dir-btn').forEach(btn => {
+        const dir = btn.dataset.dir;
+        if (dir === currentDir) btn.classList.add('active');
+        btn.onclick = () => selectDirection(dir);
+      });
+
+      // Ações
+      document.querySelectorAll('.action-btn').forEach(btn => {
+        const act = btn.dataset.action;
+        if (act === currentAction) btn.classList.add('active');
+        btn.onclick = () => selectAction(act);
+      });
+
+      document.getElementById('dmgBtn').onclick = () => triggerHurt();
+      document.getElementById('killBtn').onclick = () => triggerDead();
+      document.getElementById('reviveBtn').onclick = () => triggerRevive();
+    }
+
+    function selectMonster(idx) {
+      currentMonsterIndex = idx;
+      document.querySelectorAll('.monster-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+      });
+      triggerRevive();
+      loadSprite(MONSTERS_CONFIG[idx]);
+    }
+
+    function selectDirection(dir) {
+      if (isDead) return;
+      currentDir = dir;
+      document.querySelectorAll('.dir-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.dir === dir);
+      });
+    }
+
+    function selectAction(action) {
+      if (isDead || action === 'hurt' || action === 'dead') return;
+      currentAction = action;
+      animFrame = 0;
+      animTimer = 0;
+      document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.action === action);
+      });
+    }
+
+    function triggerHurt() {
+      if (isDead) return;
+      currentAction = 'hurt';
+      animFrame = 0;
+      animTimer = 0;
+    }
+
+    function triggerDead() {
+      if (isDead) return;
+      currentAction = 'dead';
+      animFrame = 0;
+      animTimer = 0;
+      isDead = true;
+    }
+
+    function triggerRevive() {
+      isDead = false;
+      currentAction = 'walk';
+      animFrame = 0;
+      animTimer = 0;
+      document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.action === 'walk');
+      });
+    }
+
+    function loadSprite(monster) {
+      if (!sprites.has(monster.id)) {
+        const img = new Image();
+        img.src = monster.sprite;
+        img.onload = () => console.log(`✓ Sprite carregado: ${monster.name}`);
+        img.onerror = () => console.error(`✗ Erro ao carregar sprite: ${monster.sprite}`);
+        sprites.set(monster.id, img);
+      }
+    }
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.imageSmoothingEnabled = false;
+    }
+
+    // Desenhar grid isométrico no background
+    function drawGrid(w, h) {
+      ctx.fillStyle = '#223218'; // Cor da grama escura
+      ctx.fillRect(0, 0, w, h);
+
+      const tileW = 96;
+      const tileH = 48;
+      const originX = w / 2;
+      const originY = h / 2 - 100;
+
+      ctx.strokeStyle = 'rgba(214, 166, 41, 0.08)';
+      ctx.lineWidth = 1;
+
+      for (let y = -10; y < 10; y++) {
+        for (let x = -10; x < 10; x++) {
+          const px = originX + (x - y) * tileW / 2;
+          const py = originY + (x + y) * tileH / 2;
+
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + tileW / 2, py + tileH / 2);
+          ctx.lineTo(px, py + tileH);
+          ctx.lineTo(px - tileW / 2, py + tileH / 2);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+      
+      // Desenha base central do monstro
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.beginPath();
+      ctx.ellipse(originX, originY + 120, 24, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Loop de Animação
+    function update(dt) {
+      const config = LPC_ROWS[currentAction];
+      animTimer += dt;
+
+      if (animTimer >= config.speed) {
+        animTimer = 0;
+        if (config.loop) {
+          animFrame = (animFrame + 1) % config.frames;
+        } else {
+          if (animFrame < config.frames - 1) {
+            animFrame++;
+          } else {
+            // Ações de tiro único terminam voltando para caminhada (exceto morte)
+            if (currentAction === 'hurt') {
+              currentAction = 'walk';
+              animFrame = 0;
+            } else if (currentAction === 'attack') {
+              currentAction = 'walk';
+              animFrame = 0;
+            }
+          }
+        }
+      }
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      drawGrid(w, h);
+
+      const monster = MONSTERS_CONFIG[currentMonsterIndex];
+      const img = sprites.get(monster.id);
+
+      if (img && img.complete) {
+        const config = LPC_ROWS[currentAction];
+        let row = config[currentDir];
+        let col = animFrame;
+
+        // Na linha 20 (Reação de Dano e Morte):
+        // frames 0-2 = Dano
+        // frames 3-5 = Morte (no grid LPC)
+        if (currentAction === 'dead') {
+          row = 20;
+          col = 3 + Math.min(animFrame, 2); // limita aos frames 3-5
+        }
+
+        const size = monster.scale;
+        const x = Math.round(w / 2 - size / 2);
+        const y = Math.round(h / 2 - size + 120);
+
+        ctx.drawImage(
+          img,
+          col * 64, // sx
+          row * 64, // sy
+          64,       // sw
+          64,       // sh
+          x,        // dx
+          y,        // dy
+          size,     // dw
+          size      // dh
+        );
+
+        // Atualiza HUD info
+        document.getElementById('hudName').textContent = monster.name;
+        document.getElementById('hudPath').textContent = monster.sprite.replace('../../', '');
+        document.getElementById('hudAction').textContent = currentAction.toUpperCase();
+        document.getElementById('hudDir').textContent = currentDir;
+        document.getElementById('hudRow').textContent = row;
+        document.getElementById('hudFrame').textContent = `${col} (LPC Index)`;
+      } else {
+        document.getElementById('hudName').textContent = monster.name;
+        document.getElementById('hudPath').textContent = 'Carregando spritesheet...';
+      }
+    }
+
+    let lastTime = 0;
+    function loop(time) {
+      const dt = time - lastTime;
+      lastTime = time;
+
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('resize', resize);
+    
+    // Inicialização
+    resize();
+    initUI();
+    
+    // Carrega sprites iniciais
+    MONSTERS_CONFIG.forEach(loadSprite);
+    
+    // Inicia Loop
+    requestAnimationFrame((t) => {
+      lastTime = t;
+      loop(t);
+    });
+  </script>
+</body>
+</html>

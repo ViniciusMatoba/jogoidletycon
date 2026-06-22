@@ -318,7 +318,7 @@ export class GameRenderer {
       'monster_vampiro': 'assets/sprites/monster_vampiro_universal.png',
       'monster_zoio': 'assets/sprites/zoio_universal.png',
       'monster_slime_verde': 'assets/sprites/monster_slime_green_universal.png?v=custom-slime-1',
-      'monster_saci_perere': 'assets/sprites/saci_perere_universal.png',
+      'monster_saci_perere': 'assets/sprites/saci_perere_universal.png?v=custom-boss-1',
       'monster_curupira': 'assets/sprites/curupira_universal.png',
       'monster_mula_sem_cabeca': 'assets/sprites/mula_sem_cabeca_universal.png',
       'monster_capelobo': 'assets/sprites/capelobo_universal.png',
